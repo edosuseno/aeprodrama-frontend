@@ -8,8 +8,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Suspense } from "react";
 
 export const metadata: Metadata = {
-  title: "SekaiDrama - Streaming Drama Pendek",
-  description: "Nonton drama pendek gratis dan tanpa iklan di SekaiDrama.",
+  title: "AE PRO Pusat Drama - Nonton Drama Pendek Sub Indo",
+  description: "AE PRO Pusat Drama adalah platform streaming drama pendek premium dengan subtitle Indonesia. Nonton gratis dan lengkap di AE PRO.",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({

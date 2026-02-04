@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(
       `${UPSTREAM_API}/dubindo?classify=${classify}&page=${page}`,
-      { cache: 'no-store',}
+      { cache: 'no-store' }
     );
 
     if (!response.ok) {
@@ -21,15 +21,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await safeJson(response);
-    
-    // Filter out items without bookId to prevent blank cards
-    // Note: data is directly an array for dubindo
-    const filteredData = Array.isArray(data) 
-      ? data.filter((item: any) => item && item.bookId) 
-      : [];
-
-    return encryptedResponse(filteredData);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

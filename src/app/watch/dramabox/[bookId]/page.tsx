@@ -1,296 +1,225 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useParams, useSearchParams, useRouter } from "next/navigation";
-import { useDramaDetail, useEpisodes } from "@/hooks/useDramaDetail";
-import { ChevronLeft, ChevronRight, Loader2, Settings, List, AlertCircle } from "lucide-react";
+import { useParams } from "next/navigation";
+import { useEpisodes, useDramaDetail } from "@/hooks/useDramaDetail";
 import Link from "next/link";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import type { DramaDetailDirect, DramaDetailResponseLegacy } from "@/types/drama";
-
-// Helper to check if response is new format
-function isDirectFormat(data: unknown): data is DramaDetailDirect {
-  return data !== null && typeof data === 'object' && 'bookId' in data && 'coverWap' in data;
-}
-
-// Helper to check if response is legacy format
-function isLegacyFormat(data: unknown): data is DramaDetailResponseLegacy {
-  return data !== null && typeof data === 'object' && 'data' in data && (data as DramaDetailResponseLegacy).data?.book !== undefined;
-}
+import { ChevronLeft, Loader2, List, AlertCircle, ChevronRight } from "lucide-react";
+import Hls from "hls.js";
 
 export default function DramaBoxWatchPage() {
-  const params = useParams<{ bookId: string }>();
-  const bookId = params.bookId;
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const [currentEpisode, setCurrentEpisode] = useState(0);
-  const [quality, setQuality] = useState(720);
-  const [showEpisodeList, setShowEpisodeList] = useState(false);
-  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const { bookId } = useParams<{ bookId: string }>();
 
-  const { data: detailData, isLoading: detailLoading } = useDramaDetail(bookId || "");
-  const { data: episodes, isLoading: episodesLoading } = useEpisodes(bookId || "");
+  // State
+  const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
+  const [showList, setShowList] = useState(false);
 
-  // Initialize from URL params
-  useEffect(() => {
-    const ep = parseInt(searchParams.get("ep") || "0", 10);
-    if (ep >= 0) {
-      setCurrentEpisode(ep);
+  // Fetch Data
+  const { data: episodes, isLoading: episodesLoading } = useEpisodes(bookId);
+  const { data: detail } = useDramaDetail(bookId);
+
+  // Normalize Detail Data
+  const normalizedDetail = useMemo(() => {
+    if (!detail) return null;
+    const anyDetail = detail as any;
+    // Handle various structures safely
+    return {
+      bookName: anyDetail.bookName || anyDetail.data?.book?.bookName || "DramaBox",
+      cover: anyDetail.cover || anyDetail.coverWap || anyDetail.data?.book?.cover || ""
+    };
+  }, [detail]);
+  const sortedEpisodes = useMemo(() => {
+    if (!episodes) return [];
+    return [...episodes].sort((a, b) => a.chapterIndex - b.chapterIndex);
+  }, [episodes]);
+
+  const currentEpisode = sortedEpisodes[currentEpisodeIndex];
+
+  // Helper: Get Video URL
+  const videoUrl = useMemo(() => {
+    if (!currentEpisode) return "";
+
+    // Helper: Determine URL
+    let finalUrl = "";
+    if (currentEpisode.cdnList?.length) {
+      const defaultCdn = currentEpisode.cdnList.find(c => c.isDefault === 1) || currentEpisode.cdnList[0];
+      const defaultPath = defaultCdn.videoPathList?.find(v => v.isDefault === 1 || v.quality === 720) || defaultCdn.videoPathList?.[0];
+      if (defaultPath?.videoPath) finalUrl = defaultPath.videoPath;
     }
-  }, [searchParams]);
+    if (!finalUrl) finalUrl = currentEpisode.videoUrl || "";
 
-  // Update URL when episode changes (for manual navigation)
-  const handleEpisodeChange = (index: number, preserveFullscreen = false) => {
-    setCurrentEpisode(index);
-    setShowEpisodeList(false);
-    if (preserveFullscreen) {
-      window.history.replaceState(null, '', `/watch/dramabox/${bookId}?ep=${index}`);
-    } else {
-      router.push(`/watch/dramabox/${bookId}?ep=${index}`);
+    // USE PROXY to bypass CORS
+    if (finalUrl && finalUrl.startsWith("http")) {
+      return `/api/proxy?url=${encodeURIComponent(finalUrl)}`;
     }
-  };
+    return finalUrl;
+  }, [currentEpisode]);
 
-  // All useMemo hooks must be called BEFORE any early returns
-  const currentEpisodeData = useMemo(() => {
-    if (!episodes) return null;
-    return episodes[currentEpisode] || null;
-  }, [episodes, currentEpisode]);
-
-  const defaultCdn = useMemo(() => {
-    if (!currentEpisodeData) return null;
+  // Loading State
+  if (episodesLoading) {
     return (
-      currentEpisodeData.cdnList.find((cdn) => cdn.isDefault === 1) || currentEpisodeData.cdnList[0] || null
-    );
-  }, [currentEpisodeData]);
-
-  const availableQualities = useMemo(() => {
-    const list = defaultCdn?.videoPathList
-      ?.map((v) => v.quality)
-      .filter((q): q is number => typeof q === "number");
-
-    const unique = Array.from(new Set(list && list.length ? list : [720]));
-    return unique.sort((a, b) => b - a);
-  }, [defaultCdn]);
-
-  // Keep selected quality valid for the current episode
-  useEffect(() => {
-    if (!availableQualities.length) return;
-    if (!availableQualities.includes(quality)) {
-      setQuality(availableQualities[0]);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [availableQualities.join(",")]);
-
-  // Get video URL with selected quality
-  const getVideoUrl = () => {
-    if (!currentEpisodeData || !defaultCdn) return "";
-
-    const videoPath =
-      defaultCdn.videoPathList.find((v) => v.quality === quality) ||
-      defaultCdn.videoPathList.find((v) => v.isDefault === 1) ||
-      defaultCdn.videoPathList[0];
-
-    return videoPath?.videoPath || "";
-  };
-
-  const handleVideoEnded = () => {
-    if (!episodes) return;
-    const next = currentEpisode + 1;
-    if (next <= episodes.length - 1) {
-      handleEpisodeChange(next, true);
-    }
-  };
-
-  // Handle both new and legacy API formats
-  let book: { bookId: string; bookName: string } | null = null;
-
-  if (isDirectFormat(detailData)) {
-    book = { bookId: detailData.bookId, bookName: detailData.bookName };
-  } else if (isLegacyFormat(detailData)) {
-    book = { bookId: detailData.data.book.bookId, bookName: detailData.data.book.bookName };
-  }
-
-  const totalEpisodes = episodes?.length || 0;
-
-  // Loading state
-  if (detailLoading || episodesLoading) {
-    return (
-      <main className="fixed inset-0 bg-black flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="w-12 h-12 animate-spin text-primary" />
-        <div className="text-center space-y-2">
-            <h3 className="text-white font-medium text-lg">Memuat video...</h3>
-            <p className="text-white/60 text-sm">Mohon tunggu sebentar, data sedang diambil.</p>
-        </div>
-      </main>
+      <div className="flex h-screen w-full items-center justify-center bg-black text-white">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-2">Memuat Episode...</span>
+      </div>
     );
   }
 
-  // Error state
-  if (!book || !episodes) {
+  // Error/Empty State
+  if (!sortedEpisodes.length) {
     return (
-      <main className="fixed inset-0 bg-black flex flex-col items-center justify-center p-4">
-        <AlertCircle className="w-12 h-12 text-destructive mb-4" />
-        <h2 className="text-2xl font-bold text-white mb-4">Drama tidak ditemukan</h2>
-        <Link href="/" className="text-primary hover:underline">
-          Kembali ke beranda
+      <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white p-4 text-center">
+        <AlertCircle className="h-12 w-12 text-red-500 mb-2" />
+        <h1 className="text-xl font-bold">Video Tidak Ditemukan</h1>
+        <p className="opacity-70">Maaf, episode untuk drama ini belum tersedia atau gagal dimuat.</p>
+        <Link href="/" className="mt-4 px-4 py-2 bg-white/10 rounded-full hover:bg-white/20">
+          Kembali ke Beranda
         </Link>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="fixed inset-0 bg-black flex flex-col">
-      {/* Header - Fixed Overlay with improved visibility */}
-      <div className="absolute top-0 left-0 right-0 z-40 h-16 pointer-events-none">
-        {/* Gradient background for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent" />
-
-        <div className="relative z-10 flex items-center justify-between h-full px-4 max-w-7xl mx-auto pointer-events-auto">
-          {/* Header content unchanged... */}
-          <Link
-            href={`/detail/dramabox/${bookId}`}
-            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10"
-          >
-            <ChevronLeft className="w-6 h-6" />
-            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md">SekaiDrama</span>
-          </Link>
-          
-          <div className="text-center flex-1 px-4 min-w-0">
-            <h1 className="text-white font-medium truncate text-sm sm:text-base drop-shadow-md">
-              {book.bookName}
-            </h1>
-            <p className="text-white/80 text-xs drop-shadow-md">
-              {currentEpisodeData?.chapterName || `Episode ${currentEpisode + 1}`}
-            </p>
+    <div className="relative h-screen w-full bg-black flex flex-col">
+      {/* 1. Navbar Overlay */}
+      <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
+        <Link href={`/detail/dramabox/${bookId}`} className="pointer-events-auto flex items-center gap-2 p-2 bg-black/20 backdrop-blur rounded-full text-white hover:bg-white/20 transition">
+          <ChevronLeft className="w-6 h-6" />
+          <div className="flex flex-col -gap-1">
+            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+            <span className="text-[10px] text-white/70 hidden sm:inline leading-none">PUSAT DRAMA</span>
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* Quality Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-2 text-white/90 hover:text-white transition-colors rounded-full hover:bg-white/10">
-                  <Settings className="w-6 h-6 drop-shadow-md" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="z-[100]">
-                {availableQualities.map((q) => (
-                  <DropdownMenuItem
-                    key={q}
-                    onClick={() => setQuality(q)}
-                    className={quality === q ? "text-primary font-semibold" : ""}
-                  >
-                    {q}p
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-
-            {/* Episode List Toggle */}
-            <button
-              onClick={() => setShowEpisodeList(!showEpisodeList)}
-              className="p-2 text-white/90 hover:text-white transition-colors rounded-full hover:bg-white/10"
-            >
-              <List className="w-6 h-6 drop-shadow-md" />
-            </button>
-          </div>
+        </Link>
+        <div className="text-white text-center drop-shadow-md">
+          <h2 className="font-bold text-sm md:text-base line-clamp-1">{normalizedDetail?.bookName || "DramaBox"}</h2>
+          <p className="text-xs opacity-80">
+            Episode {currentEpisode?.chapterIndex || currentEpisodeIndex + 1} / {sortedEpisodes.length}
+          </p>
         </div>
+        <button
+          onClick={() => setShowList(prev => !prev)}
+          className="pointer-events-auto p-2 bg-black/20 backdrop-blur rounded-full text-white hover:bg-white/20 transition"
+        >
+          <List className="w-6 h-6" />
+        </button>
       </div>
 
-      {/* Main Video Area */}
-      <div className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
-         {/* Video Element Wrapper */}
-         <div className="relative w-full h-full flex items-center justify-center">
-            {currentEpisodeData ? (
-              <video
-                ref={videoRef}
-                src={getVideoUrl()}
-                controls
-                autoPlay
-                onEnded={handleVideoEnded}
-                className="w-full h-full object-contain max-h-[100dvh]"
-                poster={currentEpisodeData.chapterImg}
-              />
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center z-20">
-                <Loader2 className="w-10 h-10 text-primary animate-spin" />
-              </div>
-            )}
-         </div>
+      {/* 2. Video Player */}
+      <div className="flex-1 w-full h-full flex items-center justify-center bg-black relative group">
+        {videoUrl ? (
+          <>
+            <HlsVideoPlayer
+              src={videoUrl}
+              poster={currentEpisode?.cover || normalizedDetail?.cover || ""}
+              onEnded={() => {
+                if (currentEpisodeIndex < sortedEpisodes.length - 1) {
+                  setCurrentEpisodeIndex(prev => prev + 1);
+                }
+              }}
+            />
 
-         {/* Navigation Controls Overlay - Bottom */}
-         {/* Adjusted to bottom-20 on mobile per user feedback. */}
-         <div className="absolute bottom-20 md:bottom-12 left-0 right-0 z-40 pointer-events-none flex justify-center pb-safe-area-bottom">
-            <div className="flex items-center gap-2 md:gap-6 pointer-events-auto bg-black/60 backdrop-blur-md px-3 py-1.5 md:px-6 md:py-3 rounded-full border border-white/10 shadow-lg transition-all scale-90 md:scale-100 origin-bottom">
-                <button
-                  onClick={() => currentEpisode > 0 && handleEpisodeChange(currentEpisode - 1)}
-                  disabled={currentEpisode <= 0}
-                  className="p-1.5 md:p-2 rounded-full text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
-                >
-                  <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
-                </button>
-                
-                <span className="text-white font-medium text-xs md:text-sm tabular-nums min-w-[60px] md:min-w-[80px] text-center">
-                  Ep {currentEpisode + 1} / {totalEpisodes}
-                </span>
-
-                <button
-                  onClick={() => currentEpisode < totalEpisodes - 1 && handleEpisodeChange(currentEpisode + 1)}
-                  disabled={currentEpisode >= totalEpisodes - 1}
-                  className="p-1.5 md:p-2 rounded-full text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
-                >
-                  <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
-                </button>
-            </div>
-         </div>
-      </div>
-
-      {/* Episode List Sidebar */}
-      {showEpisodeList && (
-        <>
-          <div 
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
-            onClick={() => setShowEpisodeList(false)}
-          />
-          <div className="fixed inset-y-0 right-0 w-72 bg-zinc-900 z-[70] overflow-y-auto border-l border-white/10 shadow-2xl animate-in slide-in-from-right">
-            <div className="p-4 border-b border-white/10 sticky top-0 bg-zinc-900 z-10 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <h2 className="font-bold text-white">Daftar Episode</h2>
-                <span className="text-xs text-white/60 bg-white/10 px-2 py-0.5 rounded-full">
-                  Total {totalEpisodes}
-                </span>
-              </div>
+            {/* Navigation Overlay Buttons */}
+            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
               <button
-                onClick={() => setShowEpisodeList(false)}
-                className="p-1 text-white/70 hover:text-white"
+                onClick={() => setCurrentEpisodeIndex(prev => Math.max(0, prev - 1))}
+                disabled={currentEpisodeIndex === 0}
+                className="pointer-events-auto p-4 bg-black/40 backdrop-blur rounded-full text-white hover:bg-black/60 active:scale-95 transition disabled:opacity-0"
               >
-                <ChevronRight className="w-6 h-6" />
+                <ChevronLeft className="w-8 h-8" />
+              </button>
+
+              <button
+                onClick={() => setCurrentEpisodeIndex(prev => Math.min(sortedEpisodes.length - 1, prev + 1))}
+                disabled={currentEpisodeIndex === sortedEpisodes.length - 1}
+                className="pointer-events-auto p-4 bg-black/40 backdrop-blur rounded-full text-white hover:bg-black/60 active:scale-95 transition disabled:opacity-0"
+              >
+                <ChevronRight className="w-8 h-8" />
               </button>
             </div>
-            <div className="p-3 grid grid-cols-5 gap-2">
-              {episodes.map((episode, idx) => (
-                <button
-                  key={episode.chapterId}
-                  onClick={() => handleEpisodeChange(idx)}
-                  className={`
-                    aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all
-                    ${idx === currentEpisode 
-                      ? "bg-primary text-white shadow-lg shadow-primary/20" 
-                      : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                    }
-                  `}
-                >
-                  {idx + 1}
-                </button>
-              ))}
-            </div>
+          </>
+        ) : (
+          <div className="text-white text-lg">URL Video Tidak Valid</div>
+        )}
+      </div>
+
+      {/* 3. Playlist Sidebar */}
+      {showList && (
+        <div className="fixed inset-y-0 right-0 z-50 w-72 bg-gray-900/95 backdrop-blur shadow-xl border-l border-white/10 flex flex-col">
+          <div className="p-4 border-b border-white/10 flex justify-between items-center text-white">
+            <h3 className="font-bold">Daftar Episode</h3>
+            <button onClick={() => setShowList(false)}><ChevronLeft className="rotate-180" /></button>
           </div>
-        </>
+          <div className="flex-1 overflow-y-auto p-2 grid grid-cols-4 gap-2 content-start">
+            {sortedEpisodes.map((ep, idx) => (
+              <button
+                key={ep.chapterId || idx}
+                onClick={() => {
+                  setCurrentEpisodeIndex(idx);
+                  setShowList(false); // Opsional: tutup list setelah pilih
+                }}
+                className={`p-2 rounded text-sm font-medium transition ${idx === currentEpisodeIndex
+                  ? "bg-red-600 text-white"
+                  : "bg-white/5 text-gray-300 hover:bg-white/10"
+                  }`}
+              >
+                {ep.chapterIndex}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
-    </main>
+    </div>
+  );
+}
+
+function HlsVideoPlayer({ src, poster, onEnded }: { src: string; poster: string; onEnded?: () => void }) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    if (!src) return;
+
+    let hls: Hls | null = null;
+
+    // Check if URL is HLS or proxied HLS
+    const isM3U8 = src.includes('.m3u8') || (src.includes('/proxy') && src.includes('.m3u8'));
+
+    if (Hls.isSupported() && isM3U8) {
+      hls = new Hls({
+        xhrSetup: function (xhr, url) {
+          // Opsional: Custom headers jika perlu, tapi proxy sudah handle
+        }
+      });
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        video.play().catch(e => console.log("Autoplay prevented:", e));
+      });
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        if (data.fatal) console.log("HLS Fatal Error:", data);
+      });
+    } else {
+      // Native support (Safari) or MP4
+      video.src = src;
+      video.addEventListener("loadedmetadata", () => {
+        video.play().catch(e => console.log("Autoplay prevented:", e));
+      });
+    }
+
+    return () => {
+      if (hls) hls.destroy();
+    };
+  }, [src]);
+
+  return (
+    <video
+      ref={videoRef}
+      controls
+      className="w-full h-full object-contain max-h-[100dvh]"
+      poster={poster}
+      onEnded={onEnded}
+      playsInline
+    />
   );
 }

@@ -30,8 +30,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await safeJson(response);
-    return encryptedResponse(data);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("ReelShort Episode Error:", error);
     return encryptedResponse(

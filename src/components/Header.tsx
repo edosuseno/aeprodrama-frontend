@@ -45,11 +45,11 @@ export function Header() {
     isFreeReels ? normalizedQuery : ""
   );
 
-  const isSearching = isDramaBox 
-    ? isSearchingDramaBox 
-    : isReelShort 
-      ? isSearchingReelShort 
-      : isNetShort 
+  const isSearching = isDramaBox
+    ? isSearchingDramaBox
+    : isReelShort
+      ? isSearchingReelShort
+      : isNetShort
         ? isSearchingNetShort
         : isMelolo
           ? isSearchingMelolo
@@ -58,15 +58,15 @@ export function Header() {
             : isSearchingFreeReels;
 
   // Search results processing
-  const searchResults = isDramaBox 
-    ? dramaBoxResults 
-    : isReelShort 
-      ? reelShortResults?.data 
+  const searchResults = isDramaBox
+    ? dramaBoxResults
+    : isReelShort
+      ? reelShortResults?.data
       : isNetShort
         ? netShortResults?.data
         : isMelolo
           ? meloloResults?.data?.search_data?.flatMap((item: any) => item.books || [])
-              .filter((book: any) => book.thumb_url && book.thumb_url !== "") || []
+            .filter((book: any) => book.thumb_url && book.thumb_url !== "") || []
           : isFlickReels
             ? flickReelsResults?.data
             : freeReelsResults;
@@ -83,16 +83,21 @@ export function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
-      <div className="container mx-auto px-4">
+      <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-              <Play className="w-5 h-5 text-white fill-white" />
+          <Link href="/" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-glow">
+              <span className="font-display font-black text-white text-sm tracking-tighter">AE</span>
             </div>
-            <span className="font-display font-bold text-xl gradient-text">
-              SekaiDrama
-            </span>
+            <div className="flex flex-col -gap-1">
+              <span className="font-display font-bold text-lg leading-none gradient-text tracking-wide">
+                AE PRO
+              </span>
+              <span className="text-[10px] font-medium text-muted-foreground leading-none tracking-[0.2em]">
+                PUSAT DRAMA
+              </span>
+            </div>
           </Link>
 
           {/* Search Button Only - No Nav Links */}
@@ -299,8 +304,8 @@ export function Header() {
                         <div className="w-16 h-24 bg-muted rounded-xl flex-shrink-0 overflow-hidden">
                           {book.thumb_url ? (
                             <img
-                              src={book.thumb_url.includes(".heic") 
-                                ? `https://wsrv.nl/?url=${encodeURIComponent(book.thumb_url)}&output=jpg` 
+                              src={book.thumb_url.includes(".heic")
+                                ? `https://wsrv.nl/?url=${encodeURIComponent(book.thumb_url)}&output=jpg`
                                 : book.thumb_url}
                               alt={book.book_name}
                               className="w-full h-full object-cover"
@@ -322,9 +327,9 @@ export function Header() {
                           )}
                           {book.stat_infos && book.stat_infos.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
-                               <span className="tag-pill text-[10px]">
-                                  {book.stat_infos[0]}
-                               </span>
+                              <span className="tag-pill text-[10px]">
+                                {book.stat_infos[0]}
+                              </span>
                             </div>
                           )}
                         </div>

@@ -46,9 +46,13 @@ export function BannerCarousel({
       {/* Banner Image */}
       <Link href={`/detail/reelshort/${currentBanner.jump_param.book_id}`}>
         <img
-          src={currentBanner.pic}
+          src={currentBanner.pic || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='400'%3E%3Crect fill='%23374151' width='1200' height='400'/%3E%3C/svg%3E"}
           alt={currentBanner.jump_param.book_title}
           className="w-full h-full object-cover transition-transform duration-700"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1200' height='400'%3E%3Crect fill='%23374151' width='1200' height='400'/%3E%3C/svg%3E";
+          }}
         />
 
         {/* Gradient Overlay */}
@@ -63,6 +67,9 @@ export function BannerCarousel({
               src={currentBanner.pic_artistic_word}
               alt=""
               className="h-12 md:h-16 object-contain"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
             />
           )}
 
@@ -143,10 +150,9 @@ export function BannerCarousel({
               }}
               className={`
                 w-2 h-2 rounded-full transition-all duration-200
-                ${
-                  idx === currentIndex
-                    ? "bg-primary w-6"
-                    : "bg-white/50 hover:bg-white/80"
+                ${idx === currentIndex
+                  ? "bg-primary w-6"
+                  : "bg-white/50 hover:bg-white/80"
                 }
               `}
             />

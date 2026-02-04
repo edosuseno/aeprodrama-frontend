@@ -18,14 +18,14 @@ export function ReelShortSection() {
 
     const tabs = data.data.tab_list || [];
     const popularTab = tabs.find((t) => t.tab_name === "POPULER") || tabs[0];
-    
+
     if (!popularTab) return { banners: [], bookGroups: [] };
 
     const tabLists = data.data.lists.filter((list) => list.tab_id === popularTab.tab_id);
-    
+
     const banners: ReelShortBanner[] = [];
     const bookGroups: { title: string; books: ReelShortBook[] }[] = [];
-    
+
     tabLists.forEach((list, index) => {
       if (list.banners && list.banners.length > 0) {
         banners.push(...list.banners);
@@ -42,7 +42,7 @@ export function ReelShortSection() {
 
   if (error) {
     return (
-      <UnifiedErrorDisplay 
+      <UnifiedErrorDisplay
         title="Gagal Memuat ReelShort"
         message="Terjadi kesalahan saat mengambil data dari server."
         onRetry={() => refetch()}
@@ -75,13 +75,13 @@ export function ReelShortSection() {
             {group.title}
           </h2>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
             {group.books
               .filter((book) => book.book_id && book.book_pic)
-              .slice(0, 16)
+              .slice(0, 18)
               .map((book, index) => (
-                <UnifiedMediaCard 
-                  key={book.book_id} 
+                <UnifiedMediaCard
+                  key={book.book_id}
                   index={index}
                   title={book.book_title}
                   cover={book.book_pic}
@@ -109,7 +109,7 @@ function SectionSkeleton() {
   return (
     <div>
       <div className="h-6 w-32 bg-muted/50 rounded animate-pulse mb-4" />
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
         {Array.from({ length: 8 }).map((_, i) => (
           <div key={i}>
             <div className="aspect-[2/3] rounded-lg bg-muted/50 animate-pulse" />

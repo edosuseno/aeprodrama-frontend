@@ -20,7 +20,7 @@ export function DramaSection({ title, dramas, isLoading, error, onRetry }: Drama
         <h2 className="font-display font-bold text-xl md:text-2xl text-foreground mb-4">
           {title}
         </h2>
-        <UnifiedErrorDisplay 
+        <UnifiedErrorDisplay
           title={`Gagal Memuat ${title}`}
           message="Tidak dapat mengambil data drama."
           onRetry={onRetry}
@@ -34,15 +34,31 @@ export function DramaSection({ title, dramas, isLoading, error, onRetry }: Drama
       <section className="space-y-4">
         {/* Title Skeleton */}
         <div className="h-7 md:h-8 w-48 bg-white/10 rounded-lg animate-pulse mb-4" />
-        
+
         {/* Grid Skeleton */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-          {Array.from({ length: 12 }).map((_, i) => (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
+          {Array.from({ length: 18 }).map((_, i) => (
             <UnifiedMediaCardSkeleton key={i} />
           ))}
         </div>
       </section>
     );
+  }
+
+  // Calculate items to show: Ensure it's a multiple of 6 for neat grid
+  // Desktop has 6 cols. 
+  // 1. Filter out dramas with bad/missing covers first
+  const validDramas = dramas?.filter(d =>
+    (d.cover || d.coverWap) && (!d.bookName || !d.bookName.includes("No Name"))
+  ) || [];
+
+  const totalAvailable = validDramas.length;
+  // If we have plenty data, crop to nearest multiple of 9 (max 27)
+  // If data is scarce (< 9), show all available
+  let displayCount = totalAvailable;
+
+  if (totalAvailable >= 9) {
+    displayCount = Math.floor(Math.min(totalAvailable, 27) / 9) * 9;
   }
 
   return (
@@ -51,15 +67,15 @@ export function DramaSection({ title, dramas, isLoading, error, onRetry }: Drama
         {title}
       </h2>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-        {dramas?.slice(0, 16).map((drama, index) => {
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
+        {validDramas.slice(0, displayCount).map((drama, index) => {
           // Normalize badge color: If text is "Terpopuler", force RED to match ReelShort/NetShort
           const isPopular = drama.corner?.name?.toLowerCase().includes("populer");
           const badgeColor = isPopular ? "#E52E2E" : (drama.corner?.color || "#e5a00d");
 
           return (
-            <UnifiedMediaCard 
-              key={drama.bookId || `drama-${index}`} 
+            <UnifiedMediaCard
+              key={drama.bookId || `drama-${index}`}
               index={index}
               title={drama.bookName}
               cover={drama.coverWap || drama.cover || ""}

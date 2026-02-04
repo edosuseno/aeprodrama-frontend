@@ -163,4 +163,7 @@ export interface Episode {
   cdnList: CdnInfo[];
   chapterImg: string;
   chargeChapter: boolean;
+  // Added properties used in frontend
+  videoUrl?: string;
+  cover?: string;
 }

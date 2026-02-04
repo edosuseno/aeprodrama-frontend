@@ -8,6 +8,7 @@ export async function GET() {
     const response = await fetch(`${UPSTREAM_API}/foryou`, {
       cache: 'no-store',
     });
+
     if (!response.ok) {
       return NextResponse.json(
         { error: "Failed to fetch data" },
@@ -15,14 +16,10 @@ export async function GET() {
       );
     }
 
-    const data = await safeJson(response);
-    
-    // Filter out items without bookId or bookName to prevent blank cards
-    const filteredData = Array.isArray(data) 
-      ? data.filter((item: any) => item && item.bookId) 
-      : [];
+    const data = await response.json();
 
-    return encryptedResponse(filteredData);
+    // Return the backend response directly as it is already encrypted
+    return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

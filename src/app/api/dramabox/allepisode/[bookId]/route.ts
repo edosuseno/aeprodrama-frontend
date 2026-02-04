@@ -1,38 +1,35 @@
-import { safeJson, encryptedResponse } from "@/lib/api-utils";
 import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
 
-const UPSTREAM_API = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id/api") + "/dramabox";
+const BACKEND_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5001/api") + "/dramabox";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ bookId: string }> }
 ) {
   const { bookId } = await params;
-  const headersList = await headers();
-  const accept = headersList.get("accept") || "";
+  const searchParams = request.nextUrl.searchParams;
+  const queryString = searchParams.toString();
 
+  // URL ke backend lokal (port 5001) atau upstream
+  // FIX: Sansekai API expects /allepisode?bookId=XYZ
+  const url = `${BACKEND_URL}/allepisode?bookId=${bookId}${queryString ? `&${queryString}` : ""}`;
 
-  // If API fetch -> proxy to upstream
+  console.log(`🌐 [Frontend Proxy] Proxying episodes to: ${url}`);
+
   try {
-    const response = await fetch(`${UPSTREAM_API}/allepisode?bookId=${bookId}`, {
-      cache: 'no-store',
-    });
+    const response = await fetch(url, { cache: 'no-store' });
 
     if (!response.ok) {
-      return NextResponse.json(
-        { error: "Failed to fetch data" },
-        { status: response.status }
-      );
+      return NextResponse.json({ error: "Failed to fetch from backend" }, { status: response.status });
     }
 
-    const data = await safeJson(response);
-    return encryptedResponse(data);
+    const data = await response.json();
+
+    // Kembalikan APA ADANYA (termasuk success: true dan data: encrypted)
+    // agar hook frontend bisa men-decrypt datanya
+    return NextResponse.json(data);
   } catch (error) {
-    console.error("API Error:", error);
-    return NextResponse.json(
-      { error: "Internal Server Error" },
-      { status: 500 }
-    );
+    console.error("Frontend Proxy Error:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }

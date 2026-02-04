@@ -27,9 +27,9 @@ export function NetShortHome() {
           <div key={sectionIndex}>
             {/* Title Skeleton */}
             <div className="h-7 w-48 bg-muted/50 rounded animate-pulse mb-4" />
-            
+
             {/* Card Grid Skeleton */}
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
               {Array.from({ length: 12 }).map((_, cardIndex) => (
                 <UnifiedMediaCardSkeleton key={cardIndex} index={cardIndex} />
               ))}
@@ -42,12 +42,12 @@ export function NetShortHome() {
 
   if (errorTheaters || errorForYou) {
     return (
-      <UnifiedErrorDisplay 
+      <UnifiedErrorDisplay
         title="Gagal Memuat NetShort"
         message="Tidak dapat terhubung ke layanan NetShort."
         onRetry={() => {
-            refetchTheaters();
-            refetchForYou();
+          refetchTheaters();
+          refetchForYou();
         }}
       />
     );
@@ -69,10 +69,10 @@ export function NetShortHome() {
               Rekomendasi Untukmu
             </h2>
           </div>
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
             {forYouData.data.map((drama, index) => (
-              <UnifiedMediaCard 
-                key={drama.shortPlayId} 
+              <UnifiedMediaCard
+                key={drama.shortPlayId}
                 index={index}
                 title={drama.title}
                 cover={drama.cover}
@@ -103,10 +103,10 @@ export function NetShortHome() {
           </div>
 
           {/* Drama Grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-            {group.dramas.slice(0, 12).map((drama, index) => (
-              <UnifiedMediaCard 
-                key={drama.shortPlayId} 
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
+            {group.dramas.slice(0, 18).map((drama, index) => (
+              <UnifiedMediaCard
+                key={drama.shortPlayId}
                 index={index}
                 title={drama.title}
                 cover={drama.cover}

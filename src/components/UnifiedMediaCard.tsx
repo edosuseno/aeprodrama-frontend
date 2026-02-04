@@ -29,15 +29,15 @@ export function UnifiedMediaCard({
   topRightBadge,
   index = 0,
 }: UnifiedMediaCardProps) {
-  
+
   // SHARED STYLES
   // Responsive: Mobile (Default) -> smaller | Desktop (md:) -> regular 10px
   // Using text-[8px] for mobile and text-[10px] for desktop
   // Note: Removed absolute positioning from BASE, moving it to container
   const BADGE_BASE = "px-1 py-0.5 md:px-1.5 rounded font-bold text-white shadow-sm leading-none tracking-wide flex items-center justify-center font-sans text-[8px] md:text-[10px]";
-  
-  const BADGE_FONT = { 
-    lineHeight: "1",      
+
+  const BADGE_FONT = {
+    lineHeight: "1",
     fontFamily: "inherit"
   };
 
@@ -50,13 +50,21 @@ export function UnifiedMediaCard({
       {/* Visual Container */}
       <div className="aspect-[2/3] relative overflow-hidden rounded-xl bg-muted/20">
         <img
-          src={cover.includes(".heic") 
-            ? `https://wsrv.nl/?url=${encodeURIComponent(cover)}&output=jpg` 
-            : cover}
+          src={cover && cover.trim()
+            ? (cover.includes(".heic")
+              ? `https://wsrv.nl/?url=${encodeURIComponent(cover)}&output=jpg`
+              : cover)
+            : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E"}
           alt={title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
           referrerPolicy="no-referrer"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (target.src !== "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E") {
+              target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+            }
+          }}
         />
 
         {/* Gradient Overlay */}
@@ -64,13 +72,13 @@ export function UnifiedMediaCard({
 
         {/* Badges Container - Flexbox to prevent overlap */}
         <div className="absolute top-1.5 left-1.5 right-1.5 md:top-2 md:left-2 md:right-2 flex justify-between items-start pointer-events-none z-10">
-          
+
           {/* Top Left Badge - Allowed to truncate */}
-          <div className="flex-1 min-w-0 pr-1 flex justify-start"> 
+          <div className="flex-1 min-w-0 pr-1 flex justify-start">
             {topLeftBadge && (
-              <div 
+              <div
                 className={`${BADGE_BASE} truncate max-w-full`}
-                style={{ 
+                style={{
                   ...BADGE_FONT,
                   backgroundColor: topLeftBadge.color || "#E52E2E",
                   color: topLeftBadge.textColor || "#FFFFFF"
@@ -84,9 +92,9 @@ export function UnifiedMediaCard({
           {/* Top Right Badge - Fixed width/Shrink 0 */}
           <div className="shrink-0 flex justify-end">
             {topRightBadge && (
-              <div 
+              <div
                 className={`${BADGE_BASE} ${topRightBadge.isTransparent ? 'backdrop-blur-sm' : ''}`}
-                style={{ 
+                style={{
                   ...BADGE_FONT,
                   backgroundColor: topRightBadge.isTransparent ? "rgba(0,0,0,0.6)" : (topRightBadge.color || "rgba(0,0,0,0.6)"),
                   color: topRightBadge.textColor || "#FFFFFF"
@@ -114,11 +122,13 @@ export function UnifiedMediaCard({
         </div>
       </div>
 
-      {/* Title */}
-      <div className="pt-2 md:pt-3 pb-1">
-        <h3 className="font-display font-semibold text-xs md:text-sm leading-snug line-clamp-2 text-foreground group-hover:text-primary transition-colors">
-          {title}
-        </h3>
+      {/* Title with Fixed Height Container for Alignment */}
+      <div className="pt-3 pb-1">
+        <div className="h-[2.5em] md:h-[2.8em] flex items-start overflow-hidden">
+          <h3 className="font-display font-medium text-xs md:text-sm leading-tight line-clamp-2 text-foreground group-hover:text-primary transition-colors w-full">
+            {title}
+          </h3>
+        </div>
       </div>
     </Link>
   );

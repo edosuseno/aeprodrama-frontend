@@ -8,7 +8,7 @@ import { decryptData } from "@/lib/crypto";
 // ... existing imports
 
 async function fetchDramaDetail(bookId: string): Promise<DramaDetailResponse> {
-  const response = await fetch(`${API_BASE}/detail/${bookId}`);
+  const response = await fetch(`${API_BASE}/detail/${bookId}?lang=in`);
   if (!response.ok) {
     throw new Error("Failed to fetch drama detail");
   }
@@ -20,7 +20,7 @@ async function fetchDramaDetail(bookId: string): Promise<DramaDetailResponse> {
 }
 
 async function fetchAllEpisodes(bookId: string): Promise<Episode[]> {
-  const response = await fetch(`${API_BASE}/allepisode/${bookId}`);
+  const response = await fetch(`${API_BASE}/allepisode/${bookId}?lang=in`); // Added lang=in param
   if (!response.ok) {
     throw new Error("Failed to fetch episodes");
   }

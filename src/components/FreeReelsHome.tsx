@@ -24,9 +24,9 @@ function SectionLoader({ count = 6, titleWidth = "w-48" }: { count?: number, tit
     <section className="space-y-4">
       {/* Title Skeleton */}
       <div className={`h-7 md:h-8 ${titleWidth} bg-white/10 rounded-lg animate-pulse`} />
-      
+
       {/* Grid Skeleton - Matches main grid exactly */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
         {Array.from({ length: count }).map((_, i) => (
           <UnifiedMediaCardSkeleton key={i} />
         ))}
@@ -42,42 +42,42 @@ function cleanTitle(title: string): string {
 }
 
 export function FreeReelsHome() {
-  const { 
-    data: forYouData, 
-    isLoading: loadingForYou, 
-    error: errorForYou, 
-    refetch: refetchForYou 
+  const {
+    data: forYouData,
+    isLoading: loadingForYou,
+    error: errorForYou,
+    refetch: refetchForYou
   } = useFreeReelsForYou();
 
-  const { 
-    data: homeData, 
-    isLoading: loadingHome, 
-    error: errorHome, 
-    refetch: refetchHome 
+  const {
+    data: homeData,
+    isLoading: loadingHome,
+    error: errorHome,
+    refetch: refetchHome
   } = useFreeReelsHome();
 
-  const { 
-    data: animeData, 
-    isLoading: loadingAnime, 
-    error: errorAnime, 
-    refetch: refetchAnime 
+  const {
+    data: animeData,
+    isLoading: loadingAnime,
+    error: errorAnime,
+    refetch: refetchAnime
   } = useFreeReelsAnime();
 
   if (errorForYou && errorHome && errorAnime) {
     return (
-      <UnifiedErrorDisplay 
+      <UnifiedErrorDisplay
         onRetry={() => {
           if (errorForYou) refetchForYou();
           if (errorHome) refetchHome();
           if (errorAnime) refetchAnime();
-        }} 
+        }}
       />
     );
   }
 
   return (
     <div className="space-y-8 pb-20">
-      
+
       {/* SECTION: For You / Rekomendasi */}
       {loadingForYou ? (
         <SectionLoader count={12} titleWidth="w-56" />
@@ -89,20 +89,21 @@ export function FreeReelsHome() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
             {forYouData?.data?.items
               ?.filter(item => item.title && item.cover)
+              .slice(0, 18)
               .map((item, idx) => (
-              <UnifiedMediaCard
-                key={`${item.key}-foryou-${idx}`}
-                title={item.title}
-                cover={item.cover}
-                link={`/detail/freereels/${item.key}`}
-                episodes={item.episode_count || 0}
-                topRightBadge={item.follow_count ? { text: `${(item.follow_count / 1000).toFixed(1)}k`, isTransparent: true } : null}
-                topLeftBadge={null}
-              />
-            ))}
+                <UnifiedMediaCard
+                  key={`${item.key}-foryou-${idx}`}
+                  title={item.title}
+                  cover={item.cover}
+                  link={`/detail/freereels/${item.key}`}
+                  episodes={item.episode_count || 0}
+                  topRightBadge={item.follow_count ? { text: `${(item.follow_count / 1000).toFixed(1)}k`, isTransparent: true } : null}
+                  topLeftBadge={null}
+                />
+              ))}
           </div>
         </section>
       )}
@@ -114,40 +115,40 @@ export function FreeReelsHome() {
         homeData?.data?.items
           ?.filter(module => module.type !== 'coming_soon')
           .map((module, mIdx) => {
-           const items = getModuleItems(module);
-           if (!items || items.length === 0) return null;
-           
-           // Skip if all items are invalid
-           const validItems = items.filter(item => item.title && item.cover);
-           if (validItems.length === 0) return null;
+            const items = getModuleItems(module);
+            if (!items || items.length === 0) return null;
 
-           const title = module.module_name ? cleanTitle(module.module_name) : "";
+            // Skip if all items are invalid
+            const validItems = items.filter(item => item.title && item.cover);
+            if (validItems.length === 0) return null;
 
-           return (
-            <section key={`home-module-${mIdx}`} className="space-y-4">
-              {title && (
-                <div className="flex items-center justify-between">
-                  <h2 className="font-display font-bold text-xl md:text-2xl text-foreground">
-                    {title}
-                  </h2>
+            const title = module.module_name ? cleanTitle(module.module_name) : "";
+
+            return (
+              <section key={`home-module-${mIdx}`} className="space-y-4">
+                {title && (
+                  <div className="flex items-center justify-between">
+                    <h2 className="font-display font-bold text-xl md:text-2xl text-foreground">
+                      {title}
+                    </h2>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
+                  {validItems.slice(0, 18).map((item, idx) => (
+                    <UnifiedMediaCard
+                      key={`${item.key}-home-${mIdx}-${idx}`}
+                      title={item.title}
+                      cover={item.cover}
+                      link={`/detail/freereels/${item.key}`}
+                      episodes={item.episode_count || 0}
+                      topRightBadge={item.follow_count ? { text: `${(item.follow_count / 1000).toFixed(1)}k`, isTransparent: true } : null}
+                    />
+                  ))}
                 </div>
-              )}
-
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-                {validItems.map((item, idx) => (
-                  <UnifiedMediaCard
-                    key={`${item.key}-home-${mIdx}-${idx}`}
-                    title={item.title}
-                    cover={item.cover}
-                    link={`/detail/freereels/${item.key}`}
-                    episodes={item.episode_count || 0}
-                    topRightBadge={item.follow_count ? { text: `${(item.follow_count / 1000).toFixed(1)}k`, isTransparent: true } : null}
-                  />
-                ))}
-              </div>
-            </section>
-           );
-        })
+              </section>
+            );
+          })
       )}
 
       {/* SECTION: Anime Modules */}
@@ -161,7 +162,7 @@ export function FreeReelsHome() {
                 Anime
               </h2>
             </div>
-            
+
             <div className="space-y-8">
               {animeData.data.items.map((module, mIdx) => {
                 const items = getModuleItems(module);
@@ -178,8 +179,8 @@ export function FreeReelsHome() {
                       </h3>
                     )}
 
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-3 md:gap-4">
-                      {validItems.map((item, idx) => (
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
+                      {validItems.slice(0, 18).map((item, idx) => (
                         <UnifiedMediaCard
                           key={`${item.key}-anime-${mIdx}-${idx}`}
                           title={item.title}

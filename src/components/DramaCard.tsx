@@ -7,11 +7,14 @@ interface DramaCardProps {
 }
 
 export function DramaCard({ drama, index = 0 }: DramaCardProps) {
+  // Ensure cover is never empty string
+  const coverUrl = drama.coverWap || drama.cover || null;
+
   return (
-    <UnifiedMediaCard 
+    <UnifiedMediaCard
       index={index}
       title={drama.bookName}
-      cover={drama.coverWap || drama.cover || ""}
+      cover={coverUrl || ""}
       link={`/detail/dramabox/${drama.bookId}`}
       episodes={drama.chapterCount}
       topLeftBadge={drama.corner ? {

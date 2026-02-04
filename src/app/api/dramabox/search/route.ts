@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   try {
     const response = await fetch(
       `${UPSTREAM_API}/search?query=${encodeURIComponent(query)}`,
-      { cache: 'no-store',}
+      { cache: 'no-store' }
     );
 
     if (!response.ok) {
@@ -24,8 +24,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const data = await safeJson(response);
-    return encryptedResponse(data);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(

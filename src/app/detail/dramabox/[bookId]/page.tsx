@@ -28,45 +28,36 @@ export default function DramaBoxDetailPage() {
     return <DetailSkeleton />;
   }
 
-  // Handle both new and legacy API formats
-  let book: {
-    bookId: string;
-    bookName: string;
-    cover: string;
-    chapterCount: number;
-    introduction: string;
-    tags?: string[];
-    shelfTime?: string;
-  } | null = null;
+  // Flexible Data Extraction
+  let book: any = null;
 
-  if (isDirectFormat(data)) {
-    // New flat format
+  const rawData = data as any;
+  if (rawData) {
+    // 1. Coba format langsung (Root)
+    if (rawData.bookId) book = rawData;
+    // 2. Coba format { data: ... }
+    else if (rawData.data?.bookId) book = rawData.data;
+    // 3. Coba format { data: { book: ... } } (Legacy/Sansekai Complete)
+    else if (rawData.data?.book?.bookId) book = rawData.data.book;
+  }
+
+  // Normalisasi Data untuk Tampilan
+  if (book) {
     book = {
-      bookId: data.bookId,
-      bookName: data.bookName,
-      cover: data.coverWap,
-      chapterCount: data.chapterCount,
-      introduction: data.introduction,
-      tags: data.tags || data.tagV3s?.map(t => t.tagName),
-      shelfTime: data.shelfTime,
-    };
-  } else if (isLegacyFormat(data)) {
-    // Legacy nested format
-    book = {
-      bookId: data.data.book.bookId,
-      bookName: data.data.book.bookName,
-      cover: data.data.book.cover,
-      chapterCount: data.data.book.chapterCount,
-      introduction: data.data.book.introduction,
-      tags: data.data.book.tags,
-      shelfTime: data.data.book.shelfTime,
+      bookId: book.bookId,
+      bookName: book.bookName || book.title || "Judul Tidak Tersedia",
+      cover: book.cover || book.coverWap || "",
+      chapterCount: book.chapterCount || 0,
+      introduction: book.introduction || book.desc || "Sinopsis tidak tersedia.",
+      tags: book.tags || book.tagNames || [],
+      shelfTime: book.shelfTime || ""
     };
   }
 
   if (error || !book) {
     return (
       <div className="min-h-screen pt-24 px-4">
-        <UnifiedErrorDisplay 
+        <UnifiedErrorDisplay
           title="Drama tidak ditemukan"
           message="Tidak dapat memuat detail drama. Silakan coba lagi atau kembali ke beranda."
           onRetry={() => router.push('/')}
@@ -144,7 +135,7 @@ export default function DramaBoxDetailPage() {
               {/* Tags */}
               {book.tags && book.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
-                  {book.tags.map((tag) => (
+                  {book.tags.map((tag: string) => (
                     <span key={tag} className="tag-pill">
                       {tag}
                     </span>

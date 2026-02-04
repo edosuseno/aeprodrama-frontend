@@ -23,14 +23,14 @@ export default function HomeContent() {
     <main className="min-h-screen pt-16">
       {/* Platform Selector */}
       <div className="glass-strong sticky top-16 z-40">
-        <div className="container mx-auto">
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10">
           <PlatformSelector />
         </div>
       </div>
 
       {/* DramaBox Content - Multiple Sections */}
       {isDramaBox && (
-        <div className="container mx-auto px-4 py-6 space-y-8">
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <DramaSection
             title="Populer"
             dramas={popularDramas}
@@ -64,35 +64,35 @@ export default function HomeContent() {
 
       {/* ReelShort Content - Multiple Sections */}
       {isReelShort && (
-        <div className="container mx-auto px-4 py-6 space-y-8">
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <ReelShortSection />
         </div>
       )}
 
       {/* NetShort Content */}
       {isNetShort && (
-        <div className="container mx-auto px-4 py-6 space-y-8">
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <NetShortHome />
         </div>
       )}
 
       {/* Melolo Content */}
       {isMelolo && (
-        <div className="container mx-auto px-4 py-6 space-y-8">
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <MeloloHome />
         </div>
       )}
 
       {/* FlickReels Content */}
       {isFlickReels && (
-        <div className="container mx-auto px-4 py-6 space-y-8">
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <FlickReelsHome />
         </div>
       )}
 
       {/* FreeReels Content */}
       {isFreeReels && (
-        <div className="container mx-auto px-4 py-6 space-y-8">
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <FreeReelsHome />
         </div>
       )}

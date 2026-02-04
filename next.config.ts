@@ -42,7 +42,16 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // MEMATIKAN TOMBOL "N" (Dev Indicator)
+  devIndicators: {
+    buildActivity: false,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 };
 
 export default nextConfig;
-

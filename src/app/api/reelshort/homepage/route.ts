@@ -16,8 +16,8 @@ export async function GET() {
       );
     }
 
-    const data = await safeJson(response);
-    return encryptedResponse(data);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("ReelShort API Error:", error);
     return NextResponse.json(

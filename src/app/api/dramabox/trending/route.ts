@@ -6,7 +6,8 @@ const UPSTREAM_API = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sanse
 export async function GET() {
   try {
     const response = await fetch(`${UPSTREAM_API}/trending`, {
-      cache: 'no-store',});
+      cache: 'no-store',
+    });
 
     if (!response.ok) {
       return NextResponse.json(
@@ -15,14 +16,8 @@ export async function GET() {
       );
     }
 
-    const data = await safeJson(response);
-    
-    // Filter out items without bookId or bookName to prevent blank cards
-    const filteredData = Array.isArray(data) 
-      ? data.filter((item: any) => item && item.bookId) 
-      : [];
-
-    return encryptedResponse(filteredData);
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("API Error:", error);
     return NextResponse.json(
