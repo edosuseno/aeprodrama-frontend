@@ -1,12 +1,8 @@
-import { encryptedResponse, safeJson } from "@/lib/api-utils";
+import { encryptedResponse, safeJson, getBackendBase } from "@/lib/api-utils";
 import { NextRequest, NextResponse } from "next/server";
 
-// Force dynamic to prevent static generation caching
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
-
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id";
-const API_URL = BASE_URL.endsWith("/api") ? BASE_URL : `${BASE_URL}/api`;
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
@@ -17,12 +13,8 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const res = await fetch(`${API_URL}/flickreels/detailAndAllEpisode?id=${id}`, {
-      cache: 'no-store', // CRITICAL: Video URLs expire, never cache this response
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Referer": "https://www.flickreels.com/",
-      },
+    const res = await fetch(`${getBackendBase()}/flickreels/detail?id=${id}`, {
+      cache: 'no-store',
     });
 
     if (!res.ok) {
