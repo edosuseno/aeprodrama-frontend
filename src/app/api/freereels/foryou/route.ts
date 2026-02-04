@@ -1,4 +1,3 @@
-import { getBackendBase } from "@/getBackendBase"; // This is wrong, should be from api-utils
 import { getBackendBase } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 
