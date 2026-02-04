@@ -116,38 +116,72 @@ export default function ReelShortWatchPage() {
 
   // Get available quality options
   const qualityOptions = useMemo(() => {
-    if (!episodeData?.videoList) return [];
+    if (!episodeData) return [];
 
-    return episodeData.videoList.map((video, index) => {
-      // quality=0 with H265 means 1080p
-      let qualityLabel = "";
-      if (video.quality === 0) {
-        qualityLabel = `1080p (${video.encode})`;
-      } else {
-        qualityLabel = `${video.quality}p (${video.encode})`;
-      }
+    // Handle videoList structure (multiple qualities)
+    if (episodeData.videoList && Array.isArray(episodeData.videoList)) {
+      return episodeData.videoList.map((video: any, index: number) => {
+        // quality=0 with H265 means 1080p
+        let qualityLabel = "";
+        if (video.quality === 0) {
+          qualityLabel = `1080p (${video.encode})`;
+        } else {
+          qualityLabel = `${video.quality}p (${video.encode})`;
+        }
 
-      return {
-        id: `${video.encode}-${video.quality}-${index}`,
-        label: qualityLabel,
-        quality: video.quality === 0 ? 1080 : video.quality,
-        video,
-      };
-    }).sort((a, b) => b.quality - a.quality); // Sort by quality descending
+        return {
+          id: `${video.encode}-${video.quality}-${index}`,
+          label: qualityLabel,
+          quality: video.quality === 0 ? 1080 : video.quality,
+          video,
+        };
+      }).sort((a: any, b: any) => b.quality - a.quality); // Sort by quality descending
+    }
+
+    // Handle direct videoUrl structure (single quality)
+    if (episodeData.videoUrl) {
+      return [{
+        id: 'default',
+        label: 'Default',
+        quality: 720,
+        video: {
+          url: episodeData.videoUrl,
+          encode: 'H264',
+          quality: 720,
+          bitrate: 'default'
+        }
+      }];
+    }
+
+    return [];
   }, [episodeData]);
 
   // Get current video URL based on selected quality
   const getCurrentVideoUrl = useCallback(() => {
-    if (!episodeData?.videoList?.length) return null;
+    if (!episodeData) return null;
 
-    if (selectedQuality === "auto" || !qualityOptions.length) {
-      // Default: prefer H264 for compatibility
-      const h264Video = episodeData.videoList.find(v => v.encode === "H264");
-      return h264Video || episodeData.videoList[0];
+    // If we have videoList, use quality selection
+    if (episodeData.videoList && Array.isArray(episodeData.videoList)) {
+      if (selectedQuality === "auto" || !qualityOptions.length) {
+        // Default: prefer H264 for compatibility
+        const h264Video = episodeData.videoList.find((v: any) => v.encode === "H264");
+        return h264Video || episodeData.videoList[0];
+      }
+
+      const selected = qualityOptions.find((q: any) => q.id === selectedQuality);
+      return selected?.video || episodeData.videoList[0];
     }
 
-    const selected = qualityOptions.find(q => q.id === selectedQuality);
-    return selected?.video || episodeData.videoList[0];
+    // If we have direct videoUrl, return it
+    if (episodeData.videoUrl) {
+      return {
+        url: episodeData.videoUrl,
+        encode: 'H264',
+        quality: 720
+      };
+    }
+
+    return null;
   }, [episodeData, selectedQuality, qualityOptions]);
 
   // Persistent Active URL State
@@ -285,7 +319,7 @@ export default function ReelShortWatchPage() {
                 >
                   Auto (H264)
                 </DropdownMenuItem>
-                {qualityOptions.map((option) => (
+                {qualityOptions.map((option: any) => (
                   <DropdownMenuItem
                     key={option.id}
                     onClick={() => setSelectedQuality(option.id)}
