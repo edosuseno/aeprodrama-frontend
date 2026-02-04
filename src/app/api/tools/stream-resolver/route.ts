@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getBackendBase } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest) {
-    const BACKEND_BASE = getBackendBase();
+    // FORCE to our Backend (Sansekai doesn't have /tools/resolve)
+    const BACKEND_BASE = "https://aeprodrama-backend.vercel.app/api"; // getBackendBase();
     const searchParams = request.nextUrl.searchParams;
     const source = searchParams.get("source");
     const bookId = searchParams.get("bookId");
