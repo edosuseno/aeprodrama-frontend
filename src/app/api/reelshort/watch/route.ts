@@ -10,9 +10,9 @@ export async function GET(request: NextRequest) {
     const episodeNumber = searchParams.get("episodeNumber");
 
     if (!bookId || !episodeNumber) {
-      return encryptedResponse(
+      return NextResponse.json(
         { error: "bookId and episodeNumber are required" },
-        400
+        { status: 400 }
       );
     }
 
@@ -24,19 +24,21 @@ export async function GET(request: NextRequest) {
     );
 
     if (!response.ok) {
-      return encryptedResponse(
+      return NextResponse.json(
         { error: "Failed to fetch episode" },
-        response.status
+        { status: response.status }
       );
     }
 
     const data = await response.json();
+
+    // Backend returns encrypted data, pass it through
     return NextResponse.json(data);
   } catch (error) {
     console.error("ReelShort Episode Error:", error);
-    return encryptedResponse(
+    return NextResponse.json(
       { error: "Internal Server Error" },
-      500
+      { status: 500 }
     );
   }
 }
