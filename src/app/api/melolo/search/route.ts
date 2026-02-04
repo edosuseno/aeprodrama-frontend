@@ -1,22 +1,21 @@
-
-import { type NextRequest } from "next/server";
-import { encryptedResponse } from "@/lib/api-utils";
+import { type NextRequest, NextResponse } from "next/server";
+import { getBackendBase } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get("query");
 
   if (!query) {
-    return encryptedResponse({ error: "Query parameter is required" }, 400);
+    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 });
   }
 
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id/api";
-    const response = await fetch(`${baseUrl}/melolo/search?query=${encodeURIComponent(query)}`);
+    const baseUrl = getBackendBase();
+    const response = await fetch(`${baseUrl}/melolo/search?query=${encodeURIComponent(query)}`, { cache: 'no-store' });
     const data = await response.json();
-    return encryptedResponse(data);
+    return NextResponse.json(data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return encryptedResponse({ error: message }, 500);
+    console.error("Melolo Search Error:", error);
+    return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
   }
 }
