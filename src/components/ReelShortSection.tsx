@@ -20,11 +20,13 @@ export function ReelShortSection() {
     if (!homepageData?.lists) return { banners: [], bookGroups: [] };
 
     const tabs = homepageData.tab_list || [];
-    const popularTab = tabs.find((t: any) => t.tab_name === "POPULER") || tabs[0];
+    const firstListTabId = homepageData.lists?.[0]?.tab_id;
+    const popularTab = tabs.find((t: any) => t.tab_name === "POPULER") || tabs[0] || { tab_id: firstListTabId };
 
-    if (!popularTab) return { banners: [], bookGroups: [] };
-
-    const tabLists = (homepageData.lists as any[]).filter((list: any) => list.tab_id === popularTab.tab_id);
+    const targetTabId = popularTab?.tab_id;
+    const tabLists = targetTabId
+      ? (homepageData.lists as any[]).filter((list: any) => list.tab_id === targetTabId)
+      : (homepageData.lists as any[]);
 
     const banners: ReelShortBanner[] = [];
     const bookGroups: { title: string; books: ReelShortBook[] }[] = [];
