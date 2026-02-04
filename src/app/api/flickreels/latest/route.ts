@@ -1,4 +1,4 @@
-import { encryptedResponse, safeJson, getBackendBase } from "@/lib/api-utils";
+import { getBackendBase } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 
 export async function GET() {
@@ -8,16 +8,16 @@ export async function GET() {
       headers: {
         "Content-Type": "application/json",
       },
-      next: { revalidate: 3600 }
+      cache: 'no-store'
     });
 
     if (!res.ok) {
       return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
     }
 
-    const data = await safeJson(res);
-    return encryptedResponse(data);
+    const data = await res.json();
+    return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
+    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }
