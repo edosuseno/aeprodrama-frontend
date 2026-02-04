@@ -12,21 +12,24 @@ export function ReelShortHome() {
 
   // Get content for POPULER tab only (tab_id usually 1 or first tab)
   const { banners, books } = useMemo(() => {
-    if (!data?.data?.lists) {
+    // Check both wrapped and unwrapped data structures
+    const homepageData = (data as any)?.data || data;
+
+    if (!homepageData?.lists) {
       return { banners: [], books: [] };
     }
 
     // Get the first/popular tab
-    const tabs = data.data.tab_list || [];
-    const popularTab = tabs.find((t) => t.tab_name === "POPULER") || tabs[0];
+    const tabs = homepageData.tab_list || [];
+    const popularTab = tabs.find((t: any) => t.tab_name === "POPULER") || tabs[0];
     const popularTabId = popularTab?.tab_id;
 
     if (!popularTabId) {
       return { banners: [], books: [] };
     }
 
-    const tabLists = data.data.lists.filter((list) => list.tab_id === popularTabId);
-    
+    const tabLists = (homepageData.lists as any[]).filter((list: any) => list.tab_id === popularTabId);
+
     let allBanners: ReelShortBanner[] = [];
     let allBooks: ReelShortBook[] = [];
 
@@ -59,13 +62,13 @@ export function ReelShortHome() {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4 md:gap-6">
         {isLoading
           ? Array.from({ length: 12 }).map((_, i) => (
-              <DramaCardSkeleton key={i} index={i} />
-            ))
+            <DramaCardSkeleton key={i} index={i} />
+          ))
           : books
-              .filter((book) => book.book_id)
-              .map((book, index) => (
-                <ReelShortCard key={book.book_id} book={book} index={index} />
-              ))}
+            .filter((book) => book.book_id)
+            .map((book, index) => (
+              <ReelShortCard key={book.book_id} book={book} index={index} />
+            ))}
       </div>
 
       {!isLoading && books.length === 0 && (
