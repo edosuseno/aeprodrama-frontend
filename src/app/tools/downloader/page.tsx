@@ -14,8 +14,8 @@ export default function DownloaderPage() {
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
-        // Default PIN for personal use
-        if (pin === "161099") { // Tanggal lahir atau angka random, nanti user bisa ubah
+        // PIN updated as per user request
+        if (pin === "31101983") {
             setIsUnlocked(true);
             setError("");
         } else {
