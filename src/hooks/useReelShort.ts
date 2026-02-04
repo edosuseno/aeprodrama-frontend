@@ -35,10 +35,20 @@ export function useReelShortSearch(query: string) {
  * Hook to fetch and cache episode video data
  * This will cache the video URL for faster playback
  */
+// Define types locally if not available globally
+interface ReelShortEpisodeData {
+  success: boolean;
+  isLocked: boolean;
+  videoList?: Array<{ url: string; encode: string; quality: number; bitrate: string }>;
+  videoUrl?: string; // Legacy support
+  title?: string;
+  data?: any; // For encrypted response
+}
+
 export function useReelShortEpisode(bookId: string, episodeNumber: number, enabled: boolean = true) {
   return useQuery({
     queryKey: ["reelshort", "episode", bookId, episodeNumber],
-    queryFn: () => fetchJson(`${API_BASE}/watch?bookId=${bookId}&episodeNumber=${episodeNumber}`),
+    queryFn: () => fetchJson<ReelShortEpisodeData>(`${API_BASE}/watch?bookId=${bookId}&episodeNumber=${episodeNumber}`),
     enabled: enabled && !!bookId && episodeNumber > 0,
     staleTime: 1000 * 60 * 10, // Cache for 10 minutes
     gcTime: 1000 * 60 * 30, // Keep in memory for 30 minutes

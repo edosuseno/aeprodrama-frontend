@@ -25,7 +25,9 @@ interface VideoItem {
 interface EpisodeData {
   success: boolean;
   isLocked: boolean;
-  videoList: VideoItem[];
+  videoList?: VideoItem[];
+  videoUrl?: string;
+  title?: string;
 }
 
 interface DetailData {
@@ -202,25 +204,58 @@ export default function ReelShortWatchPage() {
     if (!videoRef.current) return;
 
     const video = videoRef.current;
-
-    // Check if URL is actually new to avoid HLS reset loop
-    // BUT loadVideo is called by effect only when activeUrl changes, so it's fine.
+    console.log("🎬 Loading Video URL:", videoUrl);
 
     if (Hls.isSupported()) {
       if (hlsRef.current) {
         hlsRef.current.destroy();
       }
 
-      const hls = new Hls();
+      const hls = new Hls({
+        debug: false, // Set true untuk debug HLS detail
+        enableWorker: true,
+        lowLatencyMode: true,
+      });
+
       hlsRef.current = hls;
+
       hls.loadSource(videoUrl);
       hls.attachMedia(video);
+
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => { });
+        console.log("✅ Manifest Parsed, playing...");
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => console.error("⚠️ Autoplay error:", e));
+        }
       });
+
+      hls.on(Hls.Events.ERROR, function (event, data) {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.error("❌ HLS Network Error:", data);
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.error("❌ HLS Media Error:", data);
+              hls.recoverMediaError();
+              break;
+            default:
+              console.error("❌ HLS Fatal Error:", data);
+              hls.destroy();
+              break;
+          }
+        } else {
+          // Non-fatal error, log only
+          console.warn("⚠️ HLS Warning:", data);
+        }
+      });
+
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      // Native HLS (Safari/iOS)
       video.src = videoUrl;
-      video.play().catch(() => { });
+      video.play().catch((e) => console.error("⚠️ Native Play Error:", e));
     }
   }, []);
 
