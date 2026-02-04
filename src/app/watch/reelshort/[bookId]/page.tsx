@@ -102,6 +102,16 @@ export default function ReelShortWatchPage() {
     !!bookId && currentEpisode > 0
   );
 
+  // DEBUGGING DATA MASUK
+  useEffect(() => {
+    console.log("📥 [Debug] Episode Data Status:", { isLoading, error, hasData: !!episodeData });
+    if (episodeData) {
+      console.log("📦 [Debug] Raw Episode Data:", episodeData);
+      console.log("🔗 [Debug] Video URL:", episodeData.videoUrl);
+      console.log("📑 [Debug] Video List:", episodeData.videoList);
+    }
+  }, [episodeData, isLoading, error]);
+
   // Prefetch next episode
   const prefetchEpisode = usePrefetchReelShortEpisode();
 
