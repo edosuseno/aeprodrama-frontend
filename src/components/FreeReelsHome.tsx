@@ -41,6 +41,16 @@ function cleanTitle(title: string): string {
   return title.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/g, '').trim();
 }
 
+// Safe Array Helper
+function safeArray(data: any): any[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (data.data && Array.isArray(data.data)) return data.data;
+  if (data.items && Array.isArray(data.items)) return data.items;
+  if (data.data?.items && Array.isArray(data.data.items)) return data.data.items;
+  return [];
+}
+
 export function FreeReelsHome() {
   const {
     data: forYouData,
@@ -90,7 +100,7 @@ export function FreeReelsHome() {
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
-            {((forYouData as any)?.data?.items || (forYouData as any)?.items || forYouData?.data || [])
+            {safeArray(forYouData)
               ?.filter((item: any) => item.title && item.cover)
               .slice(0, 18)
               .map((item: any, idx: number) => (
@@ -111,7 +121,7 @@ export function FreeReelsHome() {
       {loadingHome ? (
         <SectionLoader count={6} titleWidth="w-40" />
       ) : (
-        ((homeData as any)?.data?.items || (homeData as any)?.items || homeData?.data || [])
+        safeArray(homeData)
           ?.filter((module: any) => module.type !== 'coming_soon')
           .map((module: any, mIdx: number) => {
             const items = getModuleItems(module);
@@ -154,7 +164,7 @@ export function FreeReelsHome() {
       {loadingAnime ? (
         <SectionLoader count={6} titleWidth="w-40" />
       ) : (
-        animeData?.data?.items && animeData.data.items.length > 0 && (
+        safeArray(animeData).length > 0 && (
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display font-bold text-xl md:text-2xl text-foreground">
@@ -163,7 +173,7 @@ export function FreeReelsHome() {
             </div>
 
             <div className="space-y-8">
-              {animeData.data.items.map((module, mIdx) => {
+              {safeArray(animeData).map((module: any, mIdx: number) => {
                 const items = getModuleItems(module);
                 if (!items || items.length === 0) return null;
 
