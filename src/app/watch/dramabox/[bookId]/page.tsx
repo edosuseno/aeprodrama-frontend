@@ -242,6 +242,7 @@ function HlsVideoPlayer({ src, poster, onEnded }: { src: string; poster: string;
     <video
       ref={videoRef}
       controls
+      autoPlay
       className="w-full h-full object-contain max-h-[100dvh]"
       poster={poster}
       onEnded={onEnded}
