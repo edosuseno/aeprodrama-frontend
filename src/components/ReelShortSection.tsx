@@ -14,14 +14,17 @@ export function ReelShortSection() {
 
   // Group content by sections
   const sections = useMemo(() => {
-    if (!data?.data?.lists) return { banners: [], bookGroups: [] };
+    // Menghilangkan keraguan struktur data (apakah data.data atau data langsung)
+    const homepageData = (data as any)?.data || data;
 
-    const tabs = data.data.tab_list || [];
-    const popularTab = tabs.find((t) => t.tab_name === "POPULER") || tabs[0];
+    if (!homepageData?.lists) return { banners: [], bookGroups: [] };
+
+    const tabs = homepageData.tab_list || [];
+    const popularTab = tabs.find((t: any) => t.tab_name === "POPULER") || tabs[0];
 
     if (!popularTab) return { banners: [], bookGroups: [] };
 
-    const tabLists = data.data.lists.filter((list) => list.tab_id === popularTab.tab_id);
+    const tabLists = (homepageData.lists as any[]).filter((list: any) => list.tab_id === popularTab.tab_id);
 
     const banners: ReelShortBanner[] = [];
     const bookGroups: { title: string; books: ReelShortBook[] }[] = [];

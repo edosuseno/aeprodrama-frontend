@@ -12,7 +12,7 @@ export function ReelShortHome() {
 
   // Get content for POPULER tab only (tab_id usually 1 or first tab)
   const { banners, books } = useMemo(() => {
-    // Check both wrapped and unwrapped data structures
+    // Menghilangkan keraguan struktur data (apakah data.data atau data langsung)
     const homepageData = (data as any)?.data || data;
 
     if (!homepageData?.lists) {

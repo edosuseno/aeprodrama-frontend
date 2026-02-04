@@ -90,10 +90,10 @@ export function FreeReelsHome() {
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
-            {forYouData?.data?.items
-              ?.filter(item => item.title && item.cover)
+            {((forYouData as any)?.data?.items || (forYouData as any)?.items || forYouData?.data || [])
+              ?.filter((item: any) => item.title && item.cover)
               .slice(0, 18)
-              .map((item, idx) => (
+              .map((item: any, idx: number) => (
                 <UnifiedMediaCard
                   key={`${item.key}-foryou-${idx}`}
                   title={item.title}
@@ -108,13 +108,12 @@ export function FreeReelsHome() {
         </section>
       )}
 
-      {/* SECTION: Homepage Modules */}
       {loadingHome ? (
         <SectionLoader count={6} titleWidth="w-40" />
       ) : (
-        homeData?.data?.items
-          ?.filter(module => module.type !== 'coming_soon')
-          .map((module, mIdx) => {
+        ((homeData as any)?.data?.items || (homeData as any)?.items || homeData?.data || [])
+          ?.filter((module: any) => module.type !== 'coming_soon')
+          .map((module: any, mIdx: number) => {
             const items = getModuleItems(module);
             if (!items || items.length === 0) return null;
 
