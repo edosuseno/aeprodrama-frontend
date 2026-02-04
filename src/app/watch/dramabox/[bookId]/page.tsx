@@ -49,6 +49,11 @@ export default function DramaBoxWatchPage() {
     }
     if (!finalUrl) finalUrl = currentEpisode.videoUrl || "";
 
+    // FALLBACK: If no direct URL, use our Backend Resolver
+    if (!finalUrl && bookId && currentEpisode) {
+      finalUrl = `/api/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${currentEpisode.chapterId || ""}&ep=${currentEpisode.chapterIndex || ""}`;
+    }
+
     // USE PROXY to bypass CORS
     if (finalUrl && finalUrl.startsWith("http")) {
       return `/api/proxy?url=${encodeURIComponent(finalUrl)}`;

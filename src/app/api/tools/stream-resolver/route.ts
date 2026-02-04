@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-
-// Use your actual backend URL
-const BACKEND_BASE = "https://aeprodrama-backend.vercel.app/api";
+import { getBackendBase } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest) {
+    const BACKEND_BASE = getBackendBase();
     const searchParams = request.nextUrl.searchParams;
     const source = searchParams.get("source");
     const bookId = searchParams.get("bookId");
