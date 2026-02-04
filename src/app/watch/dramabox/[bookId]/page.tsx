@@ -70,6 +70,24 @@ export default function DramaBoxWatchPage() {
     }
   }, [videoUrl]);
 
+  // Prefetch next episode in background when current episode loads
+  useEffect(() => {
+    if (!sortedEpisodes.length || currentEpisodeIndex >= sortedEpisodes.length - 1) return;
+
+    const nextEpisode = sortedEpisodes[currentEpisodeIndex + 1];
+    if (!nextEpisode || nextEpisode.videoUrl) return; // Skip if already has URL
+
+    // Prefetch after 2 seconds of current episode loading
+    const timer = setTimeout(() => {
+      const prefetchUrl = `/api/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${nextEpisode.chapterId}&ep=${nextEpisode.chapterIndex}`;
+
+      // Silent prefetch (won't show in UI)
+      fetch(prefetchUrl, { method: 'HEAD' }).catch(() => { });
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [currentEpisodeIndex, sortedEpisodes, bookId]);
+
   // Loading State
   // Don't show full screen loader if we have activeUrl (allow persistence for smooth transition)
   if (episodesLoading && !activeUrl) {

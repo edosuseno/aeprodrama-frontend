@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Hls from "hls.js";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
+import { useReelShortEpisode, usePrefetchReelShortEpisode } from "@/hooks/useReelShort";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -92,12 +93,26 @@ export default function ReelShortWatchPage() {
     enabled: !!bookId,
   });
 
-  // Fetch episode video
-  const { data: episodeData, isLoading, error } = useQuery({
-    queryKey: ["reelshort", "episode", bookId, currentEpisode],
-    queryFn: () => fetchEpisode(bookId || "", currentEpisode),
-    enabled: !!bookId && currentEpisode > 0,
-  });
+  // Fetch current episode video using new hook
+  const { data: episodeData, isLoading, error } = useReelShortEpisode(
+    bookId || "",
+    currentEpisode,
+    !!bookId && currentEpisode > 0
+  );
+
+  // Prefetch next episode
+  const prefetchEpisode = usePrefetchReelShortEpisode();
+
+  useEffect(() => {
+    const totalEpisodes = detailData?.totalEpisodes || 1;
+    if (currentEpisode < totalEpisodes && bookId) {
+      // Prefetch next episode after 2 seconds
+      const timer = setTimeout(() => {
+        prefetchEpisode(bookId, currentEpisode + 1);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentEpisode, detailData?.totalEpisodes, bookId, prefetchEpisode]);
 
   // Get available quality options
   const qualityOptions = useMemo(() => {
@@ -142,8 +157,8 @@ export default function ReelShortWatchPage() {
     const currentVideo = getCurrentVideoUrl();
     if (currentVideo?.url) {
       setActiveUrl(text => {
-          if (text !== currentVideo.url) return currentVideo.url;
-          return text;
+        if (text !== currentVideo.url) return currentVideo.url;
+        return text;
       });
     }
   }, [getCurrentVideoUrl]);
