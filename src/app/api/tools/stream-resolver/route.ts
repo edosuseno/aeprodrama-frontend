@@ -66,19 +66,28 @@ export async function GET(request: NextRequest) {
                 try { data = decryptData<any>(data); } catch (e) { }
             }
             const videoData = data?.video_data || data;
-            const video = videoData?.video_list?.find((v: any) => v.vid === videoId);
+            // Gunakan String() untuk membandingkan ID agar tidak masalah tipe data (number vs string)
+            const video = videoData?.video_list?.find((v: any) => String(v.vid) === String(videoId));
 
-            if (!video) return new NextResponse("Video not found", { status: 404 });
+            if (!video) return new NextResponse("Video not found in Melolo list", { status: 404 });
 
             let realUrl = video.main_url;
             try {
+                // Melolo often base64 encodes
                 if (realUrl && !realUrl.startsWith("http")) {
-                    realUrl = atob(realUrl);
+                    realUrl = Buffer.from(realUrl, 'base64').toString('ascii');
                 }
-            } catch (e) { }
+            } catch (e) {
+                console.error("Melolo base64 error:", e);
+            }
 
             if (realUrl) {
-                finalUrl = `${baseUrl}/api/proxy/video?url=${encodeURIComponent(realUrl)}`;
+                // Jika sudah mengandung kata proxy, kembalikan langsung
+                if (realUrl.includes('/api/proxy')) {
+                    finalUrl = realUrl.startsWith('http') ? realUrl : `${baseUrl}${realUrl}`;
+                } else {
+                    finalUrl = `${baseUrl}/api/proxy/video?url=${encodeURIComponent(realUrl)}`;
+                }
             }
         } else if (source === "reelshort") {
             const ep = searchParams.get("ep");

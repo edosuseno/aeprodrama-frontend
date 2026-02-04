@@ -20,42 +20,42 @@ export async function POST(request: NextRequest) {
         let title = `${source}-${bookId}`;
 
         if (source === "dramabox") {
-            // 1. Fetch episodes
-            const url = `${BACKEND_BASE}/dramabox/allepisode?bookId=${bookId}`;
-            const res = await fetch(url);
-            if (!res.ok) throw new Error(`Backend error: ${res.status}`);
-
-            const json = await res.json();
-
-            let chapters = [];
-            if (json.data) {
-                if (typeof json.data === 'string') {
-                    try {
-                        const decrypted = decryptData<any>(json.data);
-                        if (decrypted && decrypted.chapterList) {
-                            chapters = decrypted.chapterList;
-                        } else if (Array.isArray(decrypted)) {
-                            chapters = decrypted;
-                        } else if (decrypted && decrypted.episodes) {
-                            chapters = decrypted.episodes;
-                        }
-                    } catch (e) {
-                        console.error("[Downloader] Decryption failed:", e);
+            const fetchEpisodes = async (apiUrl: string) => {
+                try {
+                    const res = await fetch(apiUrl);
+                    if (!res.ok) return [];
+                    const json = await res.json();
+                    let data = json.data;
+                    if (typeof data === 'string') {
+                        try { data = decryptData<any>(data); } catch (e) { return []; }
                     }
-                } else {
-                    chapters = json.data.chapterList || json.data.episodes || (Array.isArray(json.data) ? json.data : []);
+                    return data?.chapterList || data?.episodes || (Array.isArray(data) ? data : []);
+                } catch (e) { return []; }
+            };
+
+            // 1. Cek Backend Base (Local Proxy/Sansekai)
+            let chapters = await fetchEpisodes(`${BACKEND_BASE}/dramabox/allepisode?bookId=${bookId}`);
+
+            // 2. Fallback ke Sansekai Direct jika kosong
+            if (!chapters.length) {
+                chapters = await fetchEpisodes(`https://api.sansekai.my.id/api/dramabox/allepisode/${bookId}`);
+            }
+
+            // 3. Fallback Detail jika masih kosong
+            if (!chapters.length) {
+                const detailRes = await fetch(`${BACKEND_BASE}/dramabox/detail/${bookId}`);
+                if (detailRes.ok) {
+                    const detailJson = await detailRes.ok ? await detailRes.json() : {};
+                    let detailData = detailJson.data;
+                    if (typeof detailData === 'string') {
+                        try { detailData = decryptData<any>(detailData); } catch (e) { }
+                    }
+                    chapters = detailData?.chapterList || detailData?.episodes || [];
                 }
             }
 
             if (!chapters || chapters.length === 0) {
-                // Try detail as last resort
-                const detailUrl = `${BACKEND_BASE}/dramabox/detail/${bookId}`;
-                const detailRes = await fetch(detailUrl);
-                const detailJson = await detailRes.json();
-                if (detailJson.data) {
-                    const detailData = typeof detailJson.data === 'string' ? decryptData<any>(detailJson.data) : detailJson.data;
-                    chapters = detailData.chapterList || detailData.episodes || [];
-                }
+                return NextResponse.json({ error: "No episodes found. Link Dramabox ini mungkin memerlukan login atau data belum tersedia di cache." }, { status: 404 });
             }
 
             if (!chapters || chapters.length === 0) {
