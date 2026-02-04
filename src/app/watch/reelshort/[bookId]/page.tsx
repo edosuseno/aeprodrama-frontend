@@ -95,22 +95,42 @@ export default function ReelShortWatchPage() {
     enabled: !!bookId,
   });
 
-  // Fetch current episode video using new hook
-  const { data: episodeData, isLoading, error } = useReelShortEpisode(
+  // Fetch raw encrypted data
+  const { data: rawEpisodeData, isLoading, error } = useReelShortEpisode(
     bookId || "",
     currentEpisode,
     !!bookId && currentEpisode > 0
   );
 
+  // Decrypt the data
+  const episodeData = useMemo(() => {
+    if (!rawEpisodeData) return null;
+
+    // Case 1: Encrypted string in data property
+    if (rawEpisodeData.data && typeof rawEpisodeData.data === 'string') {
+      try {
+        const decrypted = decryptData(rawEpisodeData.data);
+        console.log("� [Debug] Decrypted successfully:", decrypted);
+        return decrypted;
+      } catch (e) {
+        console.error("🔐 [Debug] Decryption failed:", e);
+        return null;
+      }
+    }
+
+    // Case 2: Already decrypted or direct object
+    if (rawEpisodeData.videoUrl || rawEpisodeData.videoList) return rawEpisodeData;
+
+    return rawEpisodeData;
+  }, [rawEpisodeData]);
+
   // DEBUGGING DATA MASUK
   useEffect(() => {
-    console.log("📥 [Debug] Episode Data Status:", { isLoading, error, hasData: !!episodeData });
+    console.log("� [Debug] Status:", { isLoading, hasRaw: !!rawEpisodeData, hasDecrypted: !!episodeData });
     if (episodeData) {
-      console.log("📦 [Debug] Raw Episode Data:", episodeData);
-      console.log("🔗 [Debug] Video URL:", episodeData.videoUrl);
-      console.log("📑 [Debug] Video List:", episodeData.videoList);
+      console.log("🔗 [Debug] Active URL will be:", episodeData.videoUrl || (episodeData.videoList ? episodeData.videoList[0]?.url : "NONE"));
     }
-  }, [episodeData, isLoading, error]);
+  }, [episodeData, rawEpisodeData, isLoading]);
 
   // Prefetch next episode
   const prefetchEpisode = usePrefetchReelShortEpisode();
