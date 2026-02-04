@@ -1,4 +1,4 @@
-import { safeJson, encryptedResponse, getBackendBase } from "@/lib/api-utils";
+import { getBackendBase } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 
 const UPSTREAM_API = getBackendBase() + "/netshort";
@@ -10,33 +10,13 @@ export async function GET() {
     });
 
     if (!response.ok) {
-      return encryptedResponse({ success: false, data: [] });
+      return NextResponse.json({ success: false, data: [] });
     }
 
-    const data = await safeJson<any>(response);
-
-    const normalizedGroups = (data || []).map((group: any) => ({
-      groupId: group.groupId,
-      groupName: group.contentName,
-      contentRemark: group.contentRemark,
-      dramas: (group.contentInfos || []).map((item: any) => ({
-        shortPlayId: item.shortPlayId,
-        shortPlayLibraryId: item.shortPlayLibraryId,
-        title: item.shortPlayName,
-        cover: item.shortPlayCover || item.groupShortPlayCover,
-        labels: item.labelArray || [],
-        heatScore: item.heatScoreShow || "",
-        scriptName: item.scriptName,
-        totalEpisodes: item.totalEpisode || 0,
-      })),
-    }));
-
-    return encryptedResponse({
-      success: true,
-      data: normalizedGroups,
-    });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("NetShort Theaters Error:", error);
-    return encryptedResponse({ success: false, data: [] });
+    return NextResponse.json({ success: false, data: [] });
   }
 }

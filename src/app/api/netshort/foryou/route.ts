@@ -1,4 +1,4 @@
-import { safeJson, encryptedResponse, getBackendBase } from "@/lib/api-utils";
+import { getBackendBase } from "@/lib/api-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 const UPSTREAM_API = getBackendBase() + "/netshort";
@@ -13,31 +13,13 @@ export async function GET(request: NextRequest) {
     });
 
     if (!response.ok) {
-      return encryptedResponse({ success: false, data: [] });
+      return NextResponse.json({ success: false, data: [] });
     }
 
-    const data = await safeJson<any>(response);
-
-    // Normalize the response
-    const dramas = (data.contentInfos || []).map((item: any) => ({
-      shortPlayId: item.shortPlayId,
-      shortPlayLibraryId: item.shortPlayLibraryId,
-      title: item.shortPlayName,
-      cover: item.shortPlayCover,
-      labels: item.labelArray || [],
-      heatScore: item.heatScoreShow || "",
-      scriptName: item.scriptName,
-    }));
-
-    return encryptedResponse({
-      success: true,
-      data: dramas,
-      maxOffset: data.maxOffset,
-      completed: data.completed,
-    });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("NetShort ForYou Error:", error);
-    return encryptedResponse({ success: false, data: [] });
+    return NextResponse.json({ success: false, data: [] });
   }
 }
-

@@ -1,4 +1,4 @@
-import { safeJson, encryptedResponse, getBackendBase } from "@/lib/api-utils";
+import { getBackendBase } from "@/lib/api-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 const UPSTREAM_API = getBackendBase() + "/netshort";
@@ -6,46 +6,24 @@ const UPSTREAM_API = getBackendBase() + "/netshort";
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const query = searchParams.get("query");
+    const query = searchParams.get("query") || searchParams.get("keyword");
 
     if (!query) {
-      return encryptedResponse({ success: true, data: [] });
+      return NextResponse.json({ success: false, data: [] });
     }
 
-    const response = await fetch(
-      `${UPSTREAM_API}/search?query=${encodeURIComponent(query)}`,
-      {
-        cache: 'no-store',
-      }
-    );
+    const response = await fetch(`${UPSTREAM_API}/search?keyword=${encodeURIComponent(query)}`, {
+      cache: 'no-store',
+    });
 
     if (!response.ok) {
-      return encryptedResponse({ success: true, data: [] });
+      return NextResponse.json({ success: false, data: [] });
     }
 
-    const data = await safeJson<any>(response);
-
-    // Search results are in searchCodeSearchResult array
-    const results = data.searchCodeSearchResult || [];
-
-    const normalizedResults = results.map((item: any) => ({
-      shortPlayId: item.shortPlayId,
-      shortPlayLibraryId: item.shortPlayLibraryId,
-      // Remove <em> tags from title
-      title: (item.shortPlayName || "").replace(/<\/?em>/g, ""),
-      cover: item.shortPlayCover,
-      labels: item.labelNameList || [],
-      heatScore: item.formatHeatScore || "",
-      description: item.shotIntroduce,
-    }));
-
-    return encryptedResponse({
-      success: true,
-      data: normalizedResults,
-    });
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
     console.error("NetShort Search Error:", error);
-    return encryptedResponse({ success: true, data: [] });
+    return NextResponse.json({ success: false, data: [] });
   }
 }
-
