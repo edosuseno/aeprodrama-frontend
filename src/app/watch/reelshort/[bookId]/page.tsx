@@ -14,6 +14,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { decryptData } from "@/lib/crypto";
 
 interface VideoItem {
   url: string;
@@ -22,38 +23,12 @@ interface VideoItem {
   bitrate: string;
 }
 
-interface EpisodeData {
-  success: boolean;
-  isLocked: boolean;
-  videoList?: VideoItem[];
-  videoUrl?: string;
-  title?: string;
-}
-
 interface DetailData {
   success: boolean;
   bookId: string;
   title: string;
   cover: string;
   totalEpisodes: number;
-}
-
-import { decryptData } from "@/lib/crypto";
-
-// ... existing code
-
-async function fetchEpisode(bookId: string, episodeNumber: number): Promise<EpisodeData> {
-  const response = await fetch(`/api/reelshort/watch?bookId=${bookId}&episodeNumber=${episodeNumber}`);
-  if (!response.ok) {
-    const errorData = await response.json(); // May accept unencrypted error, but trying safeJson approach is better if available.
-    // However, since we standardized on encryptedResponse, we should expect encrypted error too.
-    throw new Error("Failed to fetch episode");
-  }
-  const json = await response.json();
-  if (json.data && typeof json.data === "string") {
-    return decryptData(json.data);
-  }
-  return json;
 }
 
 async function fetchDetail(bookId: string): Promise<DetailData> {
@@ -102,15 +77,18 @@ export default function ReelShortWatchPage() {
     !!bookId && currentEpisode > 0
   );
 
-  // Decrypt the data
+  // Decrypt the data with safe typing
   const episodeData = useMemo(() => {
     if (!rawEpisodeData) return null;
 
+    // Explicit type casting to avoid lint errors
+    const raw = rawEpisodeData as any;
+
     // Case 1: Encrypted string in data property
-    if (rawEpisodeData.data && typeof rawEpisodeData.data === 'string') {
+    if (raw.data && typeof raw.data === 'string') {
       try {
-        const decrypted = decryptData(rawEpisodeData.data);
-        console.log("� [Debug] Decrypted successfully:", decrypted);
+        const decrypted = decryptData(raw.data);
+        console.log("🔓 [Debug] Decrypted successfully:", decrypted);
         return decrypted;
       } catch (e) {
         console.error("🔐 [Debug] Decryption failed:", e);
@@ -119,16 +97,21 @@ export default function ReelShortWatchPage() {
     }
 
     // Case 2: Already decrypted or direct object
-    if (rawEpisodeData.videoUrl || rawEpisodeData.videoList) return rawEpisodeData;
+    if (raw.videoUrl || raw.videoList) return raw;
 
-    return rawEpisodeData;
+    // Case 3: Nested data fallback
+    if (raw.data) return raw.data;
+
+    return raw;
   }, [rawEpisodeData]);
 
   // DEBUGGING DATA MASUK
   useEffect(() => {
-    console.log("� [Debug] Status:", { isLoading, hasRaw: !!rawEpisodeData, hasDecrypted: !!episodeData });
+    console.log("📥 [Debug] Status:", { isLoading, hasRaw: !!rawEpisodeData, hasDecrypted: !!episodeData });
     if (episodeData) {
-      console.log("🔗 [Debug] Active URL will be:", episodeData.videoUrl || (episodeData.videoList ? episodeData.videoList[0]?.url : "NONE"));
+      const ep = episodeData as any;
+      const url = ep.videoUrl || (ep.videoList && ep.videoList.length > 0 ? ep.videoList[0]?.url : "NONE");
+      console.log("🔗 [Debug] Active URL will be:", url);
     }
   }, [episodeData, rawEpisodeData, isLoading]);
 
@@ -150,9 +133,11 @@ export default function ReelShortWatchPage() {
   const qualityOptions = useMemo(() => {
     if (!episodeData) return [];
 
+    const ep = episodeData as any;
+
     // Handle videoList structure (multiple qualities)
-    if (episodeData.videoList && Array.isArray(episodeData.videoList)) {
-      return episodeData.videoList.map((video: any, index: number) => {
+    if (ep.videoList && Array.isArray(ep.videoList)) {
+      return ep.videoList.map((video: any, index: number) => {
         // quality=0 with H265 means 1080p
         let qualityLabel = "";
         if (video.quality === 0) {
@@ -171,13 +156,13 @@ export default function ReelShortWatchPage() {
     }
 
     // Handle direct videoUrl structure (single quality)
-    if (episodeData.videoUrl) {
+    if (ep.videoUrl) {
       return [{
         id: 'default',
         label: 'Default',
         quality: 720,
         video: {
-          url: episodeData.videoUrl,
+          url: ep.videoUrl,
           encode: 'H264',
           quality: 720,
           bitrate: 'default'
@@ -192,22 +177,24 @@ export default function ReelShortWatchPage() {
   const getCurrentVideoUrl = useCallback(() => {
     if (!episodeData) return null;
 
+    const ep = episodeData as any;
+
     // If we have videoList, use quality selection
-    if (episodeData.videoList && Array.isArray(episodeData.videoList)) {
+    if (ep.videoList && Array.isArray(ep.videoList)) {
       if (selectedQuality === "auto" || !qualityOptions.length) {
         // Default: prefer H264 for compatibility
-        const h264Video = episodeData.videoList.find((v: any) => v.encode === "H264");
-        return h264Video || episodeData.videoList[0];
+        const h264Video = ep.videoList.find((v: any) => v.encode === "H264");
+        return h264Video || ep.videoList[0];
       }
 
       const selected = qualityOptions.find((q: any) => q.id === selectedQuality);
-      return selected?.video || episodeData.videoList[0];
+      return selected?.video || ep.videoList[0];
     }
 
     // If we have direct videoUrl, return it
-    if (episodeData.videoUrl) {
+    if (ep.videoUrl) {
       return {
-        url: episodeData.videoUrl,
+        url: ep.videoUrl,
         encode: 'H264',
         quality: 720
       };
@@ -242,7 +229,7 @@ export default function ReelShortWatchPage() {
       }
 
       const hls = new Hls({
-        debug: false, // Set true untuk debug HLS detail
+        debug: false,
         enableWorker: true,
         lowLatencyMode: true,
       });
@@ -277,7 +264,6 @@ export default function ReelShortWatchPage() {
               break;
           }
         } else {
-          // Non-fatal error, log only
           console.warn("⚠️ HLS Warning:", data);
         }
       });
@@ -455,7 +441,6 @@ export default function ReelShortWatchPage() {
         </div>
 
         {/* Navigation Controls Overlay - Bottom */}
-        {/* Adjusted to bottom-20 on mobile per user feedback. */}
         <UnifiedVideoNavigation
           currentEpisode={currentEpisode}
           totalEpisodes={totalEpisodes}
