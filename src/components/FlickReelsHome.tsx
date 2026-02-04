@@ -23,6 +23,16 @@ function SectionLoader({ count = 6, titleWidth = "w-48" }: { count?: number, tit
   );
 }
 
+// Safe Array Helper to prevent crashes
+function safeArray(data: any): any[] {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (data.data && Array.isArray(data.data)) return data.data;
+  if (data.list && Array.isArray(data.list)) return data.list;
+  if (data.items && Array.isArray(data.items)) return data.items;
+  return [];
+}
+
 export function FlickReelsHome() {
   const {
     data: forYouData,
@@ -72,7 +82,7 @@ export function FlickReelsHome() {
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
-            {((forYouData as any)?.data?.list || forYouData?.data || (forYouData as any)?.list || [])
+            {safeArray((forYouData as any)?.data?.list || forYouData?.data || (forYouData as any)?.list)
               ?.filter((item: any) => item.title && item.cover && item.title !== "Untitled")
               .slice(0, 18)
               .map((item: any, idx: number) => (
@@ -93,7 +103,7 @@ export function FlickReelsHome() {
       {loadingHotRank ? (
         <SectionLoader count={6} titleWidth="w-40" />
       ) : (
-        ((hotRankData as any)?.data || hotRankData)?.map?.((section: any, sIdx: number) => (
+        safeArray(hotRankData).map((section: any, sIdx: number) => (
           <section key={section.name || sIdx} className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="font-display font-bold text-xl md:text-2xl text-foreground flex items-center gap-2">
@@ -102,7 +112,7 @@ export function FlickReelsHome() {
             </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
-              {(section.data || section.list || [])?.filter((item: any) => item.title && item.cover).slice(0, 18).map((item: any, idx: number) => (
+              {safeArray(section.data || section.list).filter((item: any) => item.title && item.cover).slice(0, 18).map((item: any, idx: number) => (
                 <div key={`${item.playlet_id}-${idx}`} className="relative">
                   <UnifiedMediaCard
                     title={item.title}
@@ -122,7 +132,7 @@ export function FlickReelsHome() {
       {loadingLatest ? (
         <SectionLoader count={12} titleWidth="w-48" />
       ) : (
-        ((latestData as any)?.data || latestData)?.map?.((section: any, idx: number) => (
+        safeArray(latestData).map((section: any, idx: number) => (
           <section key={idx} className="space-y-4">
             {section.title && (
               <div className="flex items-center justify-between">
@@ -133,7 +143,7 @@ export function FlickReelsHome() {
             )}
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
-              {(section.list || section.data || [])?.filter((item: any) => item.title && item.cover).slice(0, 18).map((item: any, i: number) => (
+              {safeArray(section.list || section.data).filter((item: any) => item.title && item.cover).slice(0, 18).map((item: any, i: number) => (
                 <UnifiedMediaCard
                   key={`${item.playlet_id}-${i}`}
                   title={item.title}
