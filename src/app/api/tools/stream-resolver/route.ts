@@ -26,26 +26,25 @@ export async function GET(request: NextRequest) {
         let finalUrl = "";
 
         if (source === "dramabox") {
-            // Fetch ALL episodes again (inefficient but simplest for stateless)
-            // Ideally we should cache this response
             const url = `${BACKEND_BASE}/dramabox/allepisode?bookId=${bookId}`;
-            const res = await fetch(url, { next: { revalidate: 300 } }); // Cache for 5 mins
+            const res = await fetch(url, { next: { revalidate: 300 } });
             const json = await res.json();
 
             let chapters = [];
             if (json.data && typeof json.data === 'string') {
-                const decrypted = decryptData<any>(json.data);
-                if (decrypted && decrypted.chapterList) chapters = decrypted.chapterList;
-                else if (Array.isArray(decrypted)) chapters = decrypted;
+                try {
+                    const decrypted = decryptData<any>(json.data);
+                    chapters = decrypted.chapterList || (Array.isArray(decrypted) ? decrypted : []);
+                } catch (e) { }
             } else if (json.data?.chapterList) {
                 chapters = json.data.chapterList;
             }
 
-            const chapter = chapters.find((c: any) => c.chapterId == chapterId || c.id == chapterId);
+            const epNum = searchParams.get("ep");
+            const chapter = chapters.find((c: any) => c.chapterId == chapterId || c.id == chapterId || (c.chapterIndex == epNum));
 
             if (!chapter) return new NextResponse("Chapter not found", { status: 404 });
 
-            // Logic to pick best video path
             let videoUrl = chapter.videoUrl;
             if (chapter.cdnList?.length) {
                 const defaultCdn = chapter.cdnList.find((c: any) => c.isDefault === 1) || chapter.cdnList[0];
@@ -53,7 +52,6 @@ export async function GET(request: NextRequest) {
                 if (defaultPath?.videoPath) videoUrl = defaultPath.videoPath;
             }
 
-            // Redirect through PROXY to assume identity
             if (videoUrl) {
                 finalUrl = `${baseUrl}/api/proxy?url=${encodeURIComponent(videoUrl)}`;
             }
@@ -63,24 +61,55 @@ export async function GET(request: NextRequest) {
             const res = await fetch(url, { next: { revalidate: 300 } });
             const json = await res.json();
 
-            const data = json.data?.video_data;
-            const video = data?.video_list?.find((v: any) => v.vid === videoId);
+            let data = json.data;
+            if (typeof data === 'string') {
+                try { data = decryptData<any>(data); } catch (e) { }
+            }
+            const videoData = data?.video_data || data;
+            const video = videoData?.video_list?.find((v: any) => v.vid === videoId);
 
             if (!video) return new NextResponse("Video not found", { status: 404 });
 
-            // Decode URL
             let realUrl = video.main_url;
             try {
-                // Melolo often base64 encodes
-                // Check if it looks like base64 (no http at start)
-                if (!realUrl.startsWith("http")) {
+                if (realUrl && !realUrl.startsWith("http")) {
                     realUrl = atob(realUrl);
                 }
             } catch (e) { }
 
             if (realUrl) {
-                // Melolo needs Referer too, so use Proxy
                 finalUrl = `${baseUrl}/api/proxy/video?url=${encodeURIComponent(realUrl)}`;
+            }
+        } else if (source === "reelshort") {
+            const ep = searchParams.get("ep");
+            const url = `${BACKEND_BASE}/reelshort/watch?bookId=${bookId}&chapterId=${ep}`;
+            const res = await fetch(url);
+            const json = await res.json();
+
+            let data = json.data;
+            if (typeof data === 'string') {
+                try { data = decryptData<any>(data); } catch (e) { }
+            }
+
+            if (data?.videoUrl) {
+                finalUrl = `${baseUrl}/api/proxy/video?url=${encodeURIComponent(data.videoUrl)}`;
+            }
+        } else if (source === "flickreels") {
+            const url = `${baseUrl}/api/flickreels/detail?bookId=${bookId}`;
+            const res = await fetch(url);
+            const json = await res.json();
+
+            let data = json.data;
+            if (typeof data === 'string') {
+                try { data = decryptData<any>(data); } catch (e) { }
+            }
+
+            const episodes = data?.episodes || [];
+            const ep = episodes.find((e: any) => e.id === videoId || (e.index + 1).toString() === searchParams.get("ep"));
+
+            if (ep?.raw?.videoUrl || ep?.videoUrl) {
+                const vUrl = ep.raw?.videoUrl || ep.videoUrl;
+                finalUrl = `${baseUrl}/api/proxy/video?url=${encodeURIComponent(vUrl)}&referer=${encodeURIComponent("https://www.flickreels.com/")}`;
             }
         }
 

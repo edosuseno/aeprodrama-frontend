@@ -23,41 +23,51 @@ export async function POST(request: NextRequest) {
             // 1. Fetch episodes
             const url = `${BACKEND_BASE}/dramabox/allepisode?bookId=${bookId}`;
             const res = await fetch(url);
-            if (!res.ok) throw new Error("Failed to fetch from backend");
+            if (!res.ok) throw new Error(`Backend error: ${res.status}`);
 
             const json = await res.json();
-            // Backend returns encrypted 'data'. We need to decrypt?
-            // Actually, depends on if we hit the backend directly or the Next.js API. 
-            // The Next.js API returns encrypted. The backend likely returns encrypted too (Dramabox style).
-            // Let's assume we need to decrypt.
 
             let chapters = [];
-            if (json.data && typeof json.data === 'string') {
-                const decrypted = decryptData<any>(json.data);
-                if (decrypted && decrypted.chapterList) {
-                    chapters = decrypted.chapterList; // This might be wrong structure, check logic
-                } else if (Array.isArray(decrypted)) {
-                    chapters = decrypted;
+            if (json.data) {
+                if (typeof json.data === 'string') {
+                    try {
+                        const decrypted = decryptData<any>(json.data);
+                        if (decrypted && decrypted.chapterList) {
+                            chapters = decrypted.chapterList;
+                        } else if (Array.isArray(decrypted)) {
+                            chapters = decrypted;
+                        } else if (decrypted && decrypted.episodes) {
+                            chapters = decrypted.episodes;
+                        }
+                    } catch (e) {
+                        console.error("[Downloader] Decryption failed:", e);
+                    }
+                } else {
+                    chapters = json.data.chapterList || json.data.episodes || (Array.isArray(json.data) ? json.data : []);
                 }
-            } else if (json.data && Array.isArray(json.data.chapterList)) {
-                chapters = json.data.chapterList;
             }
 
-            // Fallback: Try checking what structure we really have.
-            // Usually Dramabox allEpisode -> { data: "encrypted" } -> decrypt -> { chapterList: [...] }
-            // Or maybe it's just an array.
+            if (!chapters || chapters.length === 0) {
+                // Try detail as last resort
+                const detailUrl = `${BACKEND_BASE}/dramabox/detail/${bookId}`;
+                const detailRes = await fetch(detailUrl);
+                const detailJson = await detailRes.json();
+                if (detailJson.data) {
+                    const detailData = typeof detailJson.data === 'string' ? decryptData<any>(detailJson.data) : detailJson.data;
+                    chapters = detailData.chapterList || detailData.episodes || [];
+                }
+            }
 
             if (!chapters || chapters.length === 0) {
-                return NextResponse.json({ error: "No episodes found or decryption failed" }, { status: 404 });
+                return NextResponse.json({ error: "No episodes found. Try watching at least one episode first to populate cache." }, { status: 404 });
             }
 
             title = `DramaBox-${bookId}`;
 
             chapters.forEach((ep: any) => {
-                const epIndex = ep.chapterIndex || ep.index;
-                // RESOLVER URL
-                const resolveUrl = `${baseUrl}/api/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${ep.id || ep.chapterId}&ep=${epIndex}`;
-
+                const epIndex = ep.chapterIndex || ep.index || ep.episodeIndex || ep.episodeNo;
+                const chId = ep.id || ep.chapterId;
+                const resolveUrl = `${baseUrl}/api/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${chId}&ep=${epIndex}`;
                 playlistContent += `#EXTINF:-1, Episode ${epIndex}\n${resolveUrl}\n`;
             });
 
@@ -66,8 +76,12 @@ export async function POST(request: NextRequest) {
             const res = await fetch(url);
             const json = await res.json();
 
-            // Melolo might return { data: { video_data: ... } }
-            const drama = json.data?.video_data;
+            let data = json.data;
+            if (typeof data === 'string') {
+                try { data = decryptData<any>(data); } catch (e) { }
+            }
+
+            const drama = data?.video_data || data;
             if (!drama || !drama.video_list) {
                 return NextResponse.json({ error: "Melolo drama not found" }, { status: 404 });
             }
@@ -77,6 +91,44 @@ export async function POST(request: NextRequest) {
             drama.video_list.forEach((video: any, index: number) => {
                 const epNum = index + 1;
                 const resolveUrl = `${baseUrl}/api/tools/stream-resolver?source=melolo&bookId=${bookId}&videoId=${video.vid}&ep=${epNum}`;
+                playlistContent += `#EXTINF:-1, Episode ${epNum}\n${resolveUrl}\n`;
+            });
+        } else if (source === "reelshort") {
+            const url = `${BACKEND_BASE}/reelshort/detail?bookId=${bookId}`;
+            const res = await fetch(url);
+            const json = await res.json();
+
+            let data = json.data;
+            if (typeof data === 'string') {
+                try { data = decryptData<any>(data); } catch (e) { }
+            }
+
+            if (!data) return NextResponse.json({ error: "ReelShort drama not found" }, { status: 404 });
+
+            const totalEp = data.totalEpisodes || data.episodes?.length || 0;
+            title = `ReelShort-${data.title || data.bookName || bookId}`;
+
+            for (let i = 1; i <= totalEp; i++) {
+                const resolveUrl = `${baseUrl}/api/tools/stream-resolver?source=reelshort&bookId=${bookId}&ep=${i}`;
+                playlistContent += `#EXTINF:-1, Episode ${i}\n${resolveUrl}\n`;
+            }
+        } else if (source === "flickreels") {
+            const url = `${baseUrl}/api/flickreels/detail?bookId=${bookId}`;
+            const res = await fetch(url);
+            const json = await res.json();
+
+            let data = json.data;
+            if (typeof data === 'string') {
+                try { data = decryptData<any>(data); } catch (e) { }
+            }
+
+            if (!data || !data.episodes) return NextResponse.json({ error: "FlickReels drama not found" }, { status: 404 });
+
+            title = `FlickReels-${data.drama?.title || bookId}`;
+
+            data.episodes.forEach((ep: any) => {
+                const epNum = ep.index + 1;
+                const resolveUrl = `${baseUrl}/api/tools/stream-resolver?source=flickreels&bookId=${bookId}&videoId=${ep.id}&ep=${epNum}`;
                 playlistContent += `#EXTINF:-1, Episode ${epNum}\n${resolveUrl}\n`;
             });
         }
