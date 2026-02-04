@@ -94,13 +94,22 @@ export default function MeloloWatchPage() {
     }
   }, [rawVideoModel]);
 
-  // Set default quality
+  // Set default quality when qualities list updates (e.g. new episode loaded)
   useEffect(() => {
-    if (qualities.length > 0 && !selectedQuality) {
-      // Default to highest quality available
-      setSelectedQuality(qualities[0]);
+    if (qualities.length > 0) {
+      setSelectedQuality((prev) => {
+        // If we had a quality selected, try to find the matching one in the new list
+        if (prev) {
+          const match = qualities.find((q) => q.name === prev.name);
+          if (match) return match;
+        }
+        // Otherwise default to best quality (first in list)
+        return qualities[0];
+      });
+    } else {
+      setSelectedQuality(null);
     }
-  }, [qualities, selectedQuality]);
+  }, [qualities]);
 
   // Find current episode index
   const currentEpisodeIndex = drama?.video_list?.findIndex(v => v.vid === currentVideoId) ?? -1;

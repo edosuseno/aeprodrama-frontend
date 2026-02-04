@@ -56,8 +56,18 @@ export default function DramaBoxWatchPage() {
     return finalUrl;
   }, [currentEpisode]);
 
+  // Keep track of the last valid URL to prevent player unmounting/blanking during transitions
+  const [activeUrl, setActiveUrl] = useState("");
+
+  useEffect(() => {
+    if (videoUrl) {
+      setActiveUrl(videoUrl);
+    }
+  }, [videoUrl]);
+
   // Loading State
-  if (episodesLoading) {
+  // Don't show full screen loader if we have activeUrl (allow persistence for smooth transition)
+  if (episodesLoading && !activeUrl) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-black text-white">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -67,7 +77,7 @@ export default function DramaBoxWatchPage() {
   }
 
   // Error/Empty State
-  if (!sortedEpisodes.length) {
+  if (!sortedEpisodes.length && !episodesLoading) {
     return (
       <div className="flex h-screen w-full flex-col items-center justify-center bg-black text-white p-4 text-center">
         <AlertCircle className="h-12 w-12 text-red-500 mb-2" />
@@ -108,7 +118,7 @@ export default function DramaBoxWatchPage() {
       {/* 2. Video Player */}
       <div className="flex-1 w-full h-full flex items-center justify-center bg-black relative group">
         <HlsVideoPlayer
-          src={videoUrl}
+          src={activeUrl}
           poster={currentEpisode?.cover || normalizedDetail?.cover || ""}
           onEnded={() => {
             if (currentEpisodeIndex < sortedEpisodes.length - 1) {
@@ -117,9 +127,10 @@ export default function DramaBoxWatchPage() {
           }}
         />
 
-        {!videoUrl && (
-          <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
-            <div className="text-white text-lg">Memuat Video...</div>
+        {/* Show overlay if videoUrl is processing (not yet activeUrl) implies loading next ep */}
+        {(!videoUrl || videoUrl !== activeUrl) && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10 pointer-events-none">
+            <div className="text-white text-lg font-bold drop-shadow-md animate-pulse">Memuat...</div>
           </div>
         )}
 

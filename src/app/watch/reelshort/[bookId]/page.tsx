@@ -135,11 +135,27 @@ export default function ReelShortWatchPage() {
     return selected?.video || episodeData.videoList[0];
   }, [episodeData, selectedQuality, qualityOptions]);
 
+  // Persistent Active URL State
+  const [activeUrl, setActiveUrl] = useState("");
+
+  useEffect(() => {
+    const currentVideo = getCurrentVideoUrl();
+    if (currentVideo?.url) {
+      setActiveUrl(text => {
+          if (text !== currentVideo.url) return currentVideo.url;
+          return text;
+      });
+    }
+  }, [getCurrentVideoUrl]);
+
   // Load video source
   const loadVideo = useCallback((videoUrl: string) => {
     if (!videoRef.current) return;
 
     const video = videoRef.current;
+
+    // Check if URL is actually new to avoid HLS reset loop
+    // BUT loadVideo is called by effect only when activeUrl changes, so it's fine.
 
     if (Hls.isSupported()) {
       if (hlsRef.current) {
@@ -159,12 +175,11 @@ export default function ReelShortWatchPage() {
     }
   }, []);
 
-  // Setup HLS player when episode data or quality changes
+  // Setup HLS player when activeUrl changes
   useEffect(() => {
-    const currentVideo = getCurrentVideoUrl();
-    if (!currentVideo || !videoRef.current) return;
+    if (!activeUrl || !videoRef.current) return;
 
-    loadVideo(currentVideo.url);
+    loadVideo(activeUrl);
 
     return () => {
       if (hlsRef.current) {
@@ -172,7 +187,7 @@ export default function ReelShortWatchPage() {
         hlsRef.current = null;
       }
     };
-  }, [episodeData, selectedQuality, getCurrentVideoUrl, loadVideo]);
+  }, [activeUrl, loadVideo]);
 
   // Handle video ended - auto next episode
   const handleVideoEnded = useCallback(() => {
