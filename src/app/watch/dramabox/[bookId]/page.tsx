@@ -238,6 +238,27 @@ function HlsVideoPlayer({ src, poster, onEnded }: { src: string; poster: string;
     };
   }, [src]);
 
+  // Auto-fullscreen on mobile when video starts playing
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => {
+      // Check if on mobile (screen width < 768px)
+      if (window.innerWidth < 768 && video.requestFullscreen) {
+        video.requestFullscreen().catch(() => {
+          // Fallback for iOS
+          if ((video as any).webkitEnterFullscreen) {
+            (video as any).webkitEnterFullscreen();
+          }
+        });
+      }
+    };
+
+    video.addEventListener('play', handlePlay);
+    return () => video.removeEventListener('play', handlePlay);
+  }, []);
+
   return (
     <video
       ref={videoRef}

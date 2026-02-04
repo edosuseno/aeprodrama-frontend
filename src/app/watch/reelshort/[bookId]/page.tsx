@@ -204,6 +204,27 @@ export default function ReelShortWatchPage() {
     };
   }, [activeUrl, loadVideo]);
 
+  // Auto-fullscreen on mobile when video starts playing
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => {
+      // Check if on mobile (screen width < 768px)
+      if (window.innerWidth < 768 && video.requestFullscreen) {
+        video.requestFullscreen().catch(() => {
+          // Fallback for iOS
+          if ((video as any).webkitEnterFullscreen) {
+            (video as any).webkitEnterFullscreen();
+          }
+        });
+      }
+    };
+
+    video.addEventListener('play', handlePlay);
+    return () => video.removeEventListener('play', handlePlay);
+  }, []);
+
   // Handle video ended - auto next episode
   const handleVideoEnded = useCallback(() => {
     const totalEpisodes = detailData?.totalEpisodes || 1;
