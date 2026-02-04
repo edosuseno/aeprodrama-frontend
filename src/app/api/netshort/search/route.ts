@@ -1,7 +1,7 @@
-import { safeJson, encryptedResponse } from "@/lib/api-utils";
+import { safeJson, encryptedResponse, getBackendBase } from "@/lib/api-utils";
 import { NextRequest, NextResponse } from "next/server";
 
-const UPSTREAM_API = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id/api") + "/netshort";
+const UPSTREAM_API = getBackendBase() + "/netshort";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,8 @@ export async function GET(request: NextRequest) {
     const response = await fetch(
       `${UPSTREAM_API}/search?query=${encodeURIComponent(query)}`,
       {
-        cache: 'no-store',}
+        cache: 'no-store',
+      }
     );
 
     if (!response.ok) {
@@ -23,10 +24,10 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await safeJson<any>(response);
-    
+
     // Search results are in searchCodeSearchResult array
     const results = data.searchCodeSearchResult || [];
-    
+
     const normalizedResults = results.map((item: any) => ({
       shortPlayId: item.shortPlayId,
       shortPlayLibraryId: item.shortPlayLibraryId,

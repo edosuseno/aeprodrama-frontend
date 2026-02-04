@@ -1,7 +1,7 @@
-import { safeJson, encryptedResponse } from "@/lib/api-utils";
+import { safeJson, encryptedResponse, getBackendBase } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 
-const UPSTREAM_API = (process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id/api") + "/netshort";
+const UPSTREAM_API = getBackendBase() + "/netshort";
 
 export async function GET() {
   try {
@@ -14,9 +14,7 @@ export async function GET() {
     }
 
     const data = await safeJson<any>(response);
-    
-    // Normalize the response to match our format
-    // Each group has contentName (section title) and contentInfos (dramas)
+
     const normalizedGroups = (data || []).map((group: any) => ({
       groupId: group.groupId,
       groupName: group.contentName,

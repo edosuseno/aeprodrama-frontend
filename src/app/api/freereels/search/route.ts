@@ -1,29 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
-import { encryptedResponse } from "@/lib/api-utils";
+import { safeJson, encryptedResponse, getBackendBase } from "@/lib/api-utils";
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
-  const query = searchParams.get("query");
+  const keyword = searchParams.get("keyword");
 
-  if (!query) {
-    return NextResponse.json({ error: "Query parameter is required" }, { status: 400 });
+  if (!keyword) {
+    return NextResponse.json({ error: "Keyword parameter is required" }, { status: 400 });
   }
 
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id/api"}/freereels/search?query=${encodeURIComponent(query)}`, {
+    const res = await fetch(`${getBackendBase()}/freereels/searchBook?keyword=${encodeURIComponent(keyword)}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
-        // Add any necessary headers here
       },
-      next: { revalidate: 0 } // Don't cache search results
+      next: { revalidate: 3600 }
     });
 
     if (!res.ok) {
       throw new Error(`Upstream API failed with status ${res.status}`);
     }
 
-    const data = await res.json();
+    const data = await safeJson(res);
     return await encryptedResponse(data);
   } catch (error) {
     console.error("Error fetching FreeReels search:", error);

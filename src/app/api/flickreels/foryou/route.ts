@@ -1,9 +1,9 @@
-import { encryptedResponse, safeJson } from "@/lib/api-utils";
+import { encryptedResponse, safeJson, getBackendBase } from "@/lib/api-utils";
 import { NextResponse } from "next/server";
 
 export async function GET() {
   try {
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id/api"}/flickreels/foryou`, {
+    const res = await fetch(`${getBackendBase()}/flickreels/foryou`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -12,7 +12,7 @@ export async function GET() {
     });
 
     if (!res.ok) {
-        return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
+      return NextResponse.json({ error: "Failed to fetch data" }, { status: 500 });
     }
 
     const data = await safeJson(res);
