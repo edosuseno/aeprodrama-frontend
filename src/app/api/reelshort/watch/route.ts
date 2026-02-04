@@ -16,12 +16,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const response = await fetch(
-      `${UPSTREAM_API}/episode?bookId=${encodeURIComponent(bookId)}&episodeNumber=${encodeURIComponent(episodeNumber)}`,
-      {
-        cache: 'no-store',
-      }
+    // Try /watch endpoint first (new standard)
+    let response = await fetch(
+      `${UPSTREAM_API}/watch?bookId=${encodeURIComponent(bookId)}&chapterId=${encodeURIComponent(episodeNumber)}`,
+      { cache: 'no-store' }
     );
+
+    // If failed, try legacy /episode endpoint
+    if (!response.ok) {
+      console.log("ReelShort watch endpoint failed, falling back to episode...");
+      response = await fetch(
+        `${UPSTREAM_API}/episode?bookId=${encodeURIComponent(bookId)}&episodeNumber=${encodeURIComponent(episodeNumber)}`,
+        { cache: 'no-store' }
+      );
+    }
 
     if (!response.ok) {
       return NextResponse.json(
