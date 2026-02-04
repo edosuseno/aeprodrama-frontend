@@ -6,18 +6,27 @@ export async function GET(request: NextRequest) {
 
     try {
         const targetUrl = new URL(urlStr);
+        const requestHeaders = new Headers();
+
+        // Forward critical headers
+        requestHeaders.set("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1");
+        requestHeaders.set("Referer", "https://www.dramabox.com/");
+        requestHeaders.set("Origin", "https://www.dramabox.com/");
+
+        // Forward Range header if present
+        const range = request.headers.get("range");
+        if (range) {
+            requestHeaders.set("Range", range);
+        }
 
         // Fetch content
         const response = await fetch(urlStr, {
-            headers: {
-                "User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
-                "Referer": "https://www.dramabox.com/",
-                "Origin": "https://www.dramabox.com/"
-            },
+            headers: requestHeaders,
             redirect: 'follow'
         });
 
-        if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
+        // Don't error immediately on 4xx/5xx, pass it through so client sees it
+        // if (!response.ok) throw new Error(`Fetch failed: ${response.status}`);
 
         const contentType = response.headers.get("Content-Type") || "";
 
@@ -53,13 +62,21 @@ export async function GET(request: NextRequest) {
             });
         }
 
-        // JIKA BUKAN M3U8 (MP4/TS): Stream langsung
-        const headers = new Headers();
-        headers.set("Access-Control-Allow-Origin", "*");
-        if (contentType) headers.set("Content-Type", contentType);
-        if (response.headers.get("Content-Length")) headers.set("Content-Length", response.headers.get("Content-Length")!);
+        // JIKA BUKAN M3U8 (MP4/TS): Stream langsung dengan support Range
+        const responseHeaders = new Headers();
+        responseHeaders.set("Access-Control-Allow-Origin", "*");
+        if (contentType) responseHeaders.set("Content-Type", contentType);
 
-        return new NextResponse(response.body, { status: 200, headers });
+        // Forward Content-Range etc for seeking
+        if (response.headers.get("Content-Length")) responseHeaders.set("Content-Length", response.headers.get("Content-Length")!);
+        if (response.headers.get("Content-Range")) responseHeaders.set("Content-Range", response.headers.get("Content-Range")!);
+        if (response.headers.get("Accept-Ranges")) responseHeaders.set("Accept-Ranges", response.headers.get("Accept-Ranges")!);
+
+        return new NextResponse(response.body, {
+            status: response.status,
+            statusText: response.statusText,
+            headers: responseHeaders
+        });
 
     } catch (error: any) {
         console.error("Proxy Error:", error);
