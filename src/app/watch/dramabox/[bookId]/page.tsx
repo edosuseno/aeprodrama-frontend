@@ -6,6 +6,7 @@ import { useEpisodes, useDramaDetail } from "@/hooks/useDramaDetail";
 import Link from "next/link";
 import { ChevronLeft, Loader2, List, AlertCircle, ChevronRight } from "lucide-react";
 import Hls from "hls.js";
+import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
 export default function DramaBoxWatchPage() {
   const { bookId } = useParams<{ bookId: string }>();
@@ -106,69 +107,60 @@ export default function DramaBoxWatchPage() {
 
       {/* 2. Video Player */}
       <div className="flex-1 w-full h-full flex items-center justify-center bg-black relative group">
-        {videoUrl ? (
-          <>
-            <HlsVideoPlayer
-              src={videoUrl}
-              poster={currentEpisode?.cover || normalizedDetail?.cover || ""}
-              onEnded={() => {
-                if (currentEpisodeIndex < sortedEpisodes.length - 1) {
-                  setCurrentEpisodeIndex(prev => prev + 1);
-                }
-              }}
-            />
+        <HlsVideoPlayer
+          src={videoUrl}
+          poster={currentEpisode?.cover || normalizedDetail?.cover || ""}
+          onEnded={() => {
+            if (currentEpisodeIndex < sortedEpisodes.length - 1) {
+              setCurrentEpisodeIndex(prev => prev + 1);
+            }
+          }}
+        />
 
-            {/* Navigation Overlay Buttons */}
-            <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-              <button
-                onClick={() => setCurrentEpisodeIndex(prev => Math.max(0, prev - 1))}
-                disabled={currentEpisodeIndex === 0}
-                className="pointer-events-auto p-4 bg-black/40 backdrop-blur rounded-full text-white hover:bg-black/60 active:scale-95 transition disabled:opacity-0"
-              >
-                <ChevronLeft className="w-8 h-8" />
-              </button>
-
-              <button
-                onClick={() => setCurrentEpisodeIndex(prev => Math.min(sortedEpisodes.length - 1, prev + 1))}
-                disabled={currentEpisodeIndex === sortedEpisodes.length - 1}
-                className="pointer-events-auto p-4 bg-black/40 backdrop-blur rounded-full text-white hover:bg-black/60 active:scale-95 transition disabled:opacity-0"
-              >
-                <ChevronRight className="w-8 h-8" />
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="text-white text-lg">URL Video Tidak Valid</div>
+        {!videoUrl && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black z-10">
+            <div className="text-white text-lg">Memuat Video...</div>
+          </div>
         )}
+
+        <UnifiedVideoNavigation
+          currentEpisode={currentEpisodeIndex + 1}
+          totalEpisodes={sortedEpisodes.length}
+          onPrev={() => setCurrentEpisodeIndex((prev) => Math.max(0, prev - 1))}
+          onNext={() => setCurrentEpisodeIndex((prev) => Math.min(sortedEpisodes.length - 1, prev + 1))}
+        />
+
       </div>
 
       {/* 3. Playlist Sidebar */}
-      {showList && (
-        <div className="fixed inset-y-0 right-0 z-50 w-72 bg-gray-900/95 backdrop-blur shadow-xl border-l border-white/10 flex flex-col">
-          <div className="p-4 border-b border-white/10 flex justify-between items-center text-white">
-            <h3 className="font-bold">Daftar Episode</h3>
-            <button onClick={() => setShowList(false)}><ChevronLeft className="rotate-180" /></button>
+      {
+        showList && (
+          <div className="fixed inset-y-0 right-0 z-50 w-72 bg-gray-900/95 backdrop-blur shadow-xl border-l border-white/10 flex flex-col">
+            <div className="p-4 border-b border-white/10 flex justify-between items-center text-white">
+              <h3 className="font-bold">Daftar Episode</h3>
+              <button onClick={() => setShowList(false)}><ChevronLeft className="rotate-180" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 grid grid-cols-4 gap-2 content-start">
+              {sortedEpisodes.map((ep, idx) => (
+                <button
+                  key={ep.chapterId || idx}
+                  onClick={() => {
+                    setCurrentEpisodeIndex(idx);
+                    setShowList(false); // Opsional: tutup list setelah pilih
+                  }}
+                  className={`p-2 rounded text-sm font-medium transition ${idx === currentEpisodeIndex
+                    ? "bg-red-600 text-white"
+                    : "bg-white/5 text-gray-300 hover:bg-white/10"
+                    }`}
+                >
+                  {ep.chapterIndex}
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex-1 overflow-y-auto p-2 grid grid-cols-4 gap-2 content-start">
-            {sortedEpisodes.map((ep, idx) => (
-              <button
-                key={ep.chapterId || idx}
-                onClick={() => {
-                  setCurrentEpisodeIndex(idx);
-                  setShowList(false); // Opsional: tutup list setelah pilih
-                }}
-                className={`p-2 rounded text-sm font-medium transition ${idx === currentEpisodeIndex
-                  ? "bg-red-600 text-white"
-                  : "bg-white/5 text-gray-300 hover:bg-white/10"
-                  }`}
-              >
-                {ep.chapterIndex}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 }
 

@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight, Loader2, List, AlertCircle } from "lucide-re
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Hls from "hls.js";
+import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
 export default function FreeReelsWatchPage() {
   const params = useParams();
@@ -370,49 +371,35 @@ export default function FreeReelsWatchPage() {
       {/* Main Video Area */}
       <div className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
         <div className="relative w-full h-full flex items-center justify-center">
-          {currentVideoUrl ? (
-            <video
-              ref={videoRef}
-              controls
-              autoPlay
-              className="w-full h-full object-contain max-h-[100dvh]"
-              poster={drama.cover}
-              onEnded={handleVideoEnded}
-              {...({ disableRemotePlayback: true, referrerPolicy: "no-referrer" } as any)}
-              crossOrigin="anonymous"
-            >
-            </video>
-          ) : (
+          <video
+            ref={videoRef}
+            controls
+            autoPlay
+            className={cn(
+              "w-full h-full object-contain max-h-[100dvh]",
+              !currentVideoUrl && "invisible"
+            )}
+            poster={drama.cover}
+            onEnded={handleVideoEnded}
+            {...({ disableRemotePlayback: true, referrerPolicy: "no-referrer" } as any)}
+            crossOrigin="anonymous"
+          >
+          </video>
+
+          {!currentVideoUrl && (
             <div className="absolute inset-0 flex items-center justify-center z-20 flex-col gap-4">
-              <p className="text-white/60">URL Video tidak ditemukan</p>
+              <p className="text-white/60">Memuat Video...</p>
             </div>
           )}
         </div>
 
         {/* Navigation Controls Overlay - Bottom */}
-        <div className="absolute bottom-20 md:bottom-12 left-0 right-0 z-40 pointer-events-none flex justify-center pb-safe-area-bottom">
-          <div className="flex items-center gap-2 md:gap-6 pointer-events-auto bg-black/60 backdrop-blur-md px-3 py-1.5 md:px-6 md:py-3 rounded-full border border-white/10 shadow-lg transition-all scale-90 md:scale-100 origin-bottom">
-            <button
-              onClick={() => handleEpisodeChange(currentEpisodeIndex - 1)}
-              disabled={currentEpisodeIndex <= 0}
-              className="p-1.5 md:p-2 rounded-full text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
-            </button>
-
-            <span className="text-white font-medium text-xs md:text-sm tabular-nums min-w-[60px] md:min-w-[80px] text-center">
-              Ep {currentEpisodeData ? (currentEpisodeData.index || currentEpisodeIndex) + 1 : 1} / {totalEpisodes}
-            </span>
-
-            <button
-              onClick={() => handleEpisodeChange(currentEpisodeIndex + 1)}
-              disabled={currentEpisodeIndex >= totalEpisodes - 1}
-              className="p-1.5 md:p-2 rounded-full text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
-            </button>
-          </div>
-        </div>
+        <UnifiedVideoNavigation
+          currentEpisode={currentEpisodeData ? (currentEpisodeData.index || currentEpisodeIndex) + 1 : 1}
+          totalEpisodes={totalEpisodes}
+          onPrev={() => handleEpisodeChange(currentEpisodeIndex - 1)}
+          onNext={() => handleEpisodeChange(currentEpisodeIndex + 1)}
+        />
       </div>
 
       {/* Episode List Sidebar */}

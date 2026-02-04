@@ -6,6 +6,7 @@ import { useFlickReelsDetail } from "@/hooks/useFlickReels";
 import { ChevronLeft, ChevronRight, Loader2, List, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
 export default function FlickReelsWatchPage() {
   const params = useParams();
@@ -237,35 +238,18 @@ export default function FlickReelsWatchPage() {
         </div>
 
         {/* Navigation Controls Overlay - Bottom */}
-        <div className="absolute bottom-20 md:bottom-12 left-0 right-0 z-40 pointer-events-none flex justify-center pb-safe-area-bottom">
-          <div className="flex items-center gap-2 md:gap-6 pointer-events-auto bg-black/60 backdrop-blur-md px-3 py-1.5 md:px-6 md:py-3 rounded-full border border-white/10 shadow-lg transition-all scale-90 md:scale-100 origin-bottom">
-            <button
-              onClick={() => {
-                const prev = episodes[currentIndex - 1];
-                if (prev) handleEpisodeChange(prev.id);
-              }}
-              disabled={currentIndex <= 0}
-              className="p-1.5 md:p-2 rounded-full text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
-            </button>
-
-            <span className="text-white font-medium text-xs md:text-sm tabular-nums min-w-[60px] md:min-w-[80px] text-center">
-              Ep {currentEpisodeData ? currentEpisodeData.index + 1 : 1} / {totalEpisodes}
-            </span>
-
-            <button
-              onClick={() => {
-                const next = episodes[currentIndex + 1];
-                if (next) handleEpisodeChange(next.id);
-              }}
-              disabled={currentIndex >= totalEpisodes - 1}
-              className="p-1.5 md:p-2 rounded-full text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
-            </button>
-          </div>
-        </div>
+        <UnifiedVideoNavigation
+          currentEpisode={currentEpisodeData ? currentEpisodeData.index + 1 : 1}
+          totalEpisodes={totalEpisodes}
+          onPrev={() => {
+            const prev = episodes[currentIndex - 1];
+            if (prev) handleEpisodeChange(prev.id);
+          }}
+          onNext={() => {
+            const next = episodes[currentIndex + 1];
+            if (next) handleEpisodeChange(next.id);
+          }}
+        />
       </div>
 
       {/* Episode List Sidebar */}

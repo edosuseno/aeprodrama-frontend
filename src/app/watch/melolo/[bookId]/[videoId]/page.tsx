@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import Hls from "hls.js";
+import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
 interface VideoQuality {
   name: string;
@@ -199,16 +200,15 @@ export default function MeloloWatchPage() {
       {/* Video Player */}
       <div className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
         <div className="relative w-full h-full flex items-center justify-center">
-          {selectedQuality ? (
-            <HlsVideoPlayer
-              src={selectedQuality.url}
-              onEnded={handleVideoEnded}
-              className="w-full h-full object-contain max-h-[100dvh]"
-            />
-          ) : (
-            // Fallback while initializing first time quality
+          <HlsVideoPlayer
+            src={selectedQuality?.url || ""}
+            onEnded={handleVideoEnded}
+            className={`w-full h-full object-contain max-h-[100dvh] ${!selectedQuality && "invisible"}`}
+          />
+
+          {!selectedQuality && !streamLoading && (
             <div className="w-full h-full flex items-center justify-center text-white/50">
-              {streamLoading ? "" : "Video unavailable"}
+              Video unavailable
             </div>
           )}
 
@@ -220,30 +220,12 @@ export default function MeloloWatchPage() {
           )}
         </div>
 
-        {/* Navigation Controls */}
-        <div className="absolute bottom-20 md:bottom-12 left-0 right-0 z-40 pointer-events-none flex justify-center pb-safe-area-bottom">
-          <div className={`flex items-center gap-2 md:gap-6 pointer-events-auto bg-black/60 backdrop-blur-md px-3 py-1.5 md:px-6 md:py-3 rounded-full border border-white/10 shadow-lg transition-all scale-90 md:scale-100 origin-bottom ${showEpisodeList ? 'opacity-0' : 'opacity-100'}`}>
-            <button
-              onClick={() => currentEpisodeIndex > 0 && handleEpisodeChange(currentEpisodeIndex - 1)}
-              disabled={currentEpisodeIndex <= 0}
-              className="p-1.5 md:p-2 rounded-full text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
-            >
-              <ChevronLeft className="w-4 h-4 md:w-6 md:h-6" />
-            </button>
-
-            <span className="text-white font-medium text-xs md:text-sm tabular-nums min-w-[60px] md:min-w-[80px] text-center">
-              Ep {currentEpisodeIndex !== -1 ? currentEpisodeIndex + 1 : "-"} / {totalEpisodes}
-            </span>
-
-            <button
-              onClick={() => currentEpisodeIndex < totalEpisodes - 1 && handleEpisodeChange(currentEpisodeIndex + 1)}
-              disabled={currentEpisodeIndex >= totalEpisodes - 1}
-              className="p-1.5 md:p-2 rounded-full text-white disabled:opacity-30 hover:bg-white/10 transition-colors"
-            >
-              <ChevronRight className="w-4 h-4 md:w-6 md:h-6" />
-            </button>
-          </div>
-        </div>
+        <UnifiedVideoNavigation
+          currentEpisode={currentEpisodeIndex !== -1 ? currentEpisodeIndex + 1 : 1}
+          totalEpisodes={totalEpisodes}
+          onPrev={() => currentEpisodeIndex > 0 && handleEpisodeChange(currentEpisodeIndex - 1)}
+          onNext={() => currentEpisodeIndex < totalEpisodes - 1 && handleEpisodeChange(currentEpisodeIndex + 1)}
+        />
       </div>
 
       {/* Episode List Sidebar */}
