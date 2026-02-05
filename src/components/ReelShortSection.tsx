@@ -17,6 +17,21 @@ export function ReelShortSection() {
     // Menghilangkan keraguan struktur data (apakah data.data atau data langsung)
     const homepageData = (data as any)?.data || data;
 
+    // Handle null/undefined
+    if (!homepageData) return { banners: [], bookGroups: [] };
+
+    // Handle Flat Array (Fallback from Explore)
+    if (Array.isArray(homepageData)) {
+      return {
+        banners: [],
+        bookGroups: [{
+          title: "Untuk Kamu",
+          books: homepageData
+        }]
+      };
+    }
+
+    // Handle Standard Home Structure
     if (!homepageData?.lists) return { banners: [], bookGroups: [] };
 
     const tabs = homepageData.tab_list || [];

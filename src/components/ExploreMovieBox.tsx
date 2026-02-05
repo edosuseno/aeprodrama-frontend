@@ -48,7 +48,7 @@ export function ExploreMovieBox() {
                 <h2 className="text-xl font-bold">Jelajahi Film Lainnya</h2>
             </div>
 
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 md:gap-4">
                 {data?.pages.map((page, pageIdx) =>
                     page.data.map((movie: any, idx: number) => (
                         <UnifiedMediaCard
@@ -56,16 +56,16 @@ export function ExploreMovieBox() {
                             title={movie.title}
                             cover={movie.poster}
                             link={`/detail/moviebox/${movie.id}`}
+                            episodes={movie.year || movie.release}
                             index={idx}
-                            badge={movie.year ? String(movie.year) : null}
-                            topRightBadge={movie.rating ? { text: `⭐ ${movie.rating}`, isTransparent: true } : null}
+                            badge={movie.rating ? `⭐ ${movie.rating}` : undefined}
                         />
                     ))
                 )}
 
                 {/* Skeletons while loading initial data */}
                 {isLoading &&
-                    Array.from({ length: 9 }).map((_, i) => (
+                    Array.from({ length: 12 }).map((_, i) => (
                         <UnifiedMediaCardSkeleton key={i} />
                     ))}
             </div>

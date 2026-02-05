@@ -84,7 +84,7 @@ export function FreeReelsHome() {
             title={item.title}
             cover={item.cover}
             link={`/detail/freereels/${item.key}`}
-            episodes={Number(item.episode_count) || 0}
+            episodes={item.episode_count || 0}
             topRightBadge={item.follow_count ? { text: `${(item.follow_count / 1000).toFixed(1)}k`, isTransparent: true } : null}
             index={idx}
           />

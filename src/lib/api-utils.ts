@@ -16,16 +16,33 @@ export async function safeJson<T>(response: Response): Promise<T> {
 }
 
 export function getBackendBase() {
+  // 1. DEVELOPMENT: Auto-detect localhost (Local Backend)
+  if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_API_BASE_URL) {
+    return "http://localhost:5001/api";
+  }
+
+  // 2. PRODUCTION / EXPLICIT OVERRIDE
   let base = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id/api";
 
-  // Remove trailing slash
+  // Clean trailing slash
   if (base.endsWith('/')) {
     base = base.slice(0, -1);
   }
 
-  // If the base URL is pointing to our own Vercel backend and missing /api, add it
-  // This handles https://aeprodrama-backend.vercel.app -> https://aeprodrama-backend.vercel.app/api
-  if (base.includes('vercel.app') && !base.includes('/api')) {
+  // Prevent double API segment (e.g., /api/api)
+  // If base already ends with /api, return it as is
+  if (base.endsWith('/api')) {
+    return base;
+  }
+
+  // If base points to vercel but missing /api, append it
+  if (base.includes('vercel.app')) {
+    return `${base}/api`;
+  }
+
+  // Default behaviour: if it doesn't end in /api, append it? 
+  // Safety: usually base url is just the domain.
+  if (!base.includes('/api')) {
     return `${base}/api`;
   }
 

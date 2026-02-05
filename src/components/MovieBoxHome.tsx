@@ -42,8 +42,8 @@ function LatestSection() {
                         title={movie.title}
                         cover={movie.poster}
                         link={`/detail/moviebox/${movie.id}`}
+                        episodes={movie.year ? parseInt(movie.year) : 0}
                         index={idx}
-                        badge={movie.year ? String(movie.year) : null}
                         topRightBadge={movie.rating ? { text: `⭐ ${movie.rating}`, isTransparent: true } : null}
                     />
                 ))}
@@ -73,8 +73,8 @@ function TrendingSection() {
                         title={movie.title}
                         cover={movie.poster}
                         link={`/detail/moviebox/${movie.id}`}
+                        episodes={movie.year ? parseInt(movie.year) : 0}
                         index={idx}
-                        badge={movie.year ? String(movie.year) : null}
                         topRightBadge={movie.rating ? { text: `⭐ ${movie.rating}`, isTransparent: true } : null}
                     />
                 ))}
@@ -104,8 +104,8 @@ function PopularSection() {
                         title={movie.title}
                         cover={movie.poster}
                         link={`/detail/moviebox/${movie.id}`}
+                        episodes={movie.year ? parseInt(movie.year) : 0}
                         index={idx}
-                        badge={movie.year ? String(movie.year) : null}
                         topRightBadge={movie.rating ? { text: `⭐ ${movie.rating}`, isTransparent: true } : null}
                     />
                 ))}
@@ -135,9 +135,9 @@ function NowPlayingSection() {
                         title={movie.title}
                         cover={movie.poster}
                         link={`/detail/moviebox/${movie.id}`}
+                        episodes={movie.year ? parseInt(movie.year) : 0}
                         index={idx}
-                        badge={movie.year ? String(movie.year) : null}
-                        topRightBadge={{ text: `Now`, color: "#22c55e" }}
+                        topRightBadge={movie.rating ? { text: `Now`, color: "#22c55e" } : null}
                     />
                 ))}
             </div>

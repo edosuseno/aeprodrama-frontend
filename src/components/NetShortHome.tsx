@@ -97,7 +97,7 @@ export function NetShortHome() {
               title={drama.title}
               cover={drama.cover}
               link={`/detail/netshort/${drama.shortPlayId}`}
-              episodes={Number(drama.totalEpisodes) || 0}
+              episodes={drama.totalEpisodes}
               topLeftBadge={drama.scriptName ? {
                 text: drama.scriptName,
                 color: "#E52E2E"
@@ -134,7 +134,7 @@ export function NetShortHome() {
                 title={drama.title}
                 cover={drama.cover}
                 link={`/detail/netshort/${drama.shortPlayId}`}
-                episodes={Number(drama.totalEpisodes) || 0}
+                episodes={drama.totalEpisodes}
                 topLeftBadge={drama.scriptName ? {
                   text: drama.scriptName,
                   color: "#E52E2E"

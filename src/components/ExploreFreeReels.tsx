@@ -57,7 +57,7 @@ export function ExploreFreeReels() {
                             title={drama.title || drama.name}
                             cover={drama.cover}
                             link={`/detail/freereels/${drama.key || drama.id}`}
-                            episodes={Number(drama.episode_count) || 0}
+                            episodes={drama.episode_count || 0}
                             index={idx}
                         />
                     ))
