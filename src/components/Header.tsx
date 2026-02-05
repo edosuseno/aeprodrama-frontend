@@ -11,6 +11,7 @@ import { useNetShortSearch } from "@/hooks/useNetShort";
 import { useMeloloSearch } from "@/hooks/useMelolo";
 import { useFlickReelsSearch } from "@/hooks/useFlickReels";
 import { useFreeReelsSearch } from "@/hooks/useFreeReels";
+import { useMovieBoxSearch } from "@/hooks/useMovieBox";
 import { usePlatform } from "@/hooks/usePlatform";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePathname } from "next/navigation";
@@ -23,7 +24,7 @@ export function Header() {
   const normalizedQuery = debouncedQuery.trim();
 
   // Platform context
-  const { isDramaBox, isReelShort, isNetShort, isMelolo, isFlickReels, isFreeReels, platformInfo } = usePlatform();
+  const { isDramaBox, isReelShort, isNetShort, isMelolo, isFlickReels, isFreeReels, isMovieBox, platformInfo } = usePlatform();
 
   // Search based on platform
   const { data: dramaBoxResults, isLoading: isSearchingDramaBox } = useSearchDramas(
@@ -44,6 +45,9 @@ export function Header() {
   const { data: freeReelsResults, isLoading: isSearchingFreeReels } = useFreeReelsSearch(
     isFreeReels ? normalizedQuery : ""
   );
+  const { data: movieBoxResults, isLoading: isSearchingMovieBox } = useMovieBoxSearch(
+    isMovieBox ? normalizedQuery : ""
+  );
 
   const isSearching = isDramaBox
     ? isSearchingDramaBox
@@ -55,7 +59,9 @@ export function Header() {
           ? isSearchingMelolo
           : isFlickReels
             ? isSearchingFlickReels
-            : isSearchingFreeReels;
+            : isFreeReels
+              ? isSearchingFreeReels
+              : isSearchingMovieBox;
 
   // Search results processing
   const searchResults = isDramaBox
@@ -69,7 +75,9 @@ export function Header() {
             .filter((book: any) => book.thumb_url && book.thumb_url !== "") || []
           : isFlickReels
             ? flickReelsResults?.data
-            : freeReelsResults;
+            : isFreeReels
+              ? freeReelsResults
+              : movieBoxResults?.data;
 
   const handleSearchClose = () => {
     setSearchOpen(false);
@@ -412,6 +420,45 @@ export function Header() {
                               ))}
                             </div>
                           )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* MovieBox Results */}
+                {isMovieBox && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((movie: any, index: number) => (
+                      <Link
+                        key={movie.id}
+                        href={`/detail/moviebox/${movie.id}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={movie.poster}
+                          alt={movie.title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{movie.title}</h3>
+                          <div className="flex items-center gap-2 mt-1">
+                            {movie.rating && (
+                              <span className="text-xs text-yellow-500 font-bold">⭐ {movie.rating}</span>
+                            )}
+                            {movie.year && (
+                              <span className="text-xs text-muted-foreground">{movie.year}</span>
+                            )}
+                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary font-bold uppercase tracking-wider">
+                              {movie.type || 'Movie'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                            {movie.synopsis}
+                          </p>
                         </div>
                       </Link>
                     ))}

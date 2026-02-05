@@ -7,11 +7,18 @@ import { NetShortHome } from "@/components/NetShortHome";
 import { MeloloHome } from "@/components/MeloloHome";
 import { FlickReelsHome } from "@/components/FlickReelsHome";
 import { FreeReelsHome } from "@/components/FreeReelsHome";
+import { ExploreDramas } from "@/components/ExploreDramas";
+import { ExploreReelShort } from "@/components/ExploreReelShort";
+import { ExploreNetShort } from "@/components/ExploreNetShort";
+import { ExploreMelolo } from "@/components/ExploreMelolo";
+import { ExploreFlickReels } from "@/components/ExploreFlickReels";
+import { ExploreFreeReels } from "@/components/ExploreFreeReels";
+import { MovieBoxHome } from "@/components/MovieBoxHome";
 import { useForYouDramas, useLatestDramas, useTrendingDramas, useDubindoDramas } from "@/hooks/useDramas";
 import { usePlatform } from "@/hooks/usePlatform";
 
 export default function HomeContent() {
-  const { isDramaBox, isReelShort, isNetShort, isMelolo, isFlickReels, isFreeReels } = usePlatform();
+  const { isDramaBox, isReelShort, isNetShort, isMelolo, isFlickReels, isFreeReels, isMovieBox } = usePlatform();
 
   // Fetch data for all DramaBox sections
   const { data: popularDramas, isLoading: loadingPopular, error: errorPopular, refetch: refetchPopular } = useForYouDramas();
@@ -31,13 +38,6 @@ export default function HomeContent() {
       {/* DramaBox Content - Multiple Sections */}
       {isDramaBox && (
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
-          <DramaSection
-            title="Populer"
-            dramas={popularDramas}
-            isLoading={loadingPopular}
-            error={!!errorPopular}
-            onRetry={() => refetchPopular()}
-          />
           <DramaSection
             title="Terbaru"
             dramas={latestDramas}
@@ -59,6 +59,7 @@ export default function HomeContent() {
             error={!!errorDubindo}
             onRetry={() => refetchDubindo()}
           />
+          <ExploreDramas />
         </div>
       )}
 
@@ -66,6 +67,7 @@ export default function HomeContent() {
       {isReelShort && (
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <ReelShortSection />
+          <ExploreReelShort />
         </div>
       )}
 
@@ -73,6 +75,7 @@ export default function HomeContent() {
       {isNetShort && (
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <NetShortHome />
+          <ExploreNetShort />
         </div>
       )}
 
@@ -80,6 +83,7 @@ export default function HomeContent() {
       {isMelolo && (
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <MeloloHome />
+          <ExploreMelolo />
         </div>
       )}
 
@@ -87,6 +91,7 @@ export default function HomeContent() {
       {isFlickReels && (
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <FlickReelsHome />
+          <ExploreFlickReels />
         </div>
       )}
 
@@ -94,6 +99,15 @@ export default function HomeContent() {
       {isFreeReels && (
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <FreeReelsHome />
+          <ExploreFreeReels />
+        </div>
+      )}
+
+      {/* MovieBox Content */}
+      {isMovieBox && (
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <MovieBoxHome />
+          {/* MovieBox infinite scroll coming soon or integrated in Home */}
         </div>
       )}
     </main>

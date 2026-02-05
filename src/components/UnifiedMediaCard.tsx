@@ -17,6 +17,7 @@ export interface UnifiedMediaCardProps {
   episodes?: number;
   topLeftBadge?: BadgeConfig | null;
   topRightBadge?: BadgeConfig | null;
+  badge?: string | null; // Shorthand for simple top-right text badge
   index?: number;
 }
 
@@ -26,8 +27,10 @@ export function UnifiedMediaCard({
   link,
   episodes = 0,
   topLeftBadge,
-  topRightBadge,
   index = 0,
+  // Props badge adalah shorthand untuk topRightBadge sederhana
+  badge,
+  topRightBadge = badge ? { text: badge, isTransparent: true } : undefined,
 }: UnifiedMediaCardProps) {
 
   // SHARED STYLES

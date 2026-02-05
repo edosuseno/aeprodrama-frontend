@@ -59,25 +59,82 @@ export function NetShortHome() {
     return !EXCLUDED_SECTIONS.some((excluded) => sectionName.includes(excluded));
   });
 
+  // Separate priority groups vs others
+  const priorityGroups = filteredGroups.filter(g => {
+    const name = stripEmoji(g.groupName).toLowerCase();
+    return name.includes('premium') || name.includes('dubbing');
+  });
+
+  const remainingGroups = filteredGroups.filter(g => {
+    const name = stripEmoji(g.groupName).toLowerCase();
+    return !name.includes('premium') || !name.includes('dubbing');
+  });
+
+  const renderGroup = (group: any) => {
+    const name = stripEmoji(group.groupName).toLowerCase();
+    const isSmallSection = name.includes('premium') || name.includes('dubbing');
+
+    // SIASAT PRESISI: Pastikan baris PENUH
+    const displayLimit = isSmallSection ? 6 : (group.dramas.length >= 18 ? 18 : 9);
+    const validDramas = group.dramas.slice(0, displayLimit);
+    const gridClass = isSmallSection
+      ? "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 md:gap-3"
+      : "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3";
+
+    return (
+      <section key={group.groupId} className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold font-display text-foreground">
+            {stripEmoji(group.groupName)}
+          </h2>
+        </div>
+
+        <div className={gridClass}>
+          {validDramas.map((drama: any, index: number) => (
+            <UnifiedMediaCard
+              key={drama.shortPlayId}
+              index={index}
+              title={drama.title}
+              cover={drama.cover}
+              link={`/detail/netshort/${drama.shortPlayId}`}
+              episodes={Number(drama.totalEpisodes) || 0}
+              topLeftBadge={drama.scriptName ? {
+                text: drama.scriptName,
+                color: "#E52E2E"
+              } : null}
+              topRightBadge={drama.heatScore ? {
+                text: drama.heatScore,
+                isTransparent: true
+              } : null}
+            />
+          ))}
+        </div>
+      </section>
+    );
+  };
+
   return (
     <div className="space-y-10">
-      {/* For You Section */}
+      {/* 1. PRIORITY SECTIONS (Premium & Dubbing) */}
+      {priorityGroups.map(renderGroup)}
+
+      {/* 2. REKOMENDASI SECTION */}
       {forYouData?.data && forYouData.data.length > 0 && (
-        <section>
-          <div className="flex items-center justify-between mb-4">
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
             <h2 className="text-xl font-bold font-display text-foreground">
               Rekomendasi Untukmu
             </h2>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
-            {forYouData.data.map((drama, index) => (
+            {forYouData.data.slice(0, forYouData.data.length >= 18 ? 18 : 9).map((drama, index) => (
               <UnifiedMediaCard
                 key={drama.shortPlayId}
                 index={index}
                 title={drama.title}
                 cover={drama.cover}
                 link={`/detail/netshort/${drama.shortPlayId}`}
-                episodes={drama.totalEpisodes}
+                episodes={Number(drama.totalEpisodes) || 0}
                 topLeftBadge={drama.scriptName ? {
                   text: drama.scriptName,
                   color: "#E52E2E"
@@ -92,39 +149,8 @@ export function NetShortHome() {
         </section>
       )}
 
-      {/* Theaters Sections */}
-      {filteredGroups.map((group) => (
-        <section key={group.groupId}>
-          {/* Section Header - removed "Lihat Semua" link */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold font-display text-foreground">
-              {stripEmoji(group.groupName)}
-            </h2>
-          </div>
-
-          {/* Drama Grid */}
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
-            {group.dramas.slice(0, 18).map((drama, index) => (
-              <UnifiedMediaCard
-                key={drama.shortPlayId}
-                index={index}
-                title={drama.title}
-                cover={drama.cover}
-                link={`/detail/netshort/${drama.shortPlayId}`}
-                episodes={drama.totalEpisodes}
-                topLeftBadge={drama.scriptName ? {
-                  text: drama.scriptName,
-                  color: "#E52E2E"
-                } : null}
-                topRightBadge={drama.heatScore ? {
-                  text: drama.heatScore,
-                  isTransparent: true
-                } : null}
-              />
-            ))}
-          </div>
-        </section>
-      ))}
+      {/* 3. REMAINING SECTIONS */}
+      {remainingGroups.filter(g => !priorityGroups.includes(g)).map(renderGroup)}
     </div>
   );
 }

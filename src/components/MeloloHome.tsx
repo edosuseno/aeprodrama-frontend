@@ -9,8 +9,8 @@ function MeloloSectionSkeleton() {
   return (
     <section className="space-y-4">
       <div className="h-8 w-48 bg-muted/50 rounded animate-pulse" />
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 md:gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
           <div key={i}>
             <div className="aspect-[2/3] rounded-xl bg-muted/30 animate-pulse mb-2" />
             <div className="h-4 w-3/4 bg-muted/30 rounded animate-pulse" />
@@ -62,7 +62,7 @@ export function MeloloHome() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 md:gap-3">
             {trendingData.books.slice(0, 18).map((book, index) => (
               <UnifiedMediaCard
                 key={book.book_id}
@@ -87,7 +87,7 @@ export function MeloloHome() {
             </h2>
           </div>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 md:gap-3">
             {latestData.books.slice(0, 18).map((book, index) => (
               <UnifiedMediaCard
                 key={book.book_id}

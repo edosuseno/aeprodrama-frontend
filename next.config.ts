@@ -40,6 +40,20 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "zshipricf.farsunpteltd.com",
       },
+      // MovieBox Domains
+      {
+        protocol: "https",
+        hostname: "pbcdnw.aoneroom.com",
+      },
+      {
+        protocol: "https",
+        hostname: "h5.aoneroom.com",
+      },
+      // Image Proxy
+      {
+        protocol: "https",
+        hostname: "wsrv.nl",
+      },
     ],
   },
   // MEMATIKAN TOMBOL "N" (Dev Indicator)
@@ -48,9 +62,6 @@ const nextConfig: NextConfig = {
   },
   typescript: {
     ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
   },
 };
 

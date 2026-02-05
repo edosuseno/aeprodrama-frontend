@@ -37,8 +37,8 @@ export function useSearchDramas(query: string) {
   return useQuery({
     queryKey: ["dramas", "search", normalizedQuery],
     queryFn: async () => {
-         if (!normalizedQuery) return [];
-         return fetchJson<SearchResult[]>(`${API_BASE}/search?query=${encodeURIComponent(normalizedQuery)}`);
+      if (!normalizedQuery) return [];
+      return fetchJson<SearchResult[]>(`${API_BASE}/search?query=${encodeURIComponent(normalizedQuery)}`);
     },
     enabled: normalizedQuery.length > 0,
     staleTime: 1000 * 60 * 2,
@@ -49,6 +49,23 @@ export function useDubindoDramas() {
   return useQuery({
     queryKey: ["dramas", "dubindo"],
     queryFn: () => fetchJson<Drama[]>(`${API_BASE}/dubindo`),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+import { useInfiniteQuery } from "@tanstack/react-query";
+
+export function useInfiniteDramas() {
+  return useInfiniteQuery({
+    queryKey: ["dramas", "infinite"],
+    queryFn: ({ pageParam = 1 }) =>
+      fetchJson<Drama[]>(`${API_BASE}/explore?page=${pageParam}`),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      // API kita per page kadang cuma 9-10 item, jadi set limit rendah
+      if (!lastPage || lastPage.length < 5) return undefined;
+      return allPages.length + 1;
+    },
     staleTime: 1000 * 60 * 5,
   });
 }

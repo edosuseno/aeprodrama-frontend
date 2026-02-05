@@ -1,10 +1,12 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
+import type { Drama } from "@/types/drama";
 import type {
   ReelShortHomepageResponse,
   ReelShortSearchResponse,
 } from "@/types/reelshort";
 
 import { fetchJson } from "@/lib/fetcher";
+import { decryptData } from "@/lib/crypto";
 
 const API_BASE = "/api/reelshort";
 
@@ -55,6 +57,23 @@ export function useReelShortEpisode(bookId: string, episodeNumber: number, enabl
   });
 }
 
+export function useReelShortEpisodes(bookId: string) {
+  return useQuery({
+    queryKey: ["reelshort", "episodes", bookId],
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE}/allepisode/${bookId}`);
+      if (!response.ok) throw new Error("Failed to fetch episodes");
+      const json = await response.json();
+      if (json.data && typeof json.data === "string") {
+        return decryptData(json.data);
+      }
+      return json;
+    },
+    enabled: !!bookId,
+    staleTime: 1000 * 60 * 10,
+  });
+}
+
 /**
  * Prefetch next episode in the background
  */
@@ -68,4 +87,36 @@ export function usePrefetchReelShortEpisode() {
       staleTime: 1000 * 60 * 10,
     });
   };
+}
+
+export function useInfiniteReelShort() {
+  return useInfiniteQuery({
+    queryKey: ["reelshort", "infinite"],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await fetch(`${API_BASE}/explore?page=${pageParam}`);
+      const json = await res.json();
+      let items: any[] = [];
+
+      if (json.data && typeof json.data === "string") {
+        items = decryptData(json.data);
+      } else {
+        items = json.data || json;
+      }
+
+      // Final safety check to ensure we return an array
+      if (items && !Array.isArray(items)) {
+        if ((items as any).lists) items = (items as any).lists;
+        else if ((items as any).items) items = (items as any).items;
+        else items = [];
+      }
+
+      return (items || []) as Drama[];
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < 5) return undefined;
+      return allPages.length + 1;
+    },
+    staleTime: 1000 * 60 * 5,
+  });
 }

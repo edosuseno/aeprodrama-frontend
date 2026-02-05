@@ -1,6 +1,6 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 
 interface NetShortDrama {
   shortPlayId: string;
@@ -63,6 +63,7 @@ interface DetailResponse {
 }
 
 import { fetchJson } from "@/lib/fetcher";
+import { decryptData } from "@/lib/crypto";
 
 // ... existing interfaces
 
@@ -97,6 +98,31 @@ export function useNetShortDetail(shortPlayId: string) {
     queryFn: () => fetchJson<DetailResponse>(`/api/netshort/detail?shortPlayId=${shortPlayId}`),
     enabled: !!shortPlayId,
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useInfiniteNetShort() {
+  return useInfiniteQuery({
+    queryKey: ["netshort", "infinite"],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await fetch(`/api/netshort/explore?page=${pageParam}`);
+      const json = await res.json();
+      let data = json;
+
+      if (json.data && typeof json.data === "string") {
+        data = decryptData(json.data);
+      }
+
+      // Netshort structure: { data: [ dramas ], maxOffset, completed }
+      const items = data.data || (Array.isArray(data) ? data : []);
+      return items as NetShortDrama[];
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < 5) return undefined;
+      return allPages.length + 1;
+    },
+    staleTime: 1000 * 60 * 5,
   });
 }
 

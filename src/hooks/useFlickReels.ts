@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { fetchJson } from "@/lib/fetcher";
 
 // Interfaces based on FlickReels JSON response
@@ -122,5 +122,24 @@ export function useFlickReelsDetail(bookId: string) {
     enabled: !!bookId,
     staleTime: 10 * 1000, // 10 seconds - video URLs have time-limited tokens
     gcTime: 30 * 1000, // Garbage collect after 30 seconds
+  });
+}
+
+export function useInfiniteFlickReels() {
+  return useInfiniteQuery({
+    queryKey: ["flickreels", "infinite"],
+    queryFn: async ({ pageParam = 1 }) => {
+      // Use fetchJson to handle decryption automatically
+      const fetchedData: any = await fetchJson(`/api/flickreels/explore?page=${pageParam}`);
+
+      const items = fetchedData.list || fetchedData.items || (Array.isArray(fetchedData) ? fetchedData : []);
+      return (Array.isArray(items) ? items : []) as FlickReelsPlaylet[];
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage || lastPage.length < 5) return undefined;
+      return allPages.length + 1;
+    },
+    staleTime: 1000 * 60 * 5,
   });
 }

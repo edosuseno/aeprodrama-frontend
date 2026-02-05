@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Hls from "hls.js";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
-import { useReelShortEpisode, usePrefetchReelShortEpisode } from "@/hooks/useReelShort";
+import { useReelShortEpisode, usePrefetchReelShortEpisode, useReelShortEpisodes } from "@/hooks/useReelShort";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -76,6 +76,9 @@ export default function ReelShortWatchPage() {
     currentEpisode,
     !!bookId && currentEpisode > 0
   );
+
+  // Fetch full episode list for sidebar
+  const { data: episodesList } = useReelShortEpisodes(bookId || "");
 
   // Decrypt the data with safe typing
   const episodeData = useMemo(() => {
@@ -472,21 +475,24 @@ export default function ReelShortWatchPage() {
               </button>
             </div>
             <div className="p-3 grid grid-cols-5 gap-2">
-              {Array.from({ length: totalEpisodes }, (_, i) => i + 1).map((ep) => (
-                <button
-                  key={ep}
-                  onClick={() => goToEpisode(ep)}
-                  className={`
-                    aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all
-                    ${ep === currentEpisode
-                      ? "bg-primary text-white shadow-lg shadow-primary/20"
-                      : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-                    }
-                  `}
-                >
-                  {ep}
-                </button>
-              ))}
+              {(episodesList || Array.from({ length: totalEpisodes }, (_, i) => ({ chapterIndex: i + 1, chapterId: (i + 1).toString() }))).map((ep: any) => {
+                const epNum = ep.chapterIndex;
+                return (
+                  <button
+                    key={ep.chapterId || epNum}
+                    onClick={() => goToEpisode(epNum)}
+                    className={`
+                      aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all
+                      ${epNum === currentEpisode
+                        ? "bg-primary text-white shadow-lg shadow-primary/20"
+                        : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+                      }
+                    `}
+                  >
+                    {epNum}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </>

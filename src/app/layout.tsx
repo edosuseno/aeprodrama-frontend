@@ -6,6 +6,7 @@ import { Footer } from "@/components/Footer";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Suspense } from "react";
+import { BackToTop } from "@/components/BackToTop";
 
 export const metadata: Metadata = {
   title: "AE PRO Pusat Drama - Nonton Drama Pendek Sub Indo",
@@ -25,6 +26,7 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://wsrv.nl" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
       </head>
       <body className="font-sans antialiased">
@@ -34,6 +36,7 @@ export default function RootLayout({
           </Suspense>
           {children}
           <Footer />
+          <BackToTop />
           <Toaster />
           <Sonner />
         </Providers>
