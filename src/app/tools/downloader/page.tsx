@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = 'force-dynamic';
+
 import { useState } from "react";
 import { Download, Lock, Link as LinkIcon, AlertCircle, CheckCircle2, FileVideo } from "lucide-react";
 import { cn } from "@/lib/utils";
