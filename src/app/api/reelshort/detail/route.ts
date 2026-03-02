@@ -1,0 +1,42 @@
+import { safeJson, encryptedResponse, getBackendBase } from "@/lib/api-utils";
+import { NextRequest, NextResponse } from "next/server";
+
+const UPSTREAM_API = getBackendBase() + "/reelshort";
+
+export async function GET(request: NextRequest) {
+  try {
+    const searchParams = request.nextUrl.searchParams;
+    const bookId = searchParams.get("bookId");
+
+    if (!bookId) {
+      return encryptedResponse(
+        { error: "bookId is required" },
+        400
+      );
+    }
+
+    const response = await fetch(
+      `${UPSTREAM_API}/detail?bookId=${encodeURIComponent(bookId)}`,
+      {
+        cache: 'no-store',
+      }
+    );
+
+    if (!response.ok) {
+      return encryptedResponse(
+        { error: "Failed to fetch detail" },
+        response.status
+      );
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("ReelShort Detail Error:", error);
+    return encryptedResponse(
+      { error: "Internal Server Error" },
+      500
+    );
+  }
+}
+
