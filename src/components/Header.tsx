@@ -12,6 +12,7 @@ import { useMeloloSearch } from "@/hooks/useMelolo";
 import { useFlickReelsSearch } from "@/hooks/useFlickReels";
 import { useFreeReelsSearch } from "@/hooks/useFreeReels";
 import { useMovieBoxSearch } from "@/hooks/useMovieBox";
+import { useShortMaxSearch } from "@/hooks/useShortMax";
 import { usePlatform } from "@/hooks/usePlatform";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePathname } from "next/navigation";
@@ -24,7 +25,7 @@ export function Header() {
   const normalizedQuery = debouncedQuery.trim();
 
   // Platform context
-  const { isDramaBox, isReelShort, isNetShort, isMelolo, isFlickReels, isFreeReels, isMovieBox, platformInfo } = usePlatform();
+  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, platformInfo } = usePlatform();
 
   // Search based on platform
   const { data: dramaBoxResults, isLoading: isSearchingDramaBox } = useSearchDramas(
@@ -35,6 +36,9 @@ export function Header() {
   );
   const { data: netShortResults, isLoading: isSearchingNetShort } = useNetShortSearch(
     isNetShort ? normalizedQuery : ""
+  );
+  const { data: shortMaxResults, isLoading: isSearchingShortMax } = useShortMaxSearch(
+    isShortMax ? normalizedQuery : ""
   );
   const { data: meloloResults, isLoading: isSearchingMelolo } = useMeloloSearch(
     isMelolo ? normalizedQuery : ""
@@ -55,13 +59,15 @@ export function Header() {
       ? isSearchingReelShort
       : isNetShort
         ? isSearchingNetShort
-        : isMelolo
-          ? isSearchingMelolo
-          : isFlickReels
-            ? isSearchingFlickReels
-            : isFreeReels
-              ? isSearchingFreeReels
-              : isSearchingMovieBox;
+        : isShortMax
+          ? isSearchingShortMax
+          : isMelolo
+            ? isSearchingMelolo
+            : isFlickReels
+              ? isSearchingFlickReels
+              : isFreeReels
+                ? isSearchingFreeReels
+                : isSearchingMovieBox;
 
   // Search results processing
   const searchResults = isDramaBox
@@ -70,14 +76,16 @@ export function Header() {
       ? reelShortResults?.data
       : isNetShort
         ? netShortResults?.data
-        : isMelolo
-          ? meloloResults?.data?.search_data?.flatMap((item: any) => item.books || [])
-            .filter((book: any) => book.thumb_url && book.thumb_url !== "") || []
-          : isFlickReels
-            ? flickReelsResults?.data
-            : isFreeReels
-              ? freeReelsResults
-              : movieBoxResults?.data;
+        : isShortMax
+          ? shortMaxResults?.data
+          : isMelolo
+            ? meloloResults?.data?.search_data?.flatMap((item: any) => item.books || [])
+              .filter((book: any) => book.thumb_url && book.thumb_url !== "") || []
+            : isFlickReels
+              ? flickReelsResults?.data
+              : isFreeReels
+                ? freeReelsResults
+                : movieBoxResults?.data;
 
   const handleSearchClose = () => {
     setSearchOpen(false);
@@ -291,6 +299,41 @@ export function Header() {
                             <span className="inline-block mt-2 text-[10px] text-muted-foreground">
                               {drama.heatScore}
                             </span>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* ShortMax Results */}
+                {isShortMax && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.shortPlayId}
+                        href={`/detail/shortmax/${drama.shortPlayId}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.cover}
+                          alt={drama.title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title}</h3>
+                          {drama.labels && drama.labels.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {drama.labels.slice(0, 3).map((tag: string, idx: number) => (
+                                <span key={idx} className="tag-pill text-[10px]">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
                           )}
                         </div>
                       </Link>

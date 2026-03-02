@@ -13,12 +13,14 @@ import { ExploreNetShort } from "@/components/ExploreNetShort";
 import { ExploreMelolo } from "@/components/ExploreMelolo";
 import { ExploreFlickReels } from "@/components/ExploreFlickReels";
 import { ExploreFreeReels } from "@/components/ExploreFreeReels";
+import { ShortMaxHome } from "@/components/ShortMaxHome";
+import { ExploreShortMax } from "@/components/ExploreShortMax";
 import { MovieBoxHome } from "@/components/MovieBoxHome";
 import { useForYouDramas, useLatestDramas, useTrendingDramas, useDubindoDramas } from "@/hooks/useDramas";
 import { usePlatform } from "@/hooks/usePlatform";
 
 export default function HomeContent() {
-  const { isDramaBox, isReelShort, isNetShort, isMelolo, isFlickReels, isFreeReels, isMovieBox } = usePlatform();
+  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox } = usePlatform();
 
   // Fetch data for all DramaBox sections
   const { data: popularDramas, isLoading: loadingPopular, error: errorPopular, refetch: refetchPopular } = useForYouDramas();
@@ -79,6 +81,14 @@ export default function HomeContent() {
         </div>
       )}
 
+      {/* ShortMax Content */}
+      {isShortMax && (
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ShortMaxHome />
+          <ExploreShortMax />
+        </div>
+      )}
+
       {/* Melolo Content */}
       {isMelolo && (
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
@@ -113,4 +123,5 @@ export default function HomeContent() {
     </main>
   );
 }
+
 
