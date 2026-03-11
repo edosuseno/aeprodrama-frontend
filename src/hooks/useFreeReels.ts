@@ -159,8 +159,8 @@ export function useFreeReelsSearch(query: string) {
       // Transform search items to FreeReelsItem format
       return response.data?.items?.map(item => ({
         ...item,
-        key: item.id,
-        title: item.name,
+        key: item.id || item.key,
+        title: item.title || item.name || item.shortPlayName,
         follow_count: item.follow_count || 0,
       })) as FreeReelsItem[] || [];
     },
