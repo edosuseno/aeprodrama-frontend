@@ -22,7 +22,7 @@ export function getBackendBase() {
   }
 
   // 2. PRODUCTION / EXPLICIT OVERRIDE
-  let base = process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.sansekai.my.id/api";
+  let base = process.env.NEXT_PUBLIC_API_BASE_URL || "https://aeprodrama-backend.vercel.app/api";
 
   // Clean trailing slash
   if (base.endsWith('/')) {
