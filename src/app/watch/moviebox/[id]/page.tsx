@@ -3,6 +3,8 @@
 import { use, useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useMovieBoxSources, useMovieBoxDetail } from "@/hooks/useMovieBox";
+import { useHistoryStore } from "@/hooks/useHistory";
+import Link from "next/link";
 import { Loader2, ArrowLeft, AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,6 +21,7 @@ export default function MovieBoxWatchPage({ params }: PageProps) {
 
     const { data: detailData } = useMovieBoxDetail(resolvedParams.id);
     const { data: sourcesData, isLoading, isError } = useMovieBoxSources(resolvedParams.id, episodeId);
+    const { addToHistory } = useHistoryStore();
 
     const [iframeLoading, setIframeLoading] = useState(true);
     const [loadTime, setLoadTime] = useState(0);
@@ -27,6 +30,19 @@ export default function MovieBoxWatchPage({ params }: PageProps) {
     const title = detailData?.data?.title || "MovieBox";
     const subTitle = episodeId ? `Episode ${episodeId}` : "Full Movie";
     const embedUrl = sourcesData?.data?.[0]?.url;
+
+    useEffect(() => {
+        if (detailData?.data && embedUrl) {
+            addToHistory({
+                id: resolvedParams.id,
+                title: title,
+                poster: detailData.data.poster || "",
+                platform: "moviebox",
+                episodeNumber: subTitle,
+                link: `/watch/moviebox/${resolvedParams.id}${episodeId ? `?episodeId=${episodeId}` : ""}`
+            });
+        }
+    }, [resolvedParams.id, embedUrl, detailData, episodeId, addToHistory, title, subTitle]);
 
     // Monitor iframe load time
     useEffect(() => {
@@ -49,17 +65,19 @@ export default function MovieBoxWatchPage({ params }: PageProps) {
             <div className="sticky top-0 z-20 glass-strong border-b border-white/5">
                 <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10">
                     <div className="flex items-center gap-4 h-16">
-                        <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => router.back()}
-                            className="text-white hover:bg-white/10"
+                        <Link
+                            href={`/detail/moviebox/${resolvedParams.id}`}
+                            className="flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10"
                         >
-                            <ArrowLeft className="w-5 h-5" />
-                        </Button>
+                            <ArrowLeft className="w-6 h-6" />
+                            <div className="flex flex-col -gap-1">
+                                <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+                                <span className="text-[10px] text-white/70 hidden sm:inline leading-none">PUSAT DRAMA</span>
+                            </div>
+                        </Link>
                         <div className="flex-1 min-w-0">
                             <h1 className="text-white font-bold text-lg truncate">{title}</h1>
-                            <p className="text-white/60 text-xs font-medium truncate">{subTitle}</p>
+                            <p className="text-white/60 text-xs font-medium truncate">{subTitle || detailData?.data?.type || "Movie"}</p>
                         </div>
                         {!iframeLoading && loadTime > 0 && (
                             <div className="hidden md:flex items-center gap-2 text-sm text-primary">

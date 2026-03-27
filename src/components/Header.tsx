@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
-import { Search, X, Play } from "lucide-react";
+import { Search, X, Play, Menu } from "lucide-react";
 import { useSearchDramas } from "@/hooks/useDramas";
 import { useReelShortSearch } from "@/hooks/useReelShort";
 import { useNetShortSearch } from "@/hooks/useNetShort";
@@ -13,19 +13,34 @@ import { useFlickReelsSearch } from "@/hooks/useFlickReels";
 import { useFreeReelsSearch } from "@/hooks/useFreeReels";
 import { useMovieBoxSearch } from "@/hooks/useMovieBox";
 import { useShortMaxSearch } from "@/hooks/useShortMax";
+import { useStardustTVSearch } from "@/hooks/useStardustTV";
+import { useDramaWaveSearch } from "@/hooks/useDramaWave";
+import { useDrmanovaSearch } from "@/hooks/useDrmanova";
+import { useVeloloSearch } from "@/hooks/useVelolo";
 import { usePlatform } from "@/hooks/usePlatform";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePathname } from "next/navigation";
 
+import { useSidebarStore } from "@/hooks/useSidebar";
+import { cn } from "@/lib/utils";
+
 export function Header() {
   const pathname = usePathname();
+  const { isExpanded, toggleSidebar } = useSidebarStore();
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebounce(searchQuery, 300);
   const normalizedQuery = debouncedQuery.trim();
 
+  // Listen for global openSearch event from Mobile Nav
+  React.useEffect(() => {
+    const handleOpenSearch = () => setSearchOpen(true);
+    window.addEventListener('openSearch', handleOpenSearch);
+    return () => window.removeEventListener('openSearch', handleOpenSearch);
+  }, []);
+
   // Platform context
-  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, platformInfo } = usePlatform();
+  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, platformInfo, setPlatform } = usePlatform();
 
   // Search based on platform
   const { data: dramaBoxResults, isLoading: isSearchingDramaBox } = useSearchDramas(
@@ -52,6 +67,18 @@ export function Header() {
   const { data: movieBoxResults, isLoading: isSearchingMovieBox } = useMovieBoxSearch(
     isMovieBox ? normalizedQuery : ""
   );
+  const { data: stardustTVResults, isLoading: isSearchingStardustTV } = useStardustTVSearch(
+    isStardustTV ? normalizedQuery : ""
+  );
+  const { data: dramaWaveResults, isLoading: isSearchingDramaWave } = useDramaWaveSearch(
+    isDramaWave ? normalizedQuery : ""
+  );
+  const { data: dramanovaResults, isLoading: isSearchingDramanova } = useDrmanovaSearch(
+    isDramaNova ? normalizedQuery : ""
+  );
+  const { data: veloloResults, isLoading: isSearchingVelolo } = useVeloloSearch(
+    isVelolo ? normalizedQuery : ""
+  );
 
   const isSearching = isDramaBox
     ? isSearchingDramaBox
@@ -67,25 +94,40 @@ export function Header() {
               ? isSearchingFlickReels
               : isFreeReels
                 ? isSearchingFreeReels
-                : isSearchingMovieBox;
+                : isStardustTV
+                  ? isSearchingStardustTV
+                  : isDramaWave
+                    ? isSearchingDramaWave
+                    : isDramaNova
+                      ? isSearchingDramanova
+                      : isVelolo
+                        ? isSearchingVelolo
+                        : isSearchingMovieBox;
 
   // Search results processing
-  const searchResults = isDramaBox
+  const searchResults: any[] = (isDramaBox
     ? dramaBoxResults
     : isReelShort
-      ? reelShortResults?.data
+      ? (Array.isArray(reelShortResults) ? reelShortResults : (reelShortResults as any)?.data)
       : isNetShort
         ? netShortResults?.data
         : isShortMax
-          ? shortMaxResults?.data
+          ? shortMaxResults
           : isMelolo
-            ? meloloResults?.data?.search_data?.flatMap((item: any) => item.books || [])
-              .filter((book: any) => book.thumb_url && book.thumb_url !== "") || []
+            ? (meloloResults as any)?.search_data?.flatMap((item: any) => item.books || []) || []
             : isFlickReels
               ? flickReelsResults?.data
-              : isFreeReels
-                ? freeReelsResults
-                : movieBoxResults?.data;
+                : isFreeReels
+                  ? freeReelsResults
+                  : isStardustTV
+                    ? stardustTVResults
+                      : isDramaWave
+                        ? dramaWaveResults
+                        : isDramaNova
+                          ? dramanovaResults
+                          : isVelolo
+                            ? veloloResults
+                            : movieBoxResults?.data) || [];
 
   const handleSearchClose = () => {
     setSearchOpen(false);
@@ -98,23 +140,38 @@ export function Header() {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 glass-strong">
-      <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10">
+    <header className={cn(
+      "fixed top-0 left-0 right-0 z-[70] bg-background border-b border-border transition-all duration-300 ease-in-out"
+    )}>
+      <div className="w-full px-4 md:px-3">
         <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center group-hover:scale-110 transition-transform duration-300 shadow-glow">
-              <span className="font-display font-black text-white text-sm tracking-tighter">AE</span>
-            </div>
-            <div className="flex flex-col -gap-1">
-              <span className="font-display font-bold text-lg leading-none gradient-text tracking-wide">
-                AE PRO
-              </span>
-              <span className="text-[10px] font-medium text-muted-foreground leading-none tracking-[0.2em]">
-                PUSAT DRAMA
-              </span>
-            </div>
-          </Link>
+          <div className="flex items-center gap-0 md:gap-2">
+            {/* Sidebar Toggle - Desktop Only */}
+            <button 
+              onClick={toggleSidebar}
+              className="hidden md:flex p-3 rounded-xl hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
+              aria-label="Toggle Sidebar"
+            >
+              <Menu className={cn("w-6 h-6 transition-transform duration-300", isExpanded ? "rotate-180" : "rotate-0")} />
+            </button>
+
+            {/* Logo */}
+            <Link href="/" onClick={() => setPlatform("home")} className="flex items-center gap-2.5 px-2 md:px-0 group">
+              <img
+                src="/icon.png"
+                alt="AE PRO Logo"
+                className="w-10 h-10 rounded-xl group-hover:scale-110 transition-transform duration-300"
+              />
+              <div className="flex flex-col -gap-1">
+                <span className="font-display font-bold text-lg leading-none gradient-text tracking-wide">
+                  AE PRO
+                </span>
+                <span className="text-[10px] font-medium text-muted-foreground leading-none tracking-[0.2em]">
+                  PUSAT DRAMA
+                </span>
+              </div>
+            </Link>
+          </div>
 
           {/* Search Button Only - No Nav Links */}
           <div className="flex items-center gap-2">
@@ -286,7 +343,7 @@ export function Header() {
                               {drama.description}
                             </p>
                           )}
-                          {drama.labels && drama.labels.length > 0 && (
+                          {drama.labels && Array.isArray(drama.labels) && drama.labels.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
                               {drama.labels.slice(0, 3).map((tag: string, idx: number) => (
                                 <span key={idx} className="tag-pill text-[10px]">
@@ -326,7 +383,7 @@ export function Header() {
                         />
                         <div className="flex-1 min-w-0">
                           <h3 className="font-display font-semibold text-foreground truncate">{drama.title}</h3>
-                          {drama.labels && drama.labels.length > 0 && (
+                          {drama.labels && Array.isArray(drama.labels) && drama.labels.length > 0 && (
                             <div className="flex flex-wrap gap-1.5 mt-2">
                               {drama.labels.slice(0, 3).map((tag: string, idx: number) => (
                                 <span key={idx} className="tag-pill text-[10px]">
@@ -418,7 +475,7 @@ export function Header() {
                             <div className="flex flex-wrap gap-1.5 mt-2">
                               {book.tag_list.slice(0, 3).map((tag: any, idx: number) => (
                                 <span key={idx} className="tag-pill text-[10px]">
-                                  {tag.tag_name}
+                                  {typeof tag === 'string' ? tag : tag.tag_name || tag.name}
                                 </span>
                               ))}
                             </div>
@@ -502,6 +559,159 @@ export function Header() {
                           <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
                             {movie.synopsis}
                           </p>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* StardustTV Results */}
+                {isStardustTV && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.id || drama.shortPlayId}
+                        href={`/detail/stardusttv/${drama.id || drama.shortPlayId}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.poster || drama.image}
+                          alt={drama.title || drama.name}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title || drama.name}</h3>
+                          {drama.intro || drama.description && (
+                            <p className="text-sm text-muted-foreground line-clamp-2 mt-2">
+                              {drama.intro || drama.description}
+                            </p>
+                          )}
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            <span className="tag-pill text-[10px]">
+                              {drama.totalEpisodes || drama.chapterCount || 0} Episodes
+                            </span>
+                            {drama.badge && (
+                              <span className="tag-pill text-[10px] bg-primary/20 text-primary">
+                                {drama.badge}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* DramaWave Results */}
+                {isDramaWave && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.shortPlayId}
+                        href={`/detail/dramawave/${drama.shortPlayId}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.shortPlayCover || drama.cover}
+                          alt={drama.shortPlayName}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.shortPlayName}</h3>
+                          {drama.tags && (
+                             <div className="flex flex-wrap gap-1.5 mt-2">
+                               {drama.tags.slice(0, 3).map((tag: string, idx: number) => (
+                                 <span key={idx} className="tag-pill text-[10px]">
+                                   {tag}
+                                 </span>
+                               ))}
+                             </div>
+                          )}
+                          <div className="mt-2">
+                            <span className="tag-pill text-[10px]">
+                              {drama.chapterCount || 0} Episodes
+                            </span>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* DramaNova Results */}
+                {isDramaNova && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.id}
+                        href={`/detail/dramanova/${drama.id}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.cover}
+                          alt={drama.title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title}</h3>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            <span className="tag-pill text-[10px]">
+                              {drama.chapterCount || 0} Episodes
+                            </span>
+                            {drama.provider && (
+                               <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                                 {drama.provider}
+                               </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Velolo Results */}
+                {isVelolo && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.id}
+                        href={`/detail/velolo/${drama.id}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.cover}
+                          alt={drama.title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title}</h3>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            <span className="tag-pill text-[10px]">
+                              {drama.chapterCount || 0} Episodes
+                            </span>
+                            {drama.provider && (
+                               <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                                 {drama.provider}
+                               </span>
+                            )}
+                          </div>
                         </div>
                       </Link>
                     ))}

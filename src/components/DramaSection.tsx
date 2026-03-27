@@ -1,5 +1,7 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
+import { fetchDramaDetail } from "@/hooks/useDramaDetail";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton"; // Import skeleton
 import { UnifiedErrorDisplay } from "./UnifiedErrorDisplay";
@@ -7,13 +9,14 @@ import type { Drama } from "@/types/drama";
 
 interface DramaSectionProps {
   title: string;
-  dramas?: Drama[];
+  dramas?: any[];
   isLoading?: boolean;
-  error?: boolean;    // New prop
-  onRetry?: () => void; // New prop
+  platform: string; // New required prop
+  error?: boolean;
+  onRetry?: () => void;
 }
 
-export function DramaSection({ title, dramas, isLoading, error, onRetry }: DramaSectionProps) {
+export function DramaSection({ title, dramas, isLoading, platform, error, onRetry }: DramaSectionProps) {
   if (error) {
     return (
       <section>
@@ -36,8 +39,8 @@ export function DramaSection({ title, dramas, isLoading, error, onRetry }: Drama
         <div className="h-7 md:h-8 w-48 bg-white/10 rounded-lg animate-pulse mb-4" />
 
         {/* Grid Skeleton */}
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
-          {Array.from({ length: 18 }).map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
             <UnifiedMediaCardSkeleton key={i} />
           ))}
         </div>
@@ -45,21 +48,25 @@ export function DramaSection({ title, dramas, isLoading, error, onRetry }: Drama
     );
   }
 
-  // Calculate items to show: Ensure it's a multiple of 6 for neat grid
-  // Desktop has 6 cols. 
-  // 1. Filter out dramas with bad/missing covers first
-  const validDramas = dramas?.filter(d =>
-    (d.cover || d.coverWap) && (!d.bookName || !d.bookName.includes("No Name"))
-  ) || [];
+  // Normalize different API formats (DramaBox, ReelShort, FlickReels, etc.)
+  const validDramas = (dramas || []).map(d => {
+    // Explicitly find the ID
+    const actualId = d.bookId || d.book_id || d.shortPlayId || d.id || d.key || d.playlet_id;
+    const actualTitle = d.bookName || d.book_title || d.title || d.book_name || d.shortPlayName;
+    const actualCover = d.coverWap || d.cover || d.book_pic || d.thumb_url || d.shortPlayCover || d.poster || d.image;
+    const actualEpisodes = d.chapterCount || d.total_chapter || d.totalEpisodes || d.chapter_count || d.upload_num;
+    
+    return {
+      id: actualId,
+      title: actualTitle,
+      cover: actualCover,
+      episodes: actualEpisodes,
+      corner: d.corner || (d.book_mark ? { name: d.book_mark.text, color: d.book_mark.color } : d.cornerVo ? { name: d.cornerVo.name, color: d.cornerVo.color } : null),
+    };
+  }).filter(d => d.id && d.cover);
 
-  const totalAvailable = validDramas.length;
-  // If we have plenty data, crop to nearest multiple of 9 (max 27)
-  // If data is scarce (< 9), show all available
-  let displayCount = totalAvailable;
-
-  if (totalAvailable >= 9) {
-    displayCount = Math.floor(Math.min(totalAvailable, 27) / 9) * 9;
-  }
+  const displayCount = Math.min(validDramas.length, 6);
+  const queryClient = useQueryClient();
 
   return (
     <section>
@@ -67,27 +74,31 @@ export function DramaSection({ title, dramas, isLoading, error, onRetry }: Drama
         {title}
       </h2>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
         {validDramas.slice(0, displayCount).map((drama, index) => {
-          // Normalize badge color: If text is "Terpopuler", force RED to match ReelShort/NetShort
           const isPopular = drama.corner?.name?.toLowerCase().includes("populer");
           const badgeColor = isPopular ? "#E52E2E" : (drama.corner?.color || "#e5a00d");
 
           return (
             <UnifiedMediaCard
-              key={drama.bookId || `drama-${index}`}
+              key={`${platform}-${drama.id}-${index}`}
               index={index}
-              title={drama.bookName}
-              cover={drama.coverWap || drama.cover || ""}
-              link={`/detail/dramabox/${drama.bookId}`}
-              episodes={drama.chapterCount}
+              title={drama.title}
+              cover={drama.cover}
+              link={`/detail/${platform}/${drama.id}`}
+              episodes={drama.episodes}
+              onPrefetch={() => {
+                if (platform === "dramabox") {
+                  queryClient.prefetchQuery({
+                    queryKey: ["drama", "detail", drama.id],
+                    queryFn: () => fetchDramaDetail(drama.id),
+                    staleTime: 1000 * 60 * 10,
+                  });
+                }
+              }}
               topLeftBadge={drama.corner ? {
                 text: drama.corner.name,
                 color: badgeColor
-              } : null}
-              topRightBadge={drama.rankVo ? {
-                text: drama.rankVo.hotCode,
-                isTransparent: true
               } : null}
             />
           );

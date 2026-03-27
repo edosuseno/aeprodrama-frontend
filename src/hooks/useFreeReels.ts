@@ -107,45 +107,78 @@ export interface FreeReelsSearchResponse {
   };
 }
 
+export async function fetchFreeReelsDetail(bookId: string) {
+    const response = await fetchJson<any>(`/api/freereels/detail?id=${bookId}`);
+    
+    // Normalization logic (sama dengan select di hook)
+    let info = response?.data?.info
+        || response?.data
+        || response?.info
+        || response;
+
+    if (!info || (!info.id && !info.name && !info.title && !info.key)) {
+        return null;
+    }
+
+    const rawTags = info.content_tags || info.tags || info.tagNames;
+    const contentTags: string[] = Array.isArray(rawTags)
+        ? rawTags
+        : (typeof rawTags === "string" && rawTags.trim()
+            ? rawTags.split(/[\s,|]+/).filter(Boolean)
+            : []);
+
+    const normalizedInfo = {
+        ...info,
+        id: info.id || info.key || bookId,
+        name: info.name || info.title || "Judul tidak tersedia",
+        cover: info.cover || info.coverWap || info.image || "",
+        desc: info.desc || info.description || info.introduce || info.abstract || "",
+        episode_count: info.episode_count || info.chapterCount || info.totalEpisodes || 0,
+        content_tags: contentTags,
+        follow_count: info.follow_count || info.followCount || 0,
+    };
+
+    const rawEpisodeList = info.episode_list;
+    const isValidArray = Array.isArray(rawEpisodeList) && rawEpisodeList.length > 0;
+    const episodeList = isValidArray
+        ? rawEpisodeList
+        : (info.chapterList || info.episodes || []);
+
+    const singleEpisode = info.episode && !isValidArray ? [info.episode] : [];
+    const allEpisodes = episodeList.length > 0 ? episodeList : singleEpisode;
+
+    const episodes = allEpisodes.map((ep: any, idx: number) => {
+        const indoSub = Array.isArray(ep.subtitle_list)
+            ? ep.subtitle_list.find((sub: any) => sub.language === 'id-ID')
+            : undefined;
+        return {
+            id: ep.id || ep.chapterId || String(idx + 1),
+            name: ep.name || ep.chapterName || ep.title || `Episode ${idx + 1}`,
+            index: ep.index ?? ep.chapterIndex ?? idx,
+            videoUrl: ep.video_url || ep.videoUrl || ep.external_audio_h264_m3u8 || ep.mp4 || "",
+            m3u8_url: ep.m3u8_url || ep.hlsUrl || "",
+            external_audio_h264_m3u8: ep.external_audio_h264_m3u8 || "",
+            external_audio_h265_m3u8: ep.external_audio_h265_m3u8 || "",
+            cover: ep.cover || normalizedInfo.cover,
+            subtitleUrl: indoSub?.subtitle || indoSub?.vtt || "",
+            originalAudioLanguage: ep.original_audio_language || "",
+        };
+    });
+
+    return {
+        data: {
+            ...normalizedInfo,
+            key: normalizedInfo.id,
+            title: normalizedInfo.name,
+            episodes: episodes,
+        } as FreeReelsItem,
+    };
+}
+
 export function useFreeReelsDetail(bookId: string) {
   return useQuery({
     queryKey: ["freereels", "detail", bookId],
-    queryFn: () => fetchJson<any>(`/api/freereels/detail?id=${bookId}`),
-    select: (response) => {
-      // Response has { data: { info: { ... }, ... } }
-      const info = response.data?.info;
-      if (!info) return null;
-
-      // Transform info to FreeReelsItem
-      const episodes = info.episode_list?.map((ep: any) => {
-        // Find Indonesian subtitle if available
-        const indoSub = ep.subtitle_list?.find((sub: any) => sub.language === 'id-ID');
-
-        return {
-          id: ep.id,
-          name: ep.name,
-          index: (info.episode_list?.indexOf(ep) || 0),
-          videoUrl: ep.video_url || ep.external_audio_h264_m3u8 || "",
-          m3u8_url: ep.m3u8_url || "",
-          external_audio_h264_m3u8: ep.external_audio_h264_m3u8 || "",
-          external_audio_h265_m3u8: ep.external_audio_h265_m3u8 || "",
-          cover: ep.cover || info.cover,
-          // Subtitle extraction
-          subtitleUrl: indoSub?.subtitle || indoSub?.vtt || "",
-          originalAudioLanguage: ep.original_audio_language || "",
-        };
-      }) || [];
-
-      return {
-        data: {
-          ...info,
-          key: info.id,
-          title: info.name,
-          follow_count: info.follow_count || 0,
-          episodes: episodes,
-        } as FreeReelsItem
-      };
-    },
+    queryFn: () => fetchFreeReelsDetail(bookId),
     enabled: !!bookId,
     staleTime: 5 * 60 * 1000,
   });

@@ -115,10 +115,14 @@ export function useFlickReelsSearch(query: string) {
   });
 }
 
+export async function fetchFlickReelsDetail(bookId: string): Promise<FlickReelsDetailResponse> {
+  return fetchJson<FlickReelsDetailResponse>(`/api/flickreels/detail?id=${bookId}`);
+}
+
 export function useFlickReelsDetail(bookId: string) {
   return useQuery<FlickReelsDetailResponse>({
     queryKey: ["flickreels", "detail", bookId],
-    queryFn: () => fetchJson<FlickReelsDetailResponse>(`/api/flickreels/detail?id=${bookId}`),
+    queryFn: () => fetchFlickReelsDetail(bookId),
     enabled: !!bookId,
     staleTime: 10 * 1000, // 10 seconds - video URLs have time-limited tokens
     gcTime: 30 * 1000, // Garbage collect after 30 seconds

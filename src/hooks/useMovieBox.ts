@@ -104,10 +104,14 @@ export function useMovieBoxSearch(query: string) {
     });
 }
 
+export async function fetchMovieBoxDetail(id: string) {
+    return fetchJson<{ data: MovieBoxDetail }>(`/api/moviebox/detail?id=${id}`);
+}
+
 export function useMovieBoxDetail(id: string) {
     return useQuery({
         queryKey: ["moviebox", "detail", id],
-        queryFn: () => fetchJson<{ data: MovieBoxDetail }>(`/api/moviebox/detail?id=${id}`),
+        queryFn: () => fetchMovieBoxDetail(id),
         enabled: !!id,
         staleTime: 5 * 60 * 1000,
     });

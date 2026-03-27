@@ -95,10 +95,14 @@ export function useMeloloSearch(query: string) {
   });
 }
 
+export async function fetchMeloloDetail(bookId: string): Promise<MeloloDetailResponse> {
+  return fetchJson<MeloloDetailResponse>(`/api/melolo/detail?bookId=${bookId}`);
+}
+
 export function useMeloloDetail(bookId: string) {
   return useQuery<MeloloDetailResponse>({
     queryKey: ["melolo", "detail", bookId],
-    queryFn: () => fetchJson<MeloloDetailResponse>(`/api/melolo/detail?bookId=${bookId}`),
+    queryFn: () => fetchMeloloDetail(bookId),
     enabled: !!bookId,
     staleTime: 5 * 60 * 1000,
   });

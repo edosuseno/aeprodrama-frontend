@@ -8,6 +8,7 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Hls from "hls.js";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 import { useReelShortEpisode, usePrefetchReelShortEpisode, useReelShortEpisodes } from "@/hooks/useReelShort";
+import { useHistoryStore } from "@/hooks/useHistory";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +56,9 @@ export default function ReelShortWatchPage() {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
+  // Ref untuk area swipe vertikal (mobile)
+  const swipeContainerRef = useRef<HTMLDivElement>(null);
+
   // Get episode from URL
   useEffect(() => {
     const ep = searchParams.get("ep");
@@ -79,6 +83,20 @@ export default function ReelShortWatchPage() {
 
   // Fetch full episode list for sidebar
   const { data: episodesList } = useReelShortEpisodes(bookId || "");
+  const { addToHistory } = useHistoryStore();
+
+  useEffect(() => {
+    if (detailData && currentEpisode) {
+      addToHistory({
+        id: bookId || "",
+        title: detailData.title || "ReelShort",
+        poster: detailData.cover || "",
+        platform: "reelshort",
+        episodeNumber: currentEpisode,
+        link: `/watch/reelshort/${bookId}?ep=${currentEpisode}`
+      });
+    }
+  }, [bookId, currentEpisode, detailData, addToHistory]);
 
   // Decrypt the data with safe typing
   const episodeData = useMemo(() => {
@@ -292,27 +310,6 @@ export default function ReelShortWatchPage() {
     };
   }, [activeUrl, loadVideo]);
 
-  // Auto-fullscreen on mobile when video starts playing
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handlePlay = () => {
-      // Check if on mobile (screen width < 768px)
-      if (window.innerWidth < 768 && video.requestFullscreen) {
-        video.requestFullscreen().catch(() => {
-          // Fallback for iOS
-          if ((video as any).webkitEnterFullscreen) {
-            (video as any).webkitEnterFullscreen();
-          }
-        });
-      }
-    };
-
-    video.addEventListener('play', handlePlay);
-    return () => video.removeEventListener('play', handlePlay);
-  }, []);
-
   // Handle video ended - auto next episode
   const handleVideoEnded = useCallback(() => {
     const totalEpisodes = detailData?.totalEpisodes || 1;
@@ -330,6 +327,43 @@ export default function ReelShortWatchPage() {
   };
 
   const totalEpisodes = detailData?.totalEpisodes || 1;
+
+  // Swipe vertikal untuk navigasi episode di mobile
+  useEffect(() => {
+    const el = swipeContainerRef.current;
+    if (!el) return;
+
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      // Hanya aktif di mobile
+      if (window.innerWidth >= 768) return;
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaY = touchStartY - touchEndY;
+
+      // Threshold 80px agar tidak konflik dengan tap kontrol video
+      if (deltaY > 80) {
+        // Swipe ke atas → episode berikutnya
+        if (currentEpisode < totalEpisodes) goToEpisode(currentEpisode + 1);
+      } else if (deltaY < -80) {
+        // Swipe ke bawah → episode sebelumnya
+        if (currentEpisode > 1) goToEpisode(currentEpisode - 1);
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [currentEpisode, totalEpisodes]);
 
   return (
     <main className="fixed inset-0 bg-black flex flex-col">
@@ -397,7 +431,7 @@ export default function ReelShortWatchPage() {
       </div>
 
       {/* Main Video Area */}
-      <div className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
+      <div ref={swipeContainerRef} className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
         {/* Video Element Wrapper */}
         <div className="relative w-full h-full flex items-center justify-center">
           {isLoading && (
@@ -437,7 +471,6 @@ export default function ReelShortWatchPage() {
             ref={videoRef}
             className="w-full h-full object-contain max-h-[100dvh]"
             controls
-            playsInline
             autoPlay
             onEnded={handleVideoEnded}
           />

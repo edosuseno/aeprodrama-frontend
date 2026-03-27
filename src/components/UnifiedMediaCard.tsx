@@ -19,6 +19,7 @@ export interface UnifiedMediaCardProps {
   topRightBadge?: BadgeConfig | null;
   badge?: string | null; // Shorthand for simple top-right text badge
   index?: number;
+  onPrefetch?: () => void;
 }
 
 export function UnifiedMediaCard({
@@ -31,6 +32,7 @@ export function UnifiedMediaCard({
   // Props badge adalah shorthand untuk topRightBadge sederhana
   badge,
   topRightBadge = badge ? { text: badge, isTransparent: true } : undefined,
+  onPrefetch,
 }: UnifiedMediaCardProps) {
 
   // SHARED STYLES
@@ -49,12 +51,14 @@ export function UnifiedMediaCard({
       href={link}
       className="group relative block"
       style={{ animationDelay: `${index * 50}ms` }}
+      onMouseEnter={() => onPrefetch?.()}
+      onTouchStart={() => onPrefetch?.()}
     >
       {/* Visual Container */}
       <div className="aspect-[2/3] relative overflow-hidden rounded-xl bg-muted/20">
         <img
           src={cover && cover.trim()
-            ? (cover.includes(".heic")
+            ? (cover.includes(".heic") && !cover.includes("wsrv.nl")
               ? `https://wsrv.nl/?url=${encodeURIComponent(cover)}&output=jpg`
               : cover)
             : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E"}
@@ -64,7 +68,13 @@ export function UnifiedMediaCard({
           referrerPolicy="no-referrer"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            if (target.src !== "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E") {
+            const originalSrc = target.src;
+            
+            // If it's not already using our proxy and not the fallback SVG
+            if (cover && !originalSrc.includes('/api/image-proxy') && !originalSrc.startsWith('data:')) {
+              console.log(`[UnifiedMediaCard] Image failed, trying proxy: ${title}`);
+              target.src = `/api/image-proxy?url=${encodeURIComponent(cover)}`;
+            } else if (!originalSrc.startsWith('data:image/svg+xml')) {
               target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
             }
           }}

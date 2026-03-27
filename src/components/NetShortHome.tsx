@@ -1,6 +1,7 @@
 "use client";
 
-import { useNetShortTheaters, useNetShortForYou } from "@/hooks/useNetShort";
+import { useNetShortTheaters, useNetShortForYou, fetchNetShortDetail } from "@/hooks/useNetShort";
+import { useQueryClient } from "@tanstack/react-query";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { UnifiedErrorDisplay } from "./UnifiedErrorDisplay";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
@@ -17,6 +18,7 @@ const EXCLUDED_SECTIONS = ['segera tayang', 'coming soon', 'upcoming'];
 export function NetShortHome() {
   const { data: theatersData, isLoading: loadingTheaters, error: errorTheaters, refetch: refetchTheaters } = useNetShortTheaters();
   const { data: forYouData, isLoading: loadingForYou, error: errorForYou, refetch: refetchForYou } = useNetShortForYou();
+  const queryClient = useQueryClient();
 
   const isLoading = loadingTheaters || loadingForYou;
 
@@ -98,6 +100,13 @@ export function NetShortHome() {
               cover={drama.cover}
               link={`/detail/netshort/${drama.shortPlayId}`}
               episodes={drama.totalEpisodes}
+              onPrefetch={() => {
+                queryClient.prefetchQuery({
+                  queryKey: ["netshort", "detail", String(drama.shortPlayId)],
+                  queryFn: () => fetchNetShortDetail(String(drama.shortPlayId)),
+                  staleTime: 1000 * 60 * 10,
+                });
+              }}
               topLeftBadge={drama.scriptName ? {
                 text: drama.scriptName,
                 color: "#E52E2E"
@@ -135,6 +144,13 @@ export function NetShortHome() {
                 cover={drama.cover}
                 link={`/detail/netshort/${drama.shortPlayId}`}
                 episodes={drama.totalEpisodes}
+                onPrefetch={() => {
+                  queryClient.prefetchQuery({
+                    queryKey: ["netshort", "detail", String(drama.shortPlayId)],
+                    queryFn: () => fetchNetShortDetail(String(drama.shortPlayId)),
+                    staleTime: 1000 * 60 * 10,
+                  });
+                }}
                 topLeftBadge={drama.scriptName ? {
                   text: drama.scriptName,
                   color: "#E52E2E"

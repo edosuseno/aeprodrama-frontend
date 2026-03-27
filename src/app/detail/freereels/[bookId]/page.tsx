@@ -3,6 +3,7 @@
 
 import { useFreeReelsDetail } from "@/hooks/useFreeReels";
 import { useParams, useRouter } from "next/navigation";
+import { usePlatform } from "@/hooks/usePlatform";
 import { Play, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +15,12 @@ export default function FreeReelsDetailPage() {
   const bookId = params.bookId as string;
 
   const { data, isLoading, error, refetch } = useFreeReelsDetail(bookId);
+  const { setPlatform } = usePlatform();
+
+  const handleBack = () => {
+    setPlatform("freereels");
+    router.push("/");
+  };
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -23,10 +30,10 @@ export default function FreeReelsDetailPage() {
   if (error || !data || !data.data) {
     return (
       <div className="min-h-screen pt-24 px-4">
-        <UnifiedErrorDisplay 
+        <UnifiedErrorDisplay
           title="Gagal Memuat Drama"
           message={error ? "Drama tidak ditemukan atau terjadi kesalahan server." : "Data tidak tersedia."}
-          onRetry={() => refetch()} 
+          onRetry={() => refetch()}
         />
       </div>
     );
@@ -36,7 +43,7 @@ export default function FreeReelsDetailPage() {
   // Fallback for episode navigation. If detail API returns episodes list, use it. 
   // Otherwise try to use container info if available (likely from foryou feed passed via state, but here we fetch fresh).
   // For now assuming we start at episode 1 or what's available.
-  const firstEpisodeId = drama.container?.episode_info?.id || "1"; 
+  const firstEpisodeId = drama.container?.episode_info?.id || "1";
 
   return (
     <main className="min-h-screen pt-20">
@@ -55,7 +62,7 @@ export default function FreeReelsDetailPage() {
         <div className="relative max-w-7xl mx-auto px-4 py-8">
           {/* Back Button */}
           <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -121,12 +128,12 @@ export default function FreeReelsDetailPage() {
 
               {/* Watch Button */}
               <Link
-                  href={`/watch/freereels/${bookId}?ep=1`}
-                  className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-white transition-all hover:scale-105 shadow-lg"
-                  style={{ background: "var(--gradient-primary)" }}
+                href={`/watch/freereels/${bookId}?ep=1`}
+                className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-white transition-all hover:scale-105 shadow-lg"
+                style={{ background: "var(--gradient-primary)" }}
               >
-                  <Play className="w-5 h-5 fill-current" />
-                  Mulai Menonton
+                <Play className="w-5 h-5 fill-current" />
+                Mulai Menonton
               </Link>
             </div>
           </div>

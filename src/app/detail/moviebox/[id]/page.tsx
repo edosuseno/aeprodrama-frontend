@@ -2,6 +2,7 @@
 
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePlatform } from "@/hooks/usePlatform";
 import { useMovieBoxDetail } from "@/hooks/useMovieBox";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,6 +21,12 @@ export default function MovieBoxDetailPage({ params }: PageProps) {
     const router = useRouter();
     const { toast } = useToast();
     const { data: detailRes, isLoading } = useMovieBoxDetail(resolvedParams.id);
+    const { setPlatform } = usePlatform();
+
+    const handleBack = () => {
+        setPlatform("moviebox");
+        router.push("/");
+    };
 
     if (isLoading) {
         return <DetailSkeleton />;
@@ -60,7 +67,7 @@ export default function MovieBoxDetailPage({ params }: PageProps) {
                 <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent z-20" />
 
                 <div className="absolute top-4 left-4 z-50">
-                    <Button variant="ghost" size="icon" onClick={() => router.back()} className="rounded-full bg-black/20 hover:bg-black/40 text-white">
+                    <Button variant="ghost" size="icon" onClick={handleBack} className="rounded-full bg-black/20 hover:bg-black/40 text-white">
                         <ArrowLeft className="w-6 h-6" />
                     </Button>
                 </div>

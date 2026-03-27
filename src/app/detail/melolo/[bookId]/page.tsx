@@ -3,6 +3,7 @@
 
 import { UnifiedErrorDisplay } from "@/components/UnifiedErrorDisplay";
 import { useMeloloDetail } from "@/hooks/useMelolo";
+import { usePlatform } from "@/hooks/usePlatform";
 import { Play, ChevronLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
@@ -12,6 +13,12 @@ export default function MeloloDetailPage() {
   const params = useParams<{ bookId: string }>();
   const router = useRouter();
   const { data, isLoading, error } = useMeloloDetail(params.bookId || "");
+  const { setPlatform } = usePlatform();
+
+  const handleBack = () => {
+    setPlatform("melolo");
+    router.push("/");
+  };
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -20,10 +27,10 @@ export default function MeloloDetailPage() {
   if (error || !data?.data?.video_data) {
     return (
       <div className="min-h-screen pt-24 px-4">
-        <UnifiedErrorDisplay 
+        <UnifiedErrorDisplay
           title="Drama tidak ditemukan"
           message="Tidak dapat memuat detail drama. Silakan coba lagi."
-          onRetry={() => router.push('/')}
+          onRetry={handleBack}
           retryLabel="Kembali ke Beranda"
         />
       </div>
@@ -40,8 +47,8 @@ export default function MeloloDetailPage() {
         {/* Background Blur */}
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={drama.series_cover.includes(".heic") 
-              ? `https://wsrv.nl/?url=${encodeURIComponent(drama.series_cover)}&output=jpg` 
+            src={drama.series_cover.includes(".heic")
+              ? `https://wsrv.nl/?url=${encodeURIComponent(drama.series_cover)}&output=jpg`
               : drama.series_cover}
             alt=""
             className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
@@ -52,7 +59,7 @@ export default function MeloloDetailPage() {
 
         <div className="relative max-w-7xl mx-auto px-4 py-8">
           <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -62,8 +69,8 @@ export default function MeloloDetailPage() {
           <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
             <div className="relative group">
               <img
-                src={drama.series_cover.includes(".heic") 
-                  ? `https://wsrv.nl/?url=${encodeURIComponent(drama.series_cover)}&output=jpg` 
+                src={drama.series_cover.includes(".heic")
+                  ? `https://wsrv.nl/?url=${encodeURIComponent(drama.series_cover)}&output=jpg`
                   : drama.series_cover}
                 alt={drama.series_title}
                 className="w-full max-w-[300px] mx-auto rounded-2xl shadow-2xl"
@@ -88,17 +95,17 @@ export default function MeloloDetailPage() {
                 <h1 className="text-3xl md:text-4xl font-bold font-display gradient-text mb-4">
                   {drama.series_title}
                 </h1>
-                
+
                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                   <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5">
                     <Play className="w-4 h-4" />
                     <span>{drama.episode_cnt} Episode</span>
                   </div>
                 </div>
               </div>
 
-               {/* Description */}
-               <div className="glass rounded-xl p-4">
+              {/* Description */}
+              <div className="glass rounded-xl p-4">
                 <h3 className="font-semibold text-foreground mb-2">Sinopsis</h3>
                 <p className="text-muted-foreground leading-relaxed">
                   {drama.series_intro}
@@ -131,7 +138,7 @@ function DetailSkeleton() {
     <main className="min-h-screen pt-24 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
-          <Skeleton className="aspect-[2/3] w-full max-w-[300px] rounded-2xl" />
+          <Skeleton className="aspect-[2/3] w-full max-w-[300px] mx-auto rounded-2xl" />
           <div className="space-y-4">
             <Skeleton className="h-10 w-3/4" />
             <Skeleton className="h-6 w-1/2" />

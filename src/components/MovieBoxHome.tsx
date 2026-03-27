@@ -1,6 +1,7 @@
 "use client";
 
-import { useMovieBoxHome, useMovieBoxTrending, useMovieBoxPopular, useMovieBoxNowPlaying } from "@/hooks/useMovieBox";
+import { useMovieBoxHome, useMovieBoxTrending, useMovieBoxPopular, useMovieBoxNowPlaying, fetchMovieBoxDetail } from "@/hooks/useMovieBox";
+import { useQueryClient } from "@tanstack/react-query";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
 import { ExploreMovieBox } from "./ExploreMovieBox";
@@ -10,7 +11,7 @@ const GRID_CLASS = "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-
 
 function MovieSectionSkeleton() {
     return (
-        <section className="mt-8 space-y-4">
+        <section className="space-y-4">
             <div className="h-7 w-48 bg-white/10 rounded-lg animate-pulse" />
             <div className={GRID_CLASS}>
                 {Array.from({ length: 9 }).map((_, i) => (
@@ -23,13 +24,14 @@ function MovieSectionSkeleton() {
 
 function LatestSection() {
     const { data: home, isLoading } = useMovieBoxHome();
+    const queryClient = useQueryClient();
 
     if (isLoading) return <MovieSectionSkeleton />;
 
     const items = (home?.data || []).slice(0, 18);
 
     return (
-        <section className="mt-8">
+        <section>
             <div className="flex items-center gap-2 mb-4">
                 <Film className="w-5 h-5 text-primary" />
                 <h2 className="text-xl font-bold">Upload Terbaru</h2>
@@ -43,6 +45,13 @@ function LatestSection() {
                         cover={movie.poster}
                         link={`/detail/moviebox/${movie.id}`}
                         episodes={movie.year ? parseInt(movie.year) : 0}
+                        onPrefetch={() => {
+                            queryClient.prefetchQuery({
+                                queryKey: ["moviebox", "detail", String(movie.id)],
+                                queryFn: () => fetchMovieBoxDetail(String(movie.id)),
+                                staleTime: 1000 * 60 * 10,
+                            });
+                        }}
                         index={idx}
                         topRightBadge={movie.rating ? { text: `⭐ ${movie.rating}`, isTransparent: true } : null}
                     />
@@ -54,13 +63,14 @@ function LatestSection() {
 
 function TrendingSection() {
     const { data: trending, isLoading } = useMovieBoxTrending();
+    const queryClient = useQueryClient();
 
     if (isLoading) return <MovieSectionSkeleton />;
 
     const items = (trending?.data || []).slice(0, 18);
 
     return (
-        <section className="mt-8">
+        <section>
             <div className="flex items-center gap-2 mb-4">
                 <Trophy className="w-5 h-5 text-yellow-500" />
                 <h2 className="text-xl font-bold">Rating Tertinggi</h2>
@@ -74,6 +84,13 @@ function TrendingSection() {
                         cover={movie.poster}
                         link={`/detail/moviebox/${movie.id}`}
                         episodes={movie.year ? parseInt(movie.year) : 0}
+                        onPrefetch={() => {
+                            queryClient.prefetchQuery({
+                                queryKey: ["moviebox", "detail", String(movie.id)],
+                                queryFn: () => fetchMovieBoxDetail(String(movie.id)),
+                                staleTime: 1000 * 60 * 10,
+                            });
+                        }}
                         index={idx}
                         topRightBadge={movie.rating ? { text: `⭐ ${movie.rating}`, isTransparent: true } : null}
                     />
@@ -85,13 +102,14 @@ function TrendingSection() {
 
 function PopularSection() {
     const { data: popular, isLoading } = useMovieBoxPopular();
+    const queryClient = useQueryClient();
 
     if (isLoading) return <MovieSectionSkeleton />;
 
     const items = (popular?.data || []).slice(0, 18);
 
     return (
-        <section className="mt-8">
+        <section>
             <div className="flex items-center gap-2 mb-4">
                 <Star className="w-5 h-5 text-purple-500" />
                 <h2 className="text-xl font-bold">Paling Populer</h2>
@@ -105,6 +123,13 @@ function PopularSection() {
                         cover={movie.poster}
                         link={`/detail/moviebox/${movie.id}`}
                         episodes={movie.year ? parseInt(movie.year) : 0}
+                        onPrefetch={() => {
+                            queryClient.prefetchQuery({
+                                queryKey: ["moviebox", "detail", String(movie.id)],
+                                queryFn: () => fetchMovieBoxDetail(String(movie.id)),
+                                staleTime: 1000 * 60 * 10,
+                            });
+                        }}
                         index={idx}
                         topRightBadge={movie.rating ? { text: `⭐ ${movie.rating}`, isTransparent: true } : null}
                     />
@@ -116,6 +141,7 @@ function PopularSection() {
 
 function NowPlayingSection() {
     const { data: nowPlaying, isLoading } = useMovieBoxNowPlaying();
+    const queryClient = useQueryClient();
 
     if (isLoading) return <MovieSectionSkeleton />;
 
@@ -136,6 +162,13 @@ function NowPlayingSection() {
                         cover={movie.poster}
                         link={`/detail/moviebox/${movie.id}`}
                         episodes={movie.year ? parseInt(movie.year) : 0}
+                        onPrefetch={() => {
+                            queryClient.prefetchQuery({
+                                queryKey: ["moviebox", "detail", String(movie.id)],
+                                queryFn: () => fetchMovieBoxDetail(String(movie.id)),
+                                staleTime: 1000 * 60 * 10,
+                            });
+                        }}
                         index={idx}
                         topRightBadge={movie.rating ? { text: `Now`, color: "#22c55e" } : null}
                     />

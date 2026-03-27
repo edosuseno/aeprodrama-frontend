@@ -49,10 +49,14 @@ export function useShortMaxSearch(query: string) {
     });
 }
 
+export async function fetchShortMaxDetail(shortPlayId: string): Promise<ShortMaxDramaDetail> {
+    return fetchJson<ShortMaxDramaDetail>(`/api/shortmax/detail?shortPlayId=${shortPlayId}`);
+}
+
 export function useShortMaxDetail(shortPlayId: string) {
     return useQuery<ShortMaxDramaDetail>({
         queryKey: ["shortmax", "detail", shortPlayId],
-        queryFn: () => fetchJson<ShortMaxDramaDetail>(`/api/shortmax/detail?shortPlayId=${shortPlayId}`),
+        queryFn: () => fetchShortMaxDetail(shortPlayId),
         enabled: !!shortPlayId,
         staleTime: 10 * 60 * 1000,
     });

@@ -1,6 +1,7 @@
 "use client";
 
-import { useFlickReelsForYou, useFlickReelsLatest, useFlickReelsHotRank } from "@/hooks/useFlickReels";
+import { useFlickReelsForYou, useFlickReelsLatest, useFlickReelsHotRank, fetchFlickReelsDetail } from "@/hooks/useFlickReels";
+import { useQueryClient } from "@tanstack/react-query";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
 import { AlertCircle } from "lucide-react";
@@ -55,6 +56,8 @@ export function FlickReelsHome() {
     refetch: refetchHotRank
   } = useFlickReelsHotRank();
 
+  const queryClient = useQueryClient();
+
   if (errorForYou || errorLatest || errorHotRank) {
     return (
       <UnifiedErrorDisplay
@@ -92,6 +95,13 @@ export function FlickReelsHome() {
                   cover={item.cover}
                   link={`/detail/flickreels/${item.playlet_id}`}
                   episodes={item.upload_num ? parseInt(item.upload_num) : 0}
+                  onPrefetch={() => {
+                    queryClient.prefetchQuery({
+                      queryKey: ["flickreels", "detail", String(item.playlet_id)],
+                      queryFn: () => fetchFlickReelsDetail(String(item.playlet_id)),
+                      staleTime: 1000 * 60 * 10,
+                    });
+                  }}
                   topRightBadge={item.hot_num ? { text: item.hot_num, isTransparent: true } : null}
                   topLeftBadge={item.status === "2" ? { text: "Ongoing", color: "#EAB308" } : null}
                 />
@@ -119,6 +129,13 @@ export function FlickReelsHome() {
                     cover={item.cover}
                     link={`/detail/flickreels/${item.playlet_id}`}
                     episodes={item.upload_num ? parseInt(item.upload_num) : 0}
+                    onPrefetch={() => {
+                      queryClient.prefetchQuery({
+                        queryKey: ["flickreels", "detail", String(item.playlet_id)],
+                        queryFn: () => fetchFlickReelsDetail(String(item.playlet_id)),
+                        staleTime: 1000 * 60 * 10,
+                      });
+                    }}
                     topRightBadge={item.hot_num ? { text: item.hot_num, isTransparent: true } : null}
                   />
                 </div>
@@ -150,6 +167,13 @@ export function FlickReelsHome() {
                   cover={item.cover}
                   link={`/detail/flickreels/${item.playlet_id}`}
                   episodes={item.upload_num ? parseInt(item.upload_num) : 0}
+                  onPrefetch={() => {
+                    queryClient.prefetchQuery({
+                      queryKey: ["flickreels", "detail", String(item.playlet_id)],
+                      queryFn: () => fetchFlickReelsDetail(String(item.playlet_id)),
+                      staleTime: 1000 * 60 * 10,
+                    });
+                  }}
                   topRightBadge={null}
                 />
               ))}

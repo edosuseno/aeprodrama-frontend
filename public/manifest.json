@@ -1,0 +1,23 @@
+{
+  "name": "AE DRAMA - Pusat Drama",
+  "short_name": "AE DRAMA",
+  "description": "Nonton drama pendek gratis dan tanpa iklan.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#e11d48",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icon-192x192.png?v=4",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512x512.png?v=4",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

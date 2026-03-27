@@ -19,6 +19,9 @@ export default function ShortMaxWatchPage() {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
 
+    // Ref untuk area swipe vertikal (mobile)
+    const swipeContainerRef = useRef<HTMLDivElement>(null);
+
     useEffect(() => {
         const ep = searchParams.get("ep");
         if (ep) {
@@ -43,9 +46,11 @@ export default function ShortMaxWatchPage() {
         console.log(`[ShortMax Player] ${msg}`);
     };
 
-    // Konversi URL video ke proxy Next.js agar tidak kena CORS
+    // Konversi URL video ke proxy Backend untuk mencegah HLS.js decryption errors
     const buildProxyUrl = (videoUrl: string): string => {
-        return `/api/shortmax/proxy?url=${encodeURIComponent(videoUrl)}`;
+        const rawBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5001';
+        const baseUrl = rawBase.endsWith('/api') ? rawBase.replace('/api', '') : rawBase;
+        return `${baseUrl}/api/shortmax/proxy?url=${encodeURIComponent(videoUrl)}`;
     };
 
     useEffect(() => {
@@ -67,7 +72,15 @@ export default function ShortMaxWatchPage() {
                 // Proxy URL agar tidak kena CORS dari akamai
                 const proxyUrl = buildProxyUrl(rawVideoUrl);
                 addLog(`HLS via proxy: ${proxyUrl}`);
-                const hls = new Hls({ enableWorker: false });
+                const hls = new Hls({
+                    enableWorker: false,
+                    fragLoadingMaxRetry: 3,
+                    manifestLoadingMaxRetry: 3,
+                    levelLoadingMaxRetry: 3,
+                    xhrSetup: (xhr) => {
+                        xhr.withCredentials = false;
+                    }
+                });
                 hlsRef.current = hls;
                 hls.loadSource(proxyUrl);
                 hls.attachMedia(video);
@@ -78,8 +91,23 @@ export default function ShortMaxWatchPage() {
                 hls.on(Hls.Events.ERROR, (_, data) => {
                     addLog(`HLS Error [${data.type}]: ${data.details}`);
                     if (data.fatal) {
-                        addLog(`HLS Fatal Error - menghentikan.`);
-                        hls.destroy();
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                addLog("Network error fatal, mencoba recover...");
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                addLog("Media error fatal, mencoba recover...");
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                addLog("HLS Fatal Error tidak tertangani, menghentikan.");
+                                hls.destroy();
+                                break;
+                        }
+                    } else if (data.details === 'fragParsingError') {
+                        // Jika parsing error tapi tidak fatal (muncul di log), coba recover
+                        hls.recoverMediaError();
                     }
                 });
             } else if (isHlsUrl && (video as any).canPlayType('application/vnd.apple.mpegurl')) {
@@ -105,6 +133,26 @@ export default function ShortMaxWatchPage() {
         };
     }, [episodeData?.episode?.videoUrl]);
 
+    // Auto-fullscreen pada mobile saat video mulai diputar
+    useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
+        const handlePlay = () => {
+            if (window.innerWidth < 768 && video.requestFullscreen) {
+                video.requestFullscreen().catch(() => {
+                    // Fallback untuk iOS
+                    if ((video as any).webkitEnterFullscreen) {
+                        (video as any).webkitEnterFullscreen();
+                    }
+                });
+            }
+        };
+
+        video.addEventListener('play', handlePlay);
+        return () => video.removeEventListener('play', handlePlay);
+    }, []);
+
     const goToEpisode = (ep: number) => {
         setCurrentEpisode(ep);
         router.replace(`/watch/shortmax/${shortPlayId}?ep=${ep}`, { scroll: false });
@@ -113,6 +161,43 @@ export default function ShortMaxWatchPage() {
 
     const totalEpisodes = detailData?.totalEpisodes || 0;
     const dramaTitle = detailData?.title || "Loading...";
+
+    // Swipe vertikal untuk navigasi episode di mobile
+    useEffect(() => {
+        const el = swipeContainerRef.current;
+        if (!el) return;
+
+        let touchStartY = 0;
+
+        const handleTouchStart = (e: TouchEvent) => {
+            touchStartY = e.touches[0].clientY;
+        };
+
+        const handleTouchEnd = (e: TouchEvent) => {
+            // Hanya aktif di mobile
+            if (window.innerWidth >= 768) return;
+
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaY = touchStartY - touchEndY;
+
+            // Threshold 80px agar tidak konflik dengan tap kontrol video
+            if (deltaY > 80) {
+                // Swipe ke atas → episode berikutnya
+                if (currentEpisode < totalEpisodes) goToEpisode(currentEpisode + 1);
+            } else if (deltaY < -80) {
+                // Swipe ke bawah → episode sebelumnya
+                if (currentEpisode > 1) goToEpisode(currentEpisode - 1);
+            }
+        };
+
+        el.addEventListener('touchstart', handleTouchStart, { passive: true });
+        el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+        return () => {
+            el.removeEventListener('touchstart', handleTouchStart);
+            el.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [currentEpisode, totalEpisodes]);
 
     return (
         <main className="fixed inset-0 bg-black flex flex-col">
@@ -146,7 +231,7 @@ export default function ShortMaxWatchPage() {
                 </div>
             </div>
 
-            <div className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
+            <div ref={swipeContainerRef} className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
                 <div className="relative w-full h-full flex items-center justify-center">
                     {(loadingDetail || loadingEpisode) && (
                         <div className="absolute inset-0 flex items-center justify-center z-20">
@@ -171,7 +256,6 @@ export default function ShortMaxWatchPage() {
                         ref={videoRef}
                         className="w-full h-full object-contain max-h-[100dvh]"
                         controls
-                        playsInline
                         autoPlay
                         onEnded={handleVideoEnded}
                     />

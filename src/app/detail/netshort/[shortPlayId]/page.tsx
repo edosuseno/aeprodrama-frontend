@@ -2,6 +2,7 @@
 
 import { UnifiedErrorDisplay } from "@/components/UnifiedErrorDisplay";
 import { useNetShortDetail } from "@/hooks/useNetShort";
+import { usePlatform } from "@/hooks/usePlatform";
 import { useQuery } from "@tanstack/react-query";
 import { Play, ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,6 +15,12 @@ export default function NetShortDetailPage() {
   const router = useRouter();
 
   const { data, isLoading, error } = useNetShortDetail(shortPlayId || "");
+  const { setPlatform } = usePlatform();
+
+  const handleBack = () => {
+    setPlatform("netshort");
+    router.push("/");
+  };
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -22,10 +29,10 @@ export default function NetShortDetailPage() {
   if (error || !data?.success) {
     return (
       <div className="min-h-screen pt-24 px-4">
-        <UnifiedErrorDisplay 
+        <UnifiedErrorDisplay
           title="Drama tidak ditemukan"
           message="Tidak dapat memuat detail drama. Silakan coba lagi atau kembali ke beranda."
-          onRetry={() => router.push('/')}
+          onRetry={handleBack}
           retryLabel="Kembali ke Beranda"
         />
       </div>
@@ -49,7 +56,7 @@ export default function NetShortDetailPage() {
         <div className="relative max-w-7xl mx-auto px-4 py-8">
           {/* Back Button */}
           <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -137,7 +144,7 @@ function DetailSkeleton() {
     <main className="min-h-screen pt-24 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
-          <Skeleton className="aspect-[2/3] w-full max-w-[300px] rounded-2xl" />
+          <Skeleton className="aspect-[2/3] w-full max-w-[300px] mx-auto rounded-2xl" />
           <div className="space-y-4">
             <Skeleton className="h-10 w-3/4" />
             <Skeleton className="h-6 w-1/2" />

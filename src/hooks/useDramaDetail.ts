@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import type { DramaDetailResponse, Episode } from "@/types/drama";
 
-const API_BASE = "/api/dramabox";
+export const API_BASE = "/api/dramabox";
 
 import { decryptData } from "@/lib/crypto";
 
-async function fetchDramaDetail(bookId: string): Promise<DramaDetailResponse> {
+export async function fetchDramaDetail(bookId: string): Promise<DramaDetailResponse> {
   const response = await fetch(`${API_BASE}/detail/${bookId}?lang=in`);
   if (!response.ok) {
     throw new Error("Failed to fetch drama detail");

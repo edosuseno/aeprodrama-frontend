@@ -2,6 +2,7 @@
 
 import { UnifiedErrorDisplay } from "@/components/UnifiedErrorDisplay";
 import { useDramaDetail } from "@/hooks/useDramaDetail";
+import { usePlatform } from "@/hooks/usePlatform";
 import { Play, Calendar, ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
@@ -23,6 +24,12 @@ export default function DramaBoxDetailPage() {
   const bookId = params.bookId;
   const router = useRouter();
   const { data, isLoading, error } = useDramaDetail(bookId || "");
+  const { setPlatform } = usePlatform();
+
+  const handleBack = () => {
+    setPlatform("dramabox");
+    router.push("/");
+  };
 
   if (isLoading) {
     return <DetailSkeleton />;
@@ -60,7 +67,7 @@ export default function DramaBoxDetailPage() {
         <UnifiedErrorDisplay
           title="Drama tidak ditemukan"
           message="Tidak dapat memuat detail drama. Silakan coba lagi atau kembali ke beranda."
-          onRetry={() => router.push('/')}
+          onRetry={handleBack}
           retryLabel="Kembali ke Beranda"
         />
       </div>
@@ -84,7 +91,7 @@ export default function DramaBoxDetailPage() {
         <div className="relative max-w-7xl mx-auto px-4 py-8">
           {/* Back Button */}
           <button
-            onClick={() => router.back()}
+            onClick={handleBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
             <ChevronLeft className="w-5 h-5" />
@@ -173,7 +180,7 @@ function DetailSkeleton() {
     <main className="min-h-screen pt-24 px-4">
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
-          <Skeleton className="aspect-[2/3] w-full max-w-[300px] rounded-2xl" />
+          <Skeleton className="aspect-[2/3] w-full max-w-[300px] mx-auto rounded-2xl" />
           <div className="space-y-4">
             <Skeleton className="h-10 w-3/4" />
             <Skeleton className="h-6 w-1/2" />

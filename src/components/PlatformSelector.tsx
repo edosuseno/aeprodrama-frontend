@@ -4,11 +4,14 @@ import Image from "next/image";
 import { ChevronDown } from "lucide-react";
 import { usePlatform, type PlatformInfo } from "@/hooks/usePlatform";
 import { useState, useRef, useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 
 export function PlatformSelector() {
   const { currentPlatform, setPlatform, platforms, getPlatformInfo } = usePlatform();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const router = useRouter();
   
   const currentPlatformInfo = getPlatformInfo(currentPlatform);
 
@@ -57,6 +60,9 @@ export function PlatformSelector() {
                 onClick={() => {
                   setPlatform(platform.id);
                   setIsOpen(false);
+                  if (pathname !== "/") {
+                    router.push("/");
+                  }
                 }}
                 className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
                   currentPlatform === platform.id 
@@ -90,7 +96,12 @@ export function PlatformSelector() {
             key={platform.id}
             platform={platform}
             isActive={currentPlatform === platform.id}
-            onClick={() => setPlatform(platform.id)}
+            onClick={() => {
+              setPlatform(platform.id);
+              if (pathname !== "/") {
+                router.push("/");
+              }
+            }}
           />
         ))}
       </div>

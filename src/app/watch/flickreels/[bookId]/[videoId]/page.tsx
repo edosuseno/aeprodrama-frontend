@@ -26,6 +26,9 @@ export default function FlickReelsWatchPage() {
   // Track if this is initial load (should wait for warmup) vs auto-next (should be seamless)
   const isInitialLoad = useRef(true);
 
+  // Ref untuk area swipe vertikal (mobile)
+  const swipeContainerRef = useRef<HTMLDivElement>(null);
+
   const { data, isLoading, error, refetch } = useFlickReelsDetail(bookId);
 
   // Sync state if URL param changes (e.g. back button)
@@ -139,6 +142,65 @@ export default function FlickReelsWatchPage() {
     }
   };
 
+  // Auto-fullscreen pada mobile saat video mulai diputar
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => {
+      if (window.innerWidth < 768 && video.requestFullscreen) {
+        video.requestFullscreen().catch(() => {
+          // Fallback untuk iOS
+          if ((video as any).webkitEnterFullscreen) {
+            (video as any).webkitEnterFullscreen();
+          }
+        });
+      }
+    };
+
+    video.addEventListener('play', handlePlay);
+    return () => video.removeEventListener('play', handlePlay);
+  }, []);
+
+  // Swipe vertikal untuk navigasi episode di mobile
+  useEffect(() => {
+    const el = swipeContainerRef.current;
+    if (!el) return;
+
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      // Hanya aktif di mobile
+      if (window.innerWidth >= 768) return;
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaY = touchStartY - touchEndY;
+
+      // Threshold 80px agar tidak konflik dengan tap kontrol video
+      if (deltaY > 80) {
+        // Swipe ke atas → episode berikutnya
+        const nextEp = episodes[currentIndex + 1];
+        if (nextEp) handleEpisodeChange(nextEp.id, true);
+      } else if (deltaY < -80) {
+        // Swipe ke bawah → episode sebelumnya
+        const prevEp = episodes[currentIndex - 1];
+        if (prevEp) handleEpisodeChange(prevEp.id, true);
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [currentIndex, episodes, handleEpisodeChange]);
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center space-y-4">
@@ -202,7 +264,7 @@ export default function FlickReelsWatchPage() {
       </div>
 
       {/* Main Video Area */}
-      <div className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
+      <div ref={swipeContainerRef} className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
         <div className="relative w-full h-full flex items-center justify-center">
           {/* Always render video element to preserve fullscreen state */}
           <video

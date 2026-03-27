@@ -1,6 +1,7 @@
 "use client";
 
-import { useFreeReelsForYou, useFreeReelsHome, useFreeReelsAnime, FreeReelsModule, FreeReelsItem } from "@/hooks/useFreeReels";
+import { useFreeReelsForYou, useFreeReelsHome, useFreeReelsAnime, FreeReelsModule, FreeReelsItem, fetchFreeReelsDetail } from "@/hooks/useFreeReels";
+import { useQueryClient } from "@tanstack/react-query";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
 import { UnifiedErrorDisplay } from "./UnifiedErrorDisplay";
@@ -46,6 +47,7 @@ export function FreeReelsHome() {
   const { data: forYouData, isLoading: loadingForYou, error: errorForYou, refetch: refetchForYou } = useFreeReelsForYou();
   const { data: homeData, isLoading: loadingHome, error: errorHome, refetch: refetchHome } = useFreeReelsHome();
   const { data: animeData, isLoading: loadingAnime, error: errorAnime, refetch: refetchAnime } = useFreeReelsAnime();
+  const queryClient = useQueryClient();
 
   if (errorForYou && errorHome && errorAnime) {
     return (
@@ -85,6 +87,13 @@ export function FreeReelsHome() {
             cover={item.cover}
             link={`/detail/freereels/${item.key}`}
             episodes={item.episode_count || 0}
+            onPrefetch={() => {
+              queryClient.prefetchQuery({
+                queryKey: ["freereels", "detail", String(item.key)],
+                queryFn: () => fetchFreeReelsDetail(String(item.key)),
+                staleTime: 1000 * 60 * 10,
+              });
+            }}
             topRightBadge={item.follow_count ? { text: `${(item.follow_count / 1000).toFixed(1)}k`, isTransparent: true } : null}
             index={idx}
           />

@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useMeloloDetail, useMeloloStream } from "@/hooks/useMelolo";
+import { useHistoryStore } from "@/hooks/useHistory";
 import { ChevronLeft, ChevronRight, Loader2, List, AlertCircle, Settings } from "lucide-react";
 import Link from "next/link";
 import {
@@ -30,6 +31,9 @@ export default function MeloloWatchPage() {
   // Internal state for videoId to prevent page unmount/remount on navigation
   const [currentVideoId, setCurrentVideoId] = useState(params.videoId || "");
 
+  // Ref untuk area swipe vertikal (mobile)
+  const swipeContainerRef = useRef<HTMLDivElement>(null);
+
   // Sync state with params if they change externally (e.g. back button)
   useEffect(() => {
     if (params.videoId && params.videoId !== currentVideoId) {
@@ -40,6 +44,7 @@ export default function MeloloWatchPage() {
   // Keep previous data to avoid unmounting video during transitions
   const { data: detailData, isLoading: detailLoading } = useMeloloDetail(params.bookId || "");
   const { data: streamData, isLoading: streamLoading, isFetching: streamFetching } = useMeloloStream(currentVideoId);
+  const { addToHistory } = useHistoryStore();
 
   const drama = detailData?.data?.video_data;
   const rawVideoModel = streamData?.data?.video_model;
@@ -48,7 +53,8 @@ export default function MeloloWatchPage() {
   const qualities = useMemo(() => {
     if (!rawVideoModel) return [];
     try {
-      const parsedModel = JSON.parse(rawVideoModel);
+      // Jika data sudah berbentuk objek, jangan di-parse lagi
+      const parsedModel = typeof rawVideoModel === 'string' ? JSON.parse(rawVideoModel) : rawVideoModel;
       const videoList = parsedModel.video_list;
       if (!videoList) return [];
 
@@ -115,6 +121,20 @@ export default function MeloloWatchPage() {
   const currentEpisodeIndex = drama?.video_list?.findIndex(v => v.vid === currentVideoId) ?? -1;
   const totalEpisodes = drama?.video_list?.length || 0;
 
+  // Fitur Riwayat Terisolasi
+  useEffect(() => {
+    if (drama && currentVideoId && currentEpisodeIndex !== -1) {
+      addToHistory({
+        id: params.bookId || "",
+        title: drama.series_title || "Melolo",
+        poster: drama.series_cover || drama.cover || "",
+        platform: "melolo",
+        episodeNumber: currentEpisodeIndex + 1,
+        link: `/watch/melolo/${params.bookId}/${currentVideoId}`
+      });
+    }
+  }, [params.bookId, currentVideoId, drama, addToHistory, currentEpisodeIndex]);
+
   const handleEpisodeChange = (index: number) => {
     if (!drama?.video_list?.[index]) return;
     const nextVideoId = drama.video_list[index].vid;
@@ -134,6 +154,47 @@ export default function MeloloWatchPage() {
       handleEpisodeChange(currentEpisodeIndex + 1);
     }
   };
+
+  // Swipe vertikal untuk navigasi episode di mobile
+  useEffect(() => {
+    const el = swipeContainerRef.current;
+    if (!el) return;
+
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      // Hanya aktif di mobile
+      if (window.innerWidth >= 768) return;
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaY = touchStartY - touchEndY;
+
+      // Threshold 80px agar tidak konflik dengan tap kontrol video
+      if (deltaY > 80) {
+        // Swipe ke atas → episode berikutnya
+        if (currentEpisodeIndex !== -1 && currentEpisodeIndex < totalEpisodes - 1) {
+          handleEpisodeChange(currentEpisodeIndex + 1);
+        }
+      } else if (deltaY < -80) {
+        // Swipe ke bawah → episode sebelumnya
+        if (currentEpisodeIndex > 0) {
+          handleEpisodeChange(currentEpisodeIndex - 1);
+        }
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [currentEpisodeIndex, totalEpisodes, handleEpisodeChange]);
 
   // Guard: If logic fails completely and we have no data after loading
   if (!detailLoading && !drama) {
@@ -207,7 +268,7 @@ export default function MeloloWatchPage() {
       </div>
 
       {/* Video Player */}
-      <div className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
+      <div ref={swipeContainerRef} className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
         <div className="relative w-full h-full flex items-center justify-center">
           <HlsVideoPlayer
             src={selectedQuality?.url || ""}
@@ -320,35 +381,14 @@ function HlsVideoPlayer({
     };
   }, [src]);
 
-  // Auto-fullscreen on mobile when video starts playing
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handlePlay = () => {
-      // Check if on mobile (screen width < 768px)
-      if (window.innerWidth < 768 && video.requestFullscreen) {
-        video.requestFullscreen().catch(() => {
-          // Fallback for iOS
-          if ((video as any).webkitEnterFullscreen) {
-            (video as any).webkitEnterFullscreen();
-          }
-        });
-      }
-    };
-
-    video.addEventListener('play', handlePlay);
-    return () => video.removeEventListener('play', handlePlay);
-  }, []);
-
   return (
     <video
       ref={videoRef}
       controls
       className={className}
       onEnded={onEnded}
-      playsInline
       autoPlay
+      playsInline
     />
   );
 }

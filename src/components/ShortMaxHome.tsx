@@ -1,6 +1,7 @@
 "use client";
 
-import { useShortMaxLatest, useShortMaxRekomendasi } from "@/hooks/useShortMax";
+import { useShortMaxLatest, useShortMaxRekomendasi, fetchShortMaxDetail } from "@/hooks/useShortMax";
+import { useQueryClient } from "@tanstack/react-query";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { UnifiedErrorDisplay } from "./UnifiedErrorDisplay";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
@@ -8,6 +9,7 @@ import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
 export function ShortMaxHome() {
     const { data: latestData, isLoading: loadingLatest, error: errorLatest, refetch: refetchLatest } = useShortMaxLatest();
     const { data: rekomendasiData, isLoading: loadingRekomendasi, error: errorRekomendasi, refetch: refetchRekomendasi } = useShortMaxRekomendasi();
+    const queryClient = useQueryClient();
 
     const isLoading = loadingLatest || loadingRekomendasi;
 
@@ -63,6 +65,13 @@ export function ShortMaxHome() {
                                 cover={drama.cover}
                                 link={`/detail/shortmax/${drama.shortPlayId}`}
                                 episodes={drama.totalEpisodes}
+                                onPrefetch={() => {
+                                    queryClient.prefetchQuery({
+                                        queryKey: ["shortmax", "detail", String(drama.shortPlayId)],
+                                        queryFn: () => fetchShortMaxDetail(String(drama.shortPlayId)),
+                                        staleTime: 1000 * 60 * 10,
+                                    });
+                                }}
                                 topLeftBadge={drama.label ? {
                                     text: drama.label,
                                     color: "#E52E2E"
@@ -90,6 +99,13 @@ export function ShortMaxHome() {
                                 cover={drama.cover}
                                 link={`/detail/shortmax/${drama.shortPlayId}`}
                                 episodes={drama.totalEpisodes}
+                                onPrefetch={() => {
+                                    queryClient.prefetchQuery({
+                                        queryKey: ["shortmax", "detail", String(drama.shortPlayId)],
+                                        queryFn: () => fetchShortMaxDetail(String(drama.shortPlayId)),
+                                        staleTime: 1000 * 60 * 10,
+                                    });
+                                }}
                             />
                         ))}
                     </div>

@@ -53,3 +53,15 @@ export function encryptedResponse(data: any, status = 200) {
   const encrypted = encryptData(data);
   return NextResponse.json({ success: true, data: encrypted }, { status });
 }
+
+/**
+ * Memproksikan gambar melalui wsrv.nl untuk optimasi (WebP + Resize)
+ * Membantu mempercepat loading poster di mobile
+ */
+export function getProxiedImage(url: string, width: number = 400) {
+  if (!url) return "";
+  if (url.includes("wsrv.nl")) return url;
+  
+  // Gunakan wsrv.nl: output=webp untuk kompresi maksimal, w=width untuk resize
+  return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&output=webp&q=80`;
+}

@@ -25,8 +25,8 @@ export function useReelShortSearch(query: string) {
   return useQuery({
     queryKey: ["reelshort", "search", normalizedQuery],
     queryFn: async () => {
-      if (!normalizedQuery) return { success: true, data: [] };
-      return fetchJson<ReelShortSearchResponse>(`${API_BASE}/search?query=${encodeURIComponent(normalizedQuery)}`);
+      if (!normalizedQuery) return [];
+      return fetchJson<any[]>(`${API_BASE}/search?query=${encodeURIComponent(normalizedQuery)}`);
     },
     enabled: normalizedQuery.length > 0,
     staleTime: 1000 * 60 * 5,

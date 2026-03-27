@@ -22,11 +22,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
         }),
         defaultOptions: {
           queries: {
-            // staleTime: 60 * 1000, // sebelumnya cuma ini sendiri
-            staleTime: 5 * 60 * 1000, // Increased to 5 mins
-            refetchOnWindowFocus: false, // Disable auto refresh on focus
-            refetchOnMount: false, // Disable auto refresh on mount
-            refetchOnReconnect: false, // Disable auto refresh on network reconnect
+            staleTime: 5 * 60 * 1000, // Data dianggap segar selama 5 menit
+            gcTime: 24 * 60 * 60 * 1000, // Simpan data di memori selama 24 jam
+            refetchOnWindowFocus: false,
+            refetchOnMount: false,
+            refetchOnReconnect: false,
+            retry: 1, // Batasi retry agar user tidak menunggu lama jika error
           },
         },
       })

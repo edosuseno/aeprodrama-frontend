@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState, useEffect, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useEpisodes, useDramaDetail } from "@/hooks/useDramaDetail";
+import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
 import { ChevronLeft, Loader2, List, AlertCircle, ChevronRight } from "lucide-react";
 import Hls from "hls.js";
@@ -10,14 +11,19 @@ import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
 export default function DramaBoxWatchPage() {
   const { bookId } = useParams<{ bookId: string }>();
+  const searchParams = useSearchParams();
 
   // State
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [showList, setShowList] = useState(false);
 
+  // Ref untuk area swipe vertikal (mobile)
+  const swipeContainerRef = useRef<HTMLDivElement>(null);
+
   // Fetch Data
   const { data: episodes, isLoading: episodesLoading } = useEpisodes(bookId);
   const { data: detail } = useDramaDetail(bookId);
+  const { addToHistory } = useHistoryStore();
 
   // Normalize Detail Data
   const normalizedDetail = useMemo(() => {
@@ -36,6 +42,30 @@ export default function DramaBoxWatchPage() {
 
   const currentEpisode = sortedEpisodes[currentEpisodeIndex];
 
+  // Sync with URL ep param
+  useEffect(() => {
+    const ep = searchParams.get("ep");
+    if (ep && sortedEpisodes.length > 0) {
+      const idx = sortedEpisodes.findIndex(e => e.chapterIndex.toString() === ep);
+      if (idx !== -1) setCurrentEpisodeIndex(idx);
+    }
+  }, [searchParams, sortedEpisodes]);
+
+  useEffect(() => {
+    if (detail && currentEpisode) {
+      const anyDetail = detail as any;
+      const epNum = currentEpisode?.chapterIndex || currentEpisodeIndex + 1;
+      addToHistory({
+        id: bookId,
+        title: anyDetail.bookName || anyDetail.data?.book?.bookName || "DramaBox",
+        poster: anyDetail.cover || anyDetail.coverWap || anyDetail.data?.book?.cover || "",
+        platform: "dramabox",
+        episodeNumber: epNum,
+        link: `/watch/dramabox/${bookId}?ep=${epNum}`
+      });
+    }
+  }, [bookId, currentEpisode, detail, addToHistory, currentEpisodeIndex]);
+
   // Helper: Get Video URL
   const videoUrl = useMemo(() => {
     if (!currentEpisode) return "";
@@ -51,7 +81,7 @@ export default function DramaBoxWatchPage() {
 
     // FALLBACK: If no direct URL, use our Backend Resolver
     if (!finalUrl && bookId && currentEpisode) {
-      finalUrl = `/api/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${currentEpisode.chapterId || ""}&ep=${currentEpisode.chapterIndex || ""}`;
+      finalUrl = `/api/tools/resolve?source=dramabox&bookId=${bookId}&chapterId=${currentEpisode.chapterId || ""}&ep=${currentEpisode.chapterIndex || ""}`;
     }
 
     // USE PROXY to bypass CORS
@@ -79,7 +109,7 @@ export default function DramaBoxWatchPage() {
 
     // Prefetch after 2 seconds of current episode loading
     const timer = setTimeout(() => {
-      const prefetchUrl = `/api/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${nextEpisode.chapterId}&ep=${nextEpisode.chapterIndex}`;
+      const prefetchUrl = `/api/tools/resolve?source=dramabox&bookId=${bookId}&chapterId=${nextEpisode.chapterId}&ep=${nextEpisode.chapterIndex}`;
 
       // Silent prefetch (won't show in UI)
       fetch(prefetchUrl, { method: 'HEAD' }).catch(() => { });
@@ -87,6 +117,43 @@ export default function DramaBoxWatchPage() {
 
     return () => clearTimeout(timer);
   }, [currentEpisodeIndex, sortedEpisodes, bookId]);
+
+  // Swipe vertikal untuk navigasi episode di mobile
+  useEffect(() => {
+    const el = swipeContainerRef.current;
+    if (!el) return;
+
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      // Hanya aktif di mobile
+      if (window.innerWidth >= 768) return;
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaY = touchStartY - touchEndY;
+
+      // Threshold 80px agar tidak konflik dengan tap kontrol video
+      if (deltaY > 80) {
+        // Swipe ke atas → episode berikutnya
+        setCurrentEpisodeIndex((prev) => Math.min(sortedEpisodes.length - 1, prev + 1));
+      } else if (deltaY < -80) {
+        // Swipe ke bawah → episode sebelumnya
+        setCurrentEpisodeIndex((prev) => Math.max(0, prev - 1));
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [sortedEpisodes.length]);
 
   // Loading State
   // Don't show full screen loader if we have activeUrl (allow persistence for smooth transition)
@@ -139,7 +206,7 @@ export default function DramaBoxWatchPage() {
       </div>
 
       {/* 2. Video Player */}
-      <div className="flex-1 w-full h-full flex items-center justify-center bg-black relative group">
+      <div ref={swipeContainerRef} className="flex-1 w-full h-full flex items-center justify-center bg-black relative group">
         <HlsVideoPlayer
           src={activeUrl}
           poster={currentEpisode?.cover || normalizedDetail?.cover || ""}
@@ -219,18 +286,12 @@ function HlsVideoPlayer({ src, poster, onEnded }: { src: string; poster: string;
       });
       hls.loadSource(src);
       hls.attachMedia(video);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(e => console.log("Autoplay prevented:", e));
-      });
       hls.on(Hls.Events.ERROR, (event, data) => {
         if (data.fatal) console.log("HLS Fatal Error:", data);
       });
     } else {
       // Native support (Safari) or MP4
       video.src = src;
-      video.addEventListener("loadedmetadata", () => {
-        video.play().catch(e => console.log("Autoplay prevented:", e));
-      });
     }
 
     return () => {
@@ -238,36 +299,15 @@ function HlsVideoPlayer({ src, poster, onEnded }: { src: string; poster: string;
     };
   }, [src]);
 
-  // Auto-fullscreen on mobile when video starts playing
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handlePlay = () => {
-      // Check if on mobile (screen width < 768px)
-      if (window.innerWidth < 768 && video.requestFullscreen) {
-        video.requestFullscreen().catch(() => {
-          // Fallback for iOS
-          if ((video as any).webkitEnterFullscreen) {
-            (video as any).webkitEnterFullscreen();
-          }
-        });
-      }
-    };
-
-    video.addEventListener('play', handlePlay);
-    return () => video.removeEventListener('play', handlePlay);
-  }, []);
-
   return (
     <video
       ref={videoRef}
       controls
       autoPlay
+      playsInline
       className="w-full h-full object-contain max-h-[100dvh]"
       poster={poster}
       onEnded={onEnded}
-      playsInline
     />
   );
 }

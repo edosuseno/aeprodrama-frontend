@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
 import { Play, Flame } from "lucide-react";
 import { useReelShortHomepage } from "@/hooks/useReelShort";
+import { fetchReelShortDetail } from "@/app/detail/reelshort/[bookId]/page";
 import { BannerCarousel } from "./BannerCarousel";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { UnifiedErrorDisplay } from "./UnifiedErrorDisplay";
@@ -11,6 +13,7 @@ import type { ReelShortBook, ReelShortBanner } from "@/types/reelshort";
 
 export function ReelShortSection() {
   const { data, isLoading, error, refetch } = useReelShortHomepage();
+  const queryClient = useQueryClient();
 
   // Group content by sections
   const sections = useMemo(() => {
@@ -95,10 +98,10 @@ export function ReelShortSection() {
             {group.title}
           </h2>
 
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-5">
             {group.books
               .filter((book) => book.book_id && book.book_pic)
-              .slice(0, 18)
+              .slice(0, 6)
               .map((book, index) => (
                 <UnifiedMediaCard
                   key={book.book_id}
@@ -107,6 +110,13 @@ export function ReelShortSection() {
                   cover={book.book_pic}
                   link={`/detail/reelshort/${book.book_id}`}
                   episodes={book.chapter_count}
+                  onPrefetch={() => {
+                    queryClient.prefetchQuery({
+                      queryKey: ["reelshort", "detail", String(book.book_id)],
+                      queryFn: () => fetchReelShortDetail(String(book.book_id)),
+                      staleTime: 1000 * 60 * 10,
+                    });
+                  }}
                   topLeftBadge={book.book_mark?.text ? {
                     text: book.book_mark.text,
                     color: book.book_mark.color || "#E52E2E",
@@ -129,8 +139,8 @@ function SectionSkeleton() {
   return (
     <div>
       <div className="h-6 w-32 bg-muted/50 rounded animate-pulse mb-4" />
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-3 md:gap-5">
-        {Array.from({ length: 8 }).map((_, i) => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-5">
+        {Array.from({ length: 6 }).map((_, i) => (
           <div key={i}>
             <div className="aspect-[2/3] rounded-lg bg-muted/50 animate-pulse" />
             <div className="mt-1.5 h-3 bg-muted/50 rounded animate-pulse" />

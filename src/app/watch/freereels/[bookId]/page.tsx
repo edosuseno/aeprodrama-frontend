@@ -24,6 +24,9 @@ export default function FreeReelsWatchPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
 
+  // Ref untuk area swipe vertikal (mobile)
+  const swipeContainerRef = useRef<HTMLDivElement>(null);
+
   const { data, isLoading, error } = useFreeReelsDetail(bookId);
 
   // Sync state from URL params
@@ -284,6 +287,63 @@ export default function FreeReelsWatchPage() {
     }
   };
 
+  // Auto-fullscreen pada mobile saat video mulai diputar
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handlePlay = () => {
+      if (window.innerWidth < 768 && video.requestFullscreen) {
+        video.requestFullscreen().catch(() => {
+          // Fallback untuk iOS
+          if ((video as any).webkitEnterFullscreen) {
+            (video as any).webkitEnterFullscreen();
+          }
+        });
+      }
+    };
+
+    video.addEventListener('play', handlePlay);
+    return () => video.removeEventListener('play', handlePlay);
+  }, []);
+
+  // Swipe vertikal untuk navigasi episode di mobile
+  useEffect(() => {
+    const el = swipeContainerRef.current;
+    if (!el) return;
+
+    let touchStartY = 0;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      touchStartY = e.touches[0].clientY;
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      // Hanya aktif di mobile
+      if (window.innerWidth >= 768) return;
+
+      const touchEndY = e.changedTouches[0].clientY;
+      const deltaY = touchStartY - touchEndY;
+
+      // Threshold 80px agar tidak konflik dengan tap kontrol video
+      if (deltaY > 80) {
+        // Swipe ke atas → episode berikutnya
+        if (currentEpisodeIndex < totalEpisodes - 1) handleEpisodeChange(currentEpisodeIndex + 1);
+      } else if (deltaY < -80) {
+        // Swipe ke bawah → episode sebelumnya
+        if (currentEpisodeIndex > 0) handleEpisodeChange(currentEpisodeIndex - 1);
+      }
+    };
+
+    el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+
+    return () => {
+      el.removeEventListener('touchstart', handleTouchStart);
+      el.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [currentEpisodeIndex, totalEpisodes, handleEpisodeChange]);
+
   if (isLoading) {
     return (
       <div className="fixed inset-0 bg-black flex flex-col items-center justify-center space-y-4">
@@ -369,7 +429,7 @@ export default function FreeReelsWatchPage() {
       </div>
 
       {/* Main Video Area */}
-      <div className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
+      <div ref={swipeContainerRef} className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
         <div className="relative w-full h-full flex items-center justify-center">
           <video
             ref={videoRef}

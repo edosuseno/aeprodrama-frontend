@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useMeloloLatest, useMeloloTrending } from "@/hooks/useMelolo";
+import { useMeloloLatest, useMeloloTrending, fetchMeloloDetail } from "@/hooks/useMelolo";
+import { useQueryClient } from "@tanstack/react-query";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { UnifiedErrorDisplay } from "./UnifiedErrorDisplay";
 
@@ -34,6 +35,8 @@ export function MeloloHome() {
     error: errorTrending
   } = useMeloloTrending();
 
+  const queryClient = useQueryClient();
+
   if (errorLatest || errorTrending) {
     return (
       <UnifiedErrorDisplay
@@ -63,13 +66,20 @@ export function MeloloHome() {
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 md:gap-3">
-            {trendingData.books.slice(0, 18).map((book, index) => (
+            {trendingData.books.slice(0, 18).map((book: any, index: number) => (
               <UnifiedMediaCard
                 key={book.book_id}
                 title={book.book_name}
                 cover={book.thumb_url}
                 link={`/detail/melolo/${book.book_id}`}
                 episodes={book.serial_count || 0}
+                onPrefetch={() => {
+                  queryClient.prefetchQuery({
+                    queryKey: ["melolo", "detail", String(book.book_id)],
+                    queryFn: () => fetchMeloloDetail(String(book.book_id)),
+                    staleTime: 1000 * 60 * 10,
+                  });
+                }}
                 topLeftBadge={null}
                 index={index}
               />
@@ -88,13 +98,20 @@ export function MeloloHome() {
           </div>
 
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-6 gap-2 md:gap-3">
-            {latestData.books.slice(0, 18).map((book, index) => (
+            {latestData.books.slice(0, 18).map((book: any, index: number) => (
               <UnifiedMediaCard
                 key={book.book_id}
                 title={book.book_name}
                 cover={book.thumb_url}
                 link={`/detail/melolo/${book.book_id}`}
                 episodes={book.serial_count || 0}
+                onPrefetch={() => {
+                  queryClient.prefetchQuery({
+                    queryKey: ["melolo", "detail", String(book.book_id)],
+                    queryFn: () => fetchMeloloDetail(String(book.book_id)),
+                    staleTime: 1000 * 60 * 10,
+                  });
+                }}
                 topLeftBadge={null}
                 index={index}
               />

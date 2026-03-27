@@ -5,8 +5,8 @@ import { usePathname } from "next/navigation";
 export function Footer() {
   const pathname = usePathname();
 
-  // Hide footer on watch pages for immersive video experience
-  if (pathname?.startsWith("/watch")) {
+  // Hide footer on detail and watch pages for cleaner experience
+  if (pathname?.startsWith("/watch") || pathname?.startsWith("/detail")) {
     return null;
   }
 

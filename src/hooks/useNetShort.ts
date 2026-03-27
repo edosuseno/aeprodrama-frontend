@@ -92,10 +92,14 @@ export function useNetShortSearch(query: string) {
   });
 }
 
+export async function fetchNetShortDetail(shortPlayId: string): Promise<DetailResponse> {
+  return fetchJson<DetailResponse>(`/api/netshort/detail?shortPlayId=${shortPlayId}`);
+}
+
 export function useNetShortDetail(shortPlayId: string) {
   return useQuery<DetailResponse>({
     queryKey: ["netshort", "detail", shortPlayId],
-    queryFn: () => fetchJson<DetailResponse>(`/api/netshort/detail?shortPlayId=${shortPlayId}`),
+    queryFn: () => fetchNetShortDetail(shortPlayId),
     enabled: !!shortPlayId,
     staleTime: 5 * 60 * 1000,
   });

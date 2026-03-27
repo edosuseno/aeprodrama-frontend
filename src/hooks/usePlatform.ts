@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type Platform = "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox";
+export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo";
 
 export interface PlatformInfo {
   id: Platform;
@@ -12,6 +12,12 @@ export interface PlatformInfo {
 }
 
 export const PLATFORMS: PlatformInfo[] = [
+  {
+    id: "home",
+    name: "Beranda",
+    logo: "/logo.png",
+    apiBase: "",
+  },
   {
     id: "dramabox",
     name: "DramaBox",
@@ -60,6 +66,30 @@ export const PLATFORMS: PlatformInfo[] = [
     logo: "/moviebox.png",
     apiBase: "/api/moviebox",
   },
+  {
+    id: "stardusttv",
+    name: "StardustTV",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/stardusttv.webp", 
+    apiBase: "/api/stardusttv",
+  },
+  {
+    id: "dramawave",
+    name: "DramaWave",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/dramawave.webp",
+    apiBase: "/api/dramawave",
+  },
+  {
+    id: "dramanova",
+    name: "DramaNova",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/dramanova.webp",
+    apiBase: "/api/dramanova",
+  },
+  {
+    id: "velolo",
+    name: "Velolo",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/velolo.webp",
+    apiBase: "/api/velolo",
+  },
 ];
 
 interface PlatformState {
@@ -68,13 +98,13 @@ interface PlatformState {
 }
 
 export const usePlatformStore = create<PlatformState>((set) => ({
-  currentPlatform: "dramabox",
+  currentPlatform: "home",
   setPlatform: (platform) => set({ currentPlatform: platform }),
 }));
 
 export function usePlatform() {
   const { currentPlatform, setPlatform } = usePlatformStore();
-  const platformInfo = PLATFORMS.find((p) => p.id === currentPlatform)!;
+  const platformInfo = PLATFORMS.find((p) => p.id === currentPlatform) || PLATFORMS[0];
 
   const getPlatformInfo = (platformId: Platform) => {
     return PLATFORMS.find((p) => p.id === platformId) || PLATFORMS[0];
@@ -86,6 +116,7 @@ export function usePlatform() {
     setPlatform,
     platforms: PLATFORMS,
     getPlatformInfo,
+    isHome: currentPlatform === "home",
     isDramaBox: currentPlatform === "dramabox",
     isReelShort: currentPlatform === "reelshort",
     isNetShort: currentPlatform === "netshort",
@@ -94,5 +125,9 @@ export function usePlatform() {
     isFlickReels: currentPlatform === "flickreels",
     isFreeReels: currentPlatform === "freereels",
     isMovieBox: currentPlatform === "moviebox",
+    isStardustTV: currentPlatform === "stardusttv",
+    isDramaWave: currentPlatform === "dramawave",
+    isDramaNova: currentPlatform === "dramanova",
+    isVelolo: currentPlatform === "velolo",
   };
 }
