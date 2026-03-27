@@ -133,25 +133,22 @@ export default function ShortMaxWatchPage() {
         };
     }, [episodeData?.episode?.videoUrl]);
 
-    // Auto-fullscreen pada mobile saat video mulai diputar
-    useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
-
-        const handlePlay = () => {
-            if (window.innerWidth < 768 && video.requestFullscreen) {
-                video.requestFullscreen().catch(() => {
-                    // Fallback untuk iOS
-                    if ((video as any).webkitEnterFullscreen) {
-                        (video as any).webkitEnterFullscreen();
-                    }
-                });
-            }
-        };
-
-        video.addEventListener('play', handlePlay);
-        return () => video.removeEventListener('play', handlePlay);
-    }, []);
+    // Auto-fullscreen pada mobile saat video mulai diputar (dinonaktifkan)
+    // useEffect(() => {
+    //     const video = videoRef.current;
+    //     if (!video) return;
+    //     const handlePlay = () => {
+    //         if (window.innerWidth < 768 && video.requestFullscreen) {
+    //             video.requestFullscreen().catch(() => {
+    //                 if ((video as any).webkitEnterFullscreen) {
+    //                     (video as any).webkitEnterFullscreen();
+    //                 }
+    //             });
+    //         }
+    //     };
+    //     video.addEventListener('play', handlePlay);
+    //     return () => video.removeEventListener('play', handlePlay);
+    // }, []);
 
     const goToEpisode = (ep: number) => {
         setCurrentEpisode(ep);

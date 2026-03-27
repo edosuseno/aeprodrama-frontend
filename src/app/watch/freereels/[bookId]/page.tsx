@@ -73,7 +73,8 @@ export default function FreeReelsWatchPage() {
 
   const proxiedSubtitleUrl = useMemo(() => {
     if (!currentEpisodeData?.subtitleUrl) return "";
-    return `/api/proxy/video?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+    return `${backendBase}/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
   }, [currentEpisodeData]);
 
   // Load video with HLS support
@@ -157,107 +158,29 @@ export default function FreeReelsWatchPage() {
   }, [currentVideoUrl, useProxy]);
 
 
-  // Manual Subtitle Injection & Enforcement
-  // We handle this OUTSIDE of React's DOM management to coordinate with HLS.js
+  // Force Trigger Native Subtitle (Pola Velolo)
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    // Helper to inject track safely
-    const injectTrack = () => {
-      if (!proxiedSubtitleUrl || currentEpisodeData?.originalAudioLanguage === 'id-ID') return;
-
-      // Check if already exists
-      const tracks = Array.from(video.getElementsByTagName('track'));
-      const existing = tracks.find(t => t.label === 'Indonesia' && t.srclang === 'id');
-
-      // Use URL as specific identifier to ensure we have the RIGHT track
-      if (existing) {
-        if (existing.src === proxiedSubtitleUrl) {
-          return; // Already has correct track
-        } else {
-          // Remove old track
-          video.removeChild(existing);
+    const checkSubtitle = () => {
+      if (videoRef.current && videoRef.current.textTracks) {
+        const tracks = videoRef.current.textTracks;
+        for (let i = 0; i < tracks.length; i++) {
+          if (tracks[i].language === 'id' || tracks[i].kind === 'subtitles' || tracks[i].label === 'Indonesia') {
+            tracks[i].mode = 'showing';
+          }
         }
       }
-
-      const track = document.createElement('track');
-      track.kind = 'subtitles';
-      track.label = 'Indonesia';
-      track.srclang = 'id';
-      track.default = true;
-      track.src = proxiedSubtitleUrl;
-
-      track.onload = () => {
-        if (track.track) track.track.mode = 'showing';
-      };
-
-      video.appendChild(track);
-      // console.log("Injected subtitle track:", proxiedSubtitleUrl);
     };
 
-    // Helper to Enforce Visibility
-    const enforce = () => {
-      const tracks = Array.from(video.textTracks);
-      const indo = tracks.find(t => t.label === 'Indonesia' || t.language === 'id');
-      if (indo && indo.mode !== 'showing') {
-        indo.mode = 'showing';
-        // console.log("Enforced showing");
-      }
-    };
-
-    // Inject immediately logic
-    injectTrack();
-
-    // Listeners for enforcement
-    video.addEventListener('loadeddata', enforce);
-    video.addEventListener('canplay', enforce);
-    video.addEventListener('playing', enforce);
-    video.addEventListener('seeked', enforce);
-
-    // --- HLS Integration ---
-    // We need to attach listeners to the HLS instance created in the previous effect?
-    // Actually, we can just hook into video events, but MANIFEST_PARSED is best caught on the hls instance.
-    // Since hlsRef is mutable, we can check it.
-    if (hlsRef.current) {
-      hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
-        // HLS ready, reinject if wipe happened
-        injectTrack();
-        enforce();
-      });
-      hlsRef.current.on(Hls.Events.LEVEL_SWITCHED, () => {
-        // Quality switch -> reinject/enforce
-        injectTrack();
-        enforce();
-      });
-    }
-
-    // Polling for first 2 seconds (Race fix)
-    let retries = 0;
-    const poll = setInterval(() => {
-      injectTrack(); // Ensure it exists
-      enforce();     // Ensure it shows
-      retries++;
-      if (retries > 10) clearInterval(poll);
-    }, 200);
+    const timeout1 = setTimeout(checkSubtitle, 500);
+    const timeout2 = setTimeout(checkSubtitle, 1500);
+    const interval = setInterval(checkSubtitle, 3000); // Penjaga berkala
 
     return () => {
-      video.removeEventListener('loadeddata', enforce);
-      video.removeEventListener('canplay', enforce);
-      video.removeEventListener('playing', enforce);
-      video.removeEventListener('seeked', enforce);
-      clearInterval(poll);
-
-      // Don't remove track, let it persist or be replaced on next run
-      // Actually, we SHOULD remove it if component unmounts or URL changes?
-      // Yes, to prevent duplicates if logic fails.
-      try {
-        const tracks = Array.from(video.getElementsByTagName('track'));
-        const current = tracks.find(t => t.src === proxiedSubtitleUrl);
-        if (current) video.removeChild(current);
-      } catch (e) { }
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+      clearInterval(interval);
     };
-  }, [proxiedSubtitleUrl, currentVideoUrl, videoQuality, currentEpisodeData?.originalAudioLanguage]); // Deps ensure runs on change
+  }, [currentEpisodeIndex, currentVideoUrl]);
 
   // Navigation Handler
   const handleEpisodeChange = (index: number) => {
@@ -287,25 +210,7 @@ export default function FreeReelsWatchPage() {
     }
   };
 
-  // Auto-fullscreen pada mobile saat video mulai diputar
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
 
-    const handlePlay = () => {
-      if (window.innerWidth < 768 && video.requestFullscreen) {
-        video.requestFullscreen().catch(() => {
-          // Fallback untuk iOS
-          if ((video as any).webkitEnterFullscreen) {
-            (video as any).webkitEnterFullscreen();
-          }
-        });
-      }
-    };
-
-    video.addEventListener('play', handlePlay);
-    return () => video.removeEventListener('play', handlePlay);
-  }, []);
 
   // Swipe vertikal untuk navigasi episode di mobile
   useEffect(() => {
@@ -370,6 +275,32 @@ export default function FreeReelsWatchPage() {
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Custom Subtitle Styling VIP - Seragam Velolo */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+                video::cue {
+                    color: #ffffff !important;
+                    background: transparent !important;
+                    background-color: rgba(0, 0, 0, 0) !important;
+                    text-shadow: 
+                        2px 2px 0 #000,
+                       -2px -2px 0 #000,
+                        2px -2px 0 #000,
+                       -2px  2px 0 #000,
+                        0 2px 4px rgba(0,0,0,0.8),
+                        0 0 10px rgba(0,0,0,1) !important;
+                    font-family: "Inter", -apple-system, sans-serif !important;
+                    font-size: 1.2rem !important;
+                    font-weight: 900 !important;
+                    outline: none !important;
+                }
+                ::-webkit-media-text-track-display {
+                    background: transparent !important;
+                    background-color: transparent !important;
+                    overflow: visible !important;
+                }
+                `
+      }} />
       {/* Header - Fixed Overlay */}
       <div className="absolute top-0 left-0 right-0 z-40 h-16 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent" />
@@ -444,6 +375,16 @@ export default function FreeReelsWatchPage() {
             {...({ disableRemotePlayback: true, referrerPolicy: "no-referrer" } as any)}
             crossOrigin="anonymous"
           >
+            {proxiedSubtitleUrl && (
+              <track
+                key={proxiedSubtitleUrl}
+                label="Indonesia"
+                kind="subtitles"
+                srcLang="id"
+                src={proxiedSubtitleUrl}
+                default
+              />
+            )}
           </video>
 
           {!currentVideoUrl && (

@@ -5,8 +5,9 @@ import { useParams, useSearchParams } from "next/navigation";
 import { useEpisodes, useDramaDetail } from "@/hooks/useDramaDetail";
 import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
-import { ChevronLeft, Loader2, List, AlertCircle, ChevronRight } from "lucide-react";
+import { ChevronLeft, Loader2, List, AlertCircle, ChevronRight, Settings, Check } from "lucide-react";
 import Hls from "hls.js";
+import { getBackendBase } from "@/lib/api-utils";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
 export default function DramaBoxWatchPage() {
@@ -16,6 +17,16 @@ export default function DramaBoxWatchPage() {
   // State
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [showList, setShowList] = useState(false);
+
+  // Quality Selection State
+  const [availableLevels, setAvailableLevels] = useState<any[]>([]);
+  const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 = Auto
+  const [manualQuality, setManualQuality] = useState<number | null>(null); // For Hard URL Switching
+  const [isQualityMenuOpen, setIsQualityMenuOpen] = useState(false);
+
+  const handleLevelsFound = (levels: any[]) => {
+    setAvailableLevels(levels);
+  };
 
   // Ref untuk area swipe vertikal (mobile)
   const swipeContainerRef = useRef<HTMLDivElement>(null);
@@ -70,26 +81,37 @@ export default function DramaBoxWatchPage() {
   const videoUrl = useMemo(() => {
     if (!currentEpisode) return "";
 
-    // Helper: Determine URL
+    // 1. Ambil URL dari cdnList jika ada (Gunakan manualQuality jika dipilih)
     let finalUrl = "";
     if (currentEpisode.cdnList?.length) {
-      const defaultCdn = currentEpisode.cdnList.find(c => c.isDefault === 1) || currentEpisode.cdnList[0];
-      const defaultPath = defaultCdn.videoPathList?.find(v => v.isDefault === 1 || v.quality === 720) || defaultCdn.videoPathList?.[0];
-      if (defaultPath?.videoPath) finalUrl = defaultPath.videoPath;
+      const defaultCdn = currentEpisode.cdnList.find((c: any) => c.isDefault === 1) || currentEpisode.cdnList[0];
+      const videoPathList = defaultCdn.videoPathList || [];
+
+      let selectedPath;
+      if (manualQuality !== null) {
+        selectedPath = videoPathList.find((v: any) => v.quality === manualQuality);
+      }
+
+      if (!selectedPath) {
+        selectedPath = videoPathList.find((v: any) => v.isDefault === 1 || v.quality === 720) || videoPathList[0];
+      }
+
+      if (selectedPath?.videoPath) finalUrl = selectedPath.videoPath;
     }
     if (!finalUrl) finalUrl = currentEpisode.videoUrl || "";
 
-    // FALLBACK: If no direct URL, use our Backend Resolver
+    // 2. Jika tidak ada URL sama sekali → gunakan stream-resolver ke backend
     if (!finalUrl && bookId && currentEpisode) {
-      finalUrl = `/api/tools/resolve?source=dramabox&bookId=${bookId}&chapterId=${currentEpisode.chapterId || ""}&ep=${currentEpisode.chapterIndex || ""}`;
+      return `${getBackendBase()}/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${currentEpisode.chapterId || ""}&ep=${currentEpisode.chapterIndex || ""}`;
     }
 
-    // USE PROXY to bypass CORS
+    // USE PROXY to bypass CORS (Pointing to Backend port 5001)
     if (finalUrl && finalUrl.startsWith("http")) {
-      return `/api/proxy?url=${encodeURIComponent(finalUrl)}`;
+      return `${getBackendBase()}/proxy?url=${encodeURIComponent(finalUrl)}`;
     }
     return finalUrl;
-  }, [currentEpisode]);
+  }, [currentEpisode, bookId, manualQuality]);
+
 
   // Keep track of the last valid URL to prevent player unmounting/blanking during transitions
   const [activeUrl, setActiveUrl] = useState("");
@@ -109,11 +131,12 @@ export default function DramaBoxWatchPage() {
 
     // Prefetch after 2 seconds of current episode loading
     const timer = setTimeout(() => {
-      const prefetchUrl = `/api/tools/resolve?source=dramabox&bookId=${bookId}&chapterId=${nextEpisode.chapterId}&ep=${nextEpisode.chapterIndex}`;
+      const prefetchUrl = `/api/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${nextEpisode.chapterId}&ep=${nextEpisode.chapterIndex}`;
 
       // Silent prefetch (won't show in UI)
       fetch(prefetchUrl, { method: 'HEAD' }).catch(() => { });
     }, 2000);
+
 
     return () => clearTimeout(timer);
   }, [currentEpisodeIndex, sortedEpisodes, bookId]);
@@ -210,12 +233,60 @@ export default function DramaBoxWatchPage() {
         <HlsVideoPlayer
           src={activeUrl}
           poster={currentEpisode?.cover || normalizedDetail?.cover || ""}
+          onLevelsFound={handleLevelsFound}
+          manualLevel={currentQuality}
           onEnded={() => {
             if (currentEpisodeIndex < sortedEpisodes.length - 1) {
               setCurrentEpisodeIndex(prev => prev + 1);
             }
           }}
         />
+
+        {/* Quality Selector Overlay */}
+        <div className="absolute top-4 right-4 z-50 pointer-events-auto">
+          <div className="relative">
+            <button
+              onClick={(e) => { e.stopPropagation(); setIsQualityMenuOpen(!isQualityMenuOpen); }}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/20 transition-all ${isQualityMenuOpen ? 'bg-primary text-black' : 'bg-black/40 text-white hover:bg-white/10'}`}
+            >
+              <Settings size={18} className={isQualityMenuOpen ? 'animate-spin-slow' : ''} />
+              <span className="text-xs font-bold whitespace-nowrap">
+                {manualQuality ? `${manualQuality}p` : (currentQuality === -1 ? 'Auto' : `${availableLevels[currentQuality]?.height}p`)}
+              </span>
+            </button>
+
+            {isQualityMenuOpen && (
+              <div className="absolute top-full right-0 mt-2 w-48 bg-gray-900/90 backdrop-blur-xl border border-white/10 rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+                <div className="px-3 py-2 border-b border-white/5 bg-white/5">
+                  <span className="text-[10px] uppercase tracking-wider text-white/50 font-bold">Kualitas Video</span>
+                </div>
+                
+                <button
+                  onClick={() => { setManualQuality(null); setCurrentQuality(-1); setIsQualityMenuOpen(false); }}
+                  className={`w-full flex items-center justify-between px-4 py-3 text-sm transition ${manualQuality === null && currentQuality === -1 ? 'text-primary bg-primary/5' : 'text-zinc-400 hover:bg-white/5'}`}
+                >
+                  Otomatis (Auto) {manualQuality === null && currentQuality === -1 && <Check size={14} />}
+                </button>
+
+                {/* DramaBox Manual Quality from CDN List */}
+                {currentEpisode?.cdnList?.[0]?.videoPathList?.map((path: any) => (
+                  <button
+                    key={`cdn-${path.quality}`}
+                    onClick={() => { setManualQuality(path.quality); setIsQualityMenuOpen(false); }}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm transition ${manualQuality === path.quality ? 'text-primary bg-primary/5' : 'text-zinc-400 hover:bg-white/5'}`}
+                  >
+                    {path.quality}p {manualQuality === path.quality && <Check size={14} />}
+                  </button>
+                ))}
+
+                {/* Additional Source Suggestion if Black Screen */}
+                <div className="px-3 py-2 border-t border-white/5 bg-black/20">
+                   <p className="text-[9px] text-white/40 italic text-center">Pilih resolusi manual jika layar hitam.</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
 
         {/* Show overlay if videoUrl is processing (not yet activeUrl) implies loading next ep */}
         {(!videoUrl || videoUrl !== activeUrl) && (
@@ -265,37 +336,108 @@ export default function DramaBoxWatchPage() {
   );
 }
 
-function HlsVideoPlayer({ src, poster, onEnded }: { src: string; poster: string; onEnded?: () => void }) {
+function HlsVideoPlayer({ src, poster, onEnded, onLevelsFound, manualLevel }: {
+  src: string;
+  poster: string;
+  onEnded?: () => void;
+  onLevelsFound?: (levels: any[]) => void;
+  manualLevel?: number;
+}) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+
+  // Handle Manual Level Switch
+  useEffect(() => {
+    if (hlsRef.current && typeof manualLevel === 'number') {
+      hlsRef.current.currentLevel = manualLevel;
+    }
+  }, [manualLevel]);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
-    if (!src) return;
+    if (!video || !src) return;
 
-    let hls: Hls | null = null;
-
-    // Check if URL is HLS or proxied HLS
-    const isM3U8 = src.includes('.m3u8') || (src.includes('/proxy') && src.includes('.m3u8'));
-
-    if (Hls.isSupported() && isM3U8) {
-      hls = new Hls({
-        xhrSetup: function (xhr, url) {
-          // Opsional: Custom headers jika perlu, tapi proxy sudah handle
-        }
-      });
-      hls.loadSource(src);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) console.log("HLS Fatal Error:", data);
-      });
-    } else {
-      // Native support (Safari) or MP4
-      video.src = src;
+    // Cleanup previous instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
     }
 
+    // Deteksi apakah URL adalah stream HLS (m3u8 atau proxy route)
+    const isM3U8 = src.includes('.m3u8') || src.includes('/proxy/video') || src.includes('stream-resolver');
+
+    if (Hls.isSupported() && isM3U8) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 60,
+        fragLoadingMaxRetry: 10,
+        manifestLoadingMaxRetry: 5,
+        xhrSetup: (xhr, url) => {
+          xhr.withCredentials = false;
+        }
+      });
+
+      hls.loadSource(src);
+      hls.attachMedia(video);
+      hlsRef.current = hls;
+
+      hls.on(Hls.Events.MANIFEST_PARSED, (event, data) => {
+        console.log("HLS Manifest Parsed - Playing Video. Levels:", data.levels?.length);
+
+        // Notify parent about available levels
+        if (onLevelsFound) {
+          onLevelsFound(data.levels || []);
+        }
+
+        video.play().catch(err => {
+          console.warn("Autoplay was blocked - user interaction needed");
+        });
+      });
+
+      hls.on(Hls.Events.ERROR, (event, data) => {
+        // Jika manifest gagal di-parse (bukan HLS), fallback ke native playback
+        if (data.fatal && (data.details === 'manifestParsingError' || data.details === 'manifestIncompatibleCodecsError')) {
+          console.log("Bukan stream HLS, fallback ke native playback...");
+          hls.destroy();
+          hlsRef.current = null;
+          video.src = src;
+          video.load();
+          video.play().catch(() => { });
+          return;
+        }
+
+        if (data.fatal) {
+          console.error("HLS Fatal Error:", data.type, data.details);
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              console.log("Attemping to recover from network error...");
+              hls.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              console.log("Attemping to recover from media error...");
+              hls.recoverMediaError();
+              break;
+            default:
+              console.log("Cannot recover, destroying...");
+              hls.destroy();
+              break;
+          }
+        }
+      });
+    } else {
+      console.log("Using native video playback (Safari/MP4)");
+      video.src = src;
+      video.load();
+      video.play().catch(() => { });
+    }
+
+
     return () => {
-      if (hls) hls.destroy();
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
     };
   }, [src]);
 
@@ -303,11 +445,12 @@ function HlsVideoPlayer({ src, poster, onEnded }: { src: string; poster: string;
     <video
       ref={videoRef}
       controls
-      autoPlay
       playsInline
       className="w-full h-full object-contain max-h-[100dvh]"
       poster={poster}
       onEnded={onEnded}
+      preload="auto"
     />
   );
 }
+

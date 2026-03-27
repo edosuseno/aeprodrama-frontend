@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useVeloloDetail, useVeloloStream } from "@/hooks/useVelolo";
 import { useHistoryStore } from "@/hooks/useHistory";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, List } from "lucide-react";
@@ -31,6 +31,11 @@ export default function VeloloWatchPage() {
     const { data: detailData, isLoading: loadingDetail, error: errorDetail } = useVeloloDetail(id || "");
     const { data: videoUrl, isLoading: loadingStream } = useVeloloStream(id || "", currentEpisode);
     const { addToHistory } = useHistoryStore();
+    
+    // Cari data episode saat ini dari detail
+    const currentEpisodeData = useMemo(() => {
+        return detailData?.episodes?.find(ep => ep.index === currentEpisode);
+    }, [detailData, currentEpisode]);
 
     // Simpan ke Riwayat Nonton
     useEffect(() => {
@@ -118,24 +123,7 @@ export default function VeloloWatchPage() {
         setShowEpisodeList(false);
     };
 
-    // Auto-fullscreen pada mobile
-    useEffect(() => {
-        const video = videoRef.current;
-        if (!video) return;
 
-        const handlePlay = () => {
-            if (window.innerWidth < 768 && video.requestFullscreen) {
-                video.requestFullscreen().catch(() => {
-                    if ((video as any).webkitEnterFullscreen) {
-                        (video as any).webkitEnterFullscreen();
-                    }
-                });
-            }
-        };
-
-        video.addEventListener('play', handlePlay);
-        return () => video.removeEventListener('play', handlePlay);
-    }, []);
 
     // Swipe vertikal (mobile)
     useEffect(() => {
@@ -288,13 +276,13 @@ export default function VeloloWatchPage() {
                         crossOrigin="anonymous"
                         onEnded={handleVideoEnded}
                     >
-                        {detailData?.episodes?.find(ep => ep.index === currentEpisode)?.subtitle && (
+                        {currentEpisodeData?.subtitle && (
                             <track 
                                 key={currentEpisode}
                                 label="Indonesia"
                                 kind="subtitles"
                                 srcLang="id"
-                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/proxy?url=${encodeURIComponent(detailData.episodes.find(ep => ep.index === currentEpisode)?.subtitle || "")}&t=${Date.now()}`}
+                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitle)}&t=${Date.now()}`}
                                 default
                             />
                         )}

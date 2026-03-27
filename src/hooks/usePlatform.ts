@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo";
+export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dramabox2";
 
 export interface PlatformInfo {
   id: Platform;
@@ -90,6 +90,12 @@ export const PLATFORMS: PlatformInfo[] = [
     logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/velolo.webp",
     apiBase: "/api/velolo",
   },
+  {
+    id: "dramabox2",
+    name: "Dramabox v2",
+    logo: "/dramabox.webp",
+    apiBase: "/api/dramabox2",
+  },
 ];
 
 interface PlatformState {
@@ -129,5 +135,6 @@ export function usePlatform() {
     isDramaWave: currentPlatform === "dramawave",
     isDramaNova: currentPlatform === "dramanova",
     isVelolo: currentPlatform === "velolo",
+    isDramabox2: currentPlatform === "dramabox2",
   };
 }

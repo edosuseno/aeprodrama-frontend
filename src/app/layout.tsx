@@ -46,6 +46,37 @@ export default function RootLayout({
           <Toaster />
           <Sonner />
         </Providers>
+        
+        {/* Anti-Crash Patch for Google Translate & Other Translators */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if (typeof Node === 'function' && Node.prototype) {
+                const originalRemoveChild = Node.prototype.removeChild;
+                Node.prototype.removeChild = function(child) {
+                  if (child.parentNode !== this) {
+                    if (child.parentNode) {
+                      return child.parentNode.removeChild(child);
+                    }
+                    return child;
+                  }
+                  return originalRemoveChild.apply(this, arguments);
+                };
+
+                const originalInsertBefore = Node.prototype.insertBefore;
+                Node.prototype.insertBefore = function(newNode, referenceNode) {
+                  if (referenceNode && referenceNode.parentNode !== this) {
+                    if (referenceNode.parentNode) {
+                      return referenceNode.parentNode.insertBefore(newNode, referenceNode);
+                    }
+                  }
+                  return originalInsertBefore.apply(this, arguments);
+                };
+              }
+            `,
+          }}
+        />
+
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -62,6 +93,7 @@ export default function RootLayout({
           }}
         />
       </body>
+
     </html>
   );
 }

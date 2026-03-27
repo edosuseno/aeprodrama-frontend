@@ -56,70 +56,43 @@ export default function FlickReelsWatchPage() {
   const totalEpisodes = episodes.length;
 
   // Update video src - combines warmup and src update
-  // For initial load: wait for warmup before setting src
-  // For auto-next: set src immediately, warmup runs in background
+  // Set src langsung tanpa menunggu warmup, warmup hanya di background
   useEffect(() => {
     if (!currentEpisodeData?.raw?.videoUrl) return;
 
     // Update timestamp when video changes
     videoTimestamp.current = Date.now();
 
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
     const videoUrl = currentEpisodeData.raw.videoUrl;
-    const newSrc = `/api/proxy/video?url=${encodeURIComponent(videoUrl)}&referer=${encodeURIComponent("https://www.flickreels.com/")}&_t=${videoTimestamp.current}`;
-    const warmupUrl = `/api/proxy/warmup?url=${encodeURIComponent(videoUrl)}`;
+    const newSrc = `${backendBase}/api/proxy?url=${encodeURIComponent(videoUrl)}&referer=${encodeURIComponent("https://www.flickreels.com/")}&_t=${videoTimestamp.current}`;
+    const warmupUrl = `${backendBase}/api/proxy?url=${encodeURIComponent(videoUrl)}&warmup=1`;
 
-    if (isInitialLoad.current) {
-      // Initial load: wait for warmup before playing
-      setVideoReady(false);
-      setWarmupError(false);
+    // Langsung set video src tanpa menunggu warmup
+    setVideoReady(true);
+    setWarmupError(false);
 
-      fetch(warmupUrl)
-        .then(res => res.json())
-        .then(data => {
-          console.log("[Warmup] Initial load:", data.success ? "success" : "failed");
-          setVideoReady(true);
-          if (!data.success) setWarmupError(true);
-
-          // Mark that initial load is done
-          isInitialLoad.current = false;
-        })
-        .catch(err => {
-          console.error("[Warmup] Error:", err);
-          setVideoReady(true);
-          setWarmupError(true);
-          isInitialLoad.current = false;
-        });
-    } else {
-      // Auto-next: update src immediately, warmup in background
-      if (videoRef.current) {
-        videoRef.current.src = newSrc;
-        videoRef.current.load();
-        videoRef.current.play().catch(() => { });
-
-        // Fire warmup in background (don't await)
-        fetch(warmupUrl).catch(() => { });
-      }
-    }
-  }, [currentEpisodeData?.raw?.videoUrl, retryCount]);
-
-  // Set initial video src after warmup completes (only for initial load)
-  useEffect(() => {
-    if (!videoReady || !currentEpisodeData?.raw?.videoUrl || !videoRef.current) return;
-
-    const newSrc = `/api/proxy/video?url=${encodeURIComponent(currentEpisodeData.raw.videoUrl)}&referer=${encodeURIComponent("https://www.flickreels.com/")}&_t=${videoTimestamp.current}`;
-
-    // Check if src needs update
-    if (videoRef.current.src !== newSrc && !videoRef.current.src.endsWith(newSrc.split('?')[1])) {
+    if (videoRef.current) {
       videoRef.current.src = newSrc;
       videoRef.current.load();
       videoRef.current.play().catch(() => { });
-
-      // Mark initial load as done after we've set the src
-      if (isInitialLoad.current) {
-        isInitialLoad.current = false;
-      }
     }
-  }, [videoReady, currentEpisodeData?.raw?.videoUrl]);
+
+    // Fire warmup in background (untuk pre-cache di server)
+    fetch(warmupUrl)
+      .then(res => res.json())
+      .then(data => {
+        console.log("[Warmup] Background:", data.success ? "success" : "failed");
+        if (!data.success) setWarmupError(true);
+      })
+      .catch(() => { });
+
+    // Mark initial load as done
+    isInitialLoad.current = false;
+  }, [currentEpisodeData?.raw?.videoUrl, retryCount]);
+
+  // Note: useEffect untuk set video src setelah warmup tidak lagi dibutuhkan
+  // karena src langsung di-set di atas
 
   // Handlers
   const handleEpisodeChange = (episodeId: string, preserveFullscreen = false) => {
@@ -142,25 +115,7 @@ export default function FlickReelsWatchPage() {
     }
   };
 
-  // Auto-fullscreen pada mobile saat video mulai diputar
-  useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
 
-    const handlePlay = () => {
-      if (window.innerWidth < 768 && video.requestFullscreen) {
-        video.requestFullscreen().catch(() => {
-          // Fallback untuk iOS
-          if ((video as any).webkitEnterFullscreen) {
-            (video as any).webkitEnterFullscreen();
-          }
-        });
-      }
-    };
-
-    video.addEventListener('play', handlePlay);
-    return () => video.removeEventListener('play', handlePlay);
-  }, []);
 
   // Swipe vertikal untuk navigasi episode di mobile
   useEffect(() => {
@@ -275,7 +230,9 @@ export default function FlickReelsWatchPage() {
               "w-full h-full object-contain max-h-[100dvh]",
               (!currentEpisodeData || !videoReady) && "invisible"
             )}
-            poster={currentEpisodeData?.raw?.chapter_cover}
+            poster={currentEpisodeData?.raw?.chapter_cover 
+              ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/image-proxy?url=${encodeURIComponent(currentEpisodeData.raw.chapter_cover)}` 
+              : undefined}
             onEnded={handleVideoEnded}
             onError={async (e) => {
               if (retryCount < 2) {

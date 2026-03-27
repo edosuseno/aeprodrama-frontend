@@ -48,6 +48,12 @@ export default function FreeReelsWatchPage() {
     return currentEpisodeData.external_audio_h264_m3u8 || currentEpisodeData.videoUrl || "";
   }, [currentEpisodeData, videoQuality]);
 
+  const proxiedSubtitleUrl = useMemo(() => {
+    if (!currentEpisodeData?.subtitleUrl) return "";
+    const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
+    return `${backendBase}/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
+  }, [currentEpisodeData]);
+
   // Handlers
   const handleEpisodeChange = (episodeId: string, preserveFullscreen = false) => {
     if (episodeId === activeEpisodeId) return;
@@ -70,25 +76,31 @@ export default function FreeReelsWatchPage() {
     }
   };
 
-  // Auto-fullscreen pada mobile saat video mulai diputar
+  // Force Trigger Native Subtitle (Pola Velolo)
   useEffect(() => {
-    const video = videoRef.current;
-    if (!video) return;
-
-    const handlePlay = () => {
-      if (window.innerWidth < 768 && video.requestFullscreen) {
-        video.requestFullscreen().catch(() => {
-          // Fallback untuk iOS
-          if ((video as any).webkitEnterFullscreen) {
-            (video as any).webkitEnterFullscreen();
+    const checkSubtitle = () => {
+      if (videoRef.current && videoRef.current.textTracks) {
+        const tracks = videoRef.current.textTracks;
+        for (let i = 0; i < tracks.length; i++) {
+          if (tracks[i].language === 'id' || tracks[i].kind === 'subtitles' || tracks[i].label === 'Indonesia') {
+            tracks[i].mode = 'showing';
           }
-        });
+        }
       }
     };
 
-    video.addEventListener('play', handlePlay);
-    return () => video.removeEventListener('play', handlePlay);
-  }, []);
+    const timeout1 = setTimeout(checkSubtitle, 500);
+    const timeout2 = setTimeout(checkSubtitle, 1500);
+    const interval = setInterval(checkSubtitle, 3000); // Penjaga berkala
+
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+      clearInterval(interval);
+    };
+  }, [currentIndex, currentVideoUrl]);
+
+
 
   // Swipe vertikal untuk navigasi episode di mobile
   useEffect(() => {
@@ -155,6 +167,32 @@ export default function FreeReelsWatchPage() {
 
   return (
     <div className="fixed inset-0 bg-black flex flex-col">
+      {/* Custom Subtitle Styling VIP - Seragam Velolo */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+                video::cue {
+                    color: #ffffff !important;
+                    background: transparent !important;
+                    background-color: rgba(0, 0, 0, 0) !important;
+                    text-shadow: 
+                        2px 2px 0 #000,
+                       -2px -2px 0 #000,
+                        2px -2px 0 #000,
+                       -2px  2px 0 #000,
+                        0 2px 4px rgba(0,0,0,0.8),
+                        0 0 10px rgba(0,0,0,1) !important;
+                    font-family: "Inter", -apple-system, sans-serif !important;
+                    font-size: 1.2rem !important;
+                    font-weight: 900 !important;
+                    outline: none !important;
+                }
+                ::-webkit-media-text-track-display {
+                    background: transparent !important;
+                    background-color: transparent !important;
+                    overflow: visible !important;
+                }
+                `
+      }} />
       {/* Header - Fixed Overlay */}
       <div className="absolute top-0 left-0 right-0 z-40 h-16 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent" />
@@ -226,9 +264,20 @@ export default function FreeReelsWatchPage() {
               className="w-full h-full object-contain max-h-[100dvh]"
               poster={drama.cover}
               onEnded={handleVideoEnded}
-              // @ts-ignore
+               // @ts-ignore
               referrerPolicy="no-referrer"
-            />
+            >
+              {proxiedSubtitleUrl && (
+                <track
+                  key={proxiedSubtitleUrl}
+                  label="Indonesia"
+                  kind="subtitles"
+                  srcLang="id"
+                  src={proxiedSubtitleUrl}
+                  default
+                />
+              )}
+            </video>
           ) : (
             <div className="absolute inset-0 flex items-center justify-center z-20 flex-col gap-4">
               <p className="text-white/60">URL Video tidak ditemukan</p>

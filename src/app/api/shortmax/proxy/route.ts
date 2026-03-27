@@ -19,6 +19,7 @@ export async function GET(request: NextRequest) {
                 'User-Agent': 'Mozilla/5.0',
             },
             cache: 'no-store',
+            redirect: 'follow',
         });
 
         const contentType = upstream.headers.get('content-type') || 'application/octet-stream';

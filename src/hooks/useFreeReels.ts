@@ -148,9 +148,14 @@ export async function fetchFreeReelsDetail(bookId: string) {
     const allEpisodes = episodeList.length > 0 ? episodeList : singleEpisode;
 
     const episodes = allEpisodes.map((ep: any, idx: number) => {
-        const indoSub = Array.isArray(ep.subtitle_list)
-            ? ep.subtitle_list.find((sub: any) => sub.language === 'id-ID')
-            : undefined;
+        const subtitlePool = Array.isArray(ep.subtitle_list) ? ep.subtitle_list : [];
+        const indoSub = subtitlePool.find((sub: any) => {
+            const lang = (sub.language || "").toLowerCase();
+            return lang === 'id-id' || lang === 'id' || lang === 'ina' || lang === 'in-id' || lang === 'indonesia';
+        });
+
+        const rawSubtitle = indoSub?.subtitle || indoSub?.vtt || ep.subtitle || ep.subtitle_url || ep.vtt || "";
+        
         return {
             id: ep.id || ep.chapterId || String(idx + 1),
             name: ep.name || ep.chapterName || ep.title || `Episode ${idx + 1}`,
@@ -160,7 +165,7 @@ export async function fetchFreeReelsDetail(bookId: string) {
             external_audio_h264_m3u8: ep.external_audio_h264_m3u8 || "",
             external_audio_h265_m3u8: ep.external_audio_h265_m3u8 || "",
             cover: ep.cover || normalizedInfo.cover,
-            subtitleUrl: indoSub?.subtitle || indoSub?.vtt || "",
+            subtitleUrl: rawSubtitle,
             originalAudioLanguage: ep.original_audio_language || "",
         };
     });

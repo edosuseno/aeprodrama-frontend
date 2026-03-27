@@ -19,8 +19,9 @@ export function UnifiedVideoNavigation({
     const hasNext = currentEpisode < totalEpisodes;
 
     return (
-        <div className="absolute bottom-8 md:bottom-12 left-0 right-0 z-40 pointer-events-none flex justify-center pb-safe-area-bottom">
-            <div className="flex items-center gap-2 md:gap-6 pointer-events-auto bg-black/60 backdrop-blur-md px-3 py-1.5 md:px-6 md:py-3 rounded-full border border-white/10 shadow-lg transition-all scale-90 md:scale-100 origin-bottom">
+        <div className="absolute bottom-8 md:bottom-12 left-0 right-0 z-40 pointer-events-none flex justify-center pb-safe-area-bottom" translate="no">
+            <div className="flex items-center gap-2 md:gap-6 pointer-events-auto bg-black/60 backdrop-blur-md px-3 py-1.5 md:px-6 md:py-3 rounded-full border border-white/10 shadow-lg transition-all scale-90 md:scale-100 origin-bottom notranslate">
+
                 <button
                     onClick={(e) => {
                         e.stopPropagation();

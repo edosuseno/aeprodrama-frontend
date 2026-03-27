@@ -16,6 +16,7 @@ export interface VeloloDetail extends VeloloDrama {
     id: string;
     index: number;
     title: string;
+    subtitle?: string;
   }[];
   totalEpisodes: number;
 }

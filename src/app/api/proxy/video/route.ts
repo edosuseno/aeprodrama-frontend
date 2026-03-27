@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import https from "https";
 import http from "http";
 
-export const dynamic = 'force-dynamic'; // Prevent static optimization
+export const dynamic = 'force-dynamic'; 
 
 // Custom agent to ignore SSL issues
 const agent = new https.Agent({
@@ -52,9 +52,22 @@ function streamToBuffer(stream: http.IncomingMessage): Promise<Buffer> {
 function nodeToWebStream(nodeStream: http.IncomingMessage): ReadableStream {
     return new ReadableStream({
         start(controller) {
-            nodeStream.on('data', (chunk) => controller.enqueue(chunk));
-            nodeStream.on('end', () => controller.close());
-            nodeStream.on('error', (err) => controller.error(err));
+            nodeStream.on('data', (chunk) => {
+              try {
+                controller.enqueue(chunk);
+              } catch(e) {
+                nodeStream.destroy();
+              }
+            });
+            nodeStream.on('end', () => {
+              try { controller.close(); } catch(e) {}
+            });
+            nodeStream.on('error', (err) => {
+              try { controller.error(err); } catch(e) {}
+            });
+        },
+        cancel() {
+          nodeStream.destroy();
         }
     });
 }
@@ -104,7 +117,7 @@ export async function GET(req: NextRequest) {
         const stream = nodeToWebStream(upstreamRes);
         
         const responseHeaders = new Headers();
-        responseHeaders.set("Content-Type", contentType || "video/mp4");
+        responseHeaders.set("Content-Type", contentType || "video/mp2t");
         responseHeaders.set("Access-Control-Allow-Origin", "*");
         responseHeaders.set("Accept-Ranges", "bytes");
         
@@ -132,7 +145,8 @@ export async function GET(req: NextRequest) {
     
     // DETERMINE VALID ORIGIN for rewrites
     const host = req.headers.get("x-forwarded-host") || req.headers.get("host");
-    const proto = req.headers.get("x-forwarded-proto") || "https"; 
+    // FIX Lokal: Detect http for localhost
+    const proto = (host?.includes('localhost') || host?.includes('127.0.0.1')) ? "http" : (req.headers.get("x-forwarded-proto") || "https"); 
     const origin = `${proto}://${host}`;
 
     if (isM3u8 || isM3u8Content) {
@@ -167,18 +181,6 @@ export async function GET(req: NextRequest) {
             } catch (e) { return line; }
         }).join('\n');
 
-        if (isMasterPlaylist && subUrl) {
-            let proxiedSubUrl = `${origin}/api/proxy/video?url=${encodeURIComponent(subUrl)}`;
-            if (refererParam) proxiedSubUrl += `&referer=${encodeURIComponent(refererParam)}`;
-            
-            const mediaLine = `#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",NAME="Indonesia",DEFAULT=YES,AUTOSELECT=YES,LANGUAGE="id",URI="${proxiedSubUrl}"`;
-            rewritten = rewritten.replace("#EXTM3U", "#EXTM3U\n" + mediaLine);
-            rewritten = rewritten.replace(/#EXT-X-STREAM-INF:(.*)/g, (match, attrs) => {
-                if (attrs.includes("SUBTITLES=")) return match; 
-                return `#EXT-X-STREAM-INF:${attrs},SUBTITLES="subs"`;
-            });
-        }
-
         return new NextResponse(rewritten, {
             status: 200,
             headers: {
@@ -189,33 +191,7 @@ export async function GET(req: NextRequest) {
         });
     }
 
-    // VTT/SRT Logic
-    if (isVtt || lowUrl.endsWith(".srt")) {
-       let vttContent = decoder.decode(buffer);
-       const isSrt = lowUrl.includes(".srt");
-       
-       if (isSrt && !firstChunk.includes("WEBVTT")) {
-           vttContent = vttContent.replace(/\r\n/g, '\n')
-                        .replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
-           vttContent = "WEBVTT\n\n" + vttContent;
-       }
-       
-       vttContent = vttContent.replace(
-           /((?:\d{2}:)?\d{2}:\d{2}\.\d{3} --> (?:\d{2}:)?\d{2}:\d{2}\.\d{3})(.*)/g, 
-           (match, time, rest) => rest.includes("line:") ? match : `${time} line:75%${rest}`
-       );
-
-       return new NextResponse(vttContent, {
-         status: 200,
-         headers: {
-           "Content-Type": "text/vtt",
-           "Access-Control-Allow-Origin": "*",
-           "Cache-Control": "no-store",
-         }
-       });
-    }
-
-    // FALLBACK: Just return buffered content (e.g. small unknown files)
+    // FALLBACK: Just return buffered content
     return new NextResponse(buffer as any, {
         status: upstreamRes.statusCode || 200,
         headers: {
