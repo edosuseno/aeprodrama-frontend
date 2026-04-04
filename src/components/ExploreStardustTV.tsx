@@ -90,7 +90,7 @@ export function ExploreStardustTV() {
                             <UnifiedMediaCard
                                 key={`${drama.id || drama.shortPlayId}-${pageIdx}-${idx}`}
                                 title={drama.title || drama.name}
-                                cover={drama.poster || drama.image}
+                                cover={drama.cover || drama.book_pic || drama.poster || drama.image || drama.shortPlayCover || ''}
                                 link={`/detail/stardusttv/${drama.id || drama.shortPlayId}`}
                                 episodes={drama.totalEpisodes || drama.chapterCount || 0}
                                 index={idx}
