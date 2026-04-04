@@ -40,7 +40,7 @@ export function Header() {
   }, []);
 
   // Platform context
-  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, platformInfo, setPlatform } = usePlatform();
+  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDramabox2, platformInfo, setPlatform } = usePlatform();
 
   // Search based on platform
   const { data: dramaBoxResults, isLoading: isSearchingDramaBox } = useSearchDramas(
@@ -117,17 +117,17 @@ export function Header() {
             ? (meloloResults as any)?.search_data?.flatMap((item: any) => item.books || []) || []
             : isFlickReels
               ? flickReelsResults?.data
-                : isFreeReels
-                  ? freeReelsResults
-                  : isStardustTV
-                    ? stardustTVResults
-                      : isDramaWave
-                        ? dramaWaveResults
-                        : isDramaNova
-                          ? dramanovaResults
-                          : isVelolo
-                            ? veloloResults
-                            : movieBoxResults?.data) || [];
+              : isFreeReels
+                ? freeReelsResults
+                : isStardustTV
+                  ? stardustTVResults
+                  : isDramaWave
+                    ? dramaWaveResults
+                    : isDramaNova
+                      ? dramanovaResults
+                      : isVelolo
+                        ? veloloResults
+                        : movieBoxResults?.data) || [];
 
   const handleSearchClose = () => {
     setSearchOpen(false);
@@ -147,7 +147,7 @@ export function Header() {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center gap-0 md:gap-2">
             {/* Sidebar Toggle - Desktop Only */}
-            <button 
+            <button
               onClick={toggleSidebar}
               className="hidden md:flex p-3 rounded-xl hover:bg-muted/50 transition-colors text-muted-foreground hover:text-foreground"
               aria-label="Toggle Sidebar"
@@ -627,13 +627,13 @@ export function Header() {
                         <div className="flex-1 min-w-0">
                           <h3 className="font-display font-semibold text-foreground truncate">{drama.shortPlayName}</h3>
                           {drama.tags && (
-                             <div className="flex flex-wrap gap-1.5 mt-2">
-                               {drama.tags.slice(0, 3).map((tag: string, idx: number) => (
-                                 <span key={idx} className="tag-pill text-[10px]">
-                                   {tag}
-                                 </span>
-                               ))}
-                             </div>
+                            <div className="flex flex-wrap gap-1.5 mt-2">
+                              {drama.tags.slice(0, 3).map((tag: string, idx: number) => (
+                                <span key={idx} className="tag-pill text-[10px]">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
                           )}
                           <div className="mt-2">
                             <span className="tag-pill text-[10px]">
@@ -671,9 +671,9 @@ export function Header() {
                               {drama.chapterCount || 0} Episodes
                             </span>
                             {drama.provider && (
-                               <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
-                                 {drama.provider}
-                               </span>
+                              <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                                {drama.provider}
+                              </span>
                             )}
                           </div>
                         </div>
@@ -707,9 +707,9 @@ export function Header() {
                               {drama.chapterCount || 0} Episodes
                             </span>
                             {drama.provider && (
-                               <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
-                                 {drama.provider}
-                               </span>
+                              <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                                {drama.provider}
+                              </span>
                             )}
                           </div>
                         </div>

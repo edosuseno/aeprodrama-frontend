@@ -35,7 +35,13 @@ export interface DrmanovaDetailResponse {
 export function useDrmanovaExplore(page = 1, category = 'all') {
     return useQuery<DrmanovaDrama[]>({
         queryKey: ["dramanova", "explore", page, category],
-        queryFn: () => fetchJson<DrmanovaDrama[]>(`/api/dramanova/explore?page=${page}&category=${category}`),
+        queryFn: async () => {
+            const data = await fetchJson<any>(`/api/dramanova/explore?page=${page}&category=${category}`);
+            // Guard: pastikan selalu mengembalikan array
+            if (Array.isArray(data)) return data as DrmanovaDrama[];
+            if (data?.data && Array.isArray(data.data)) return data.data as DrmanovaDrama[];
+            return [] as DrmanovaDrama[];
+        },
         staleTime: 5 * 60 * 1000,
     });
 }
@@ -59,9 +65,9 @@ export function useDrmanovaSearch(query: string) {
 }
 
 export function useDrmanovaStream(id: string, episodeIndex: number) {
-    return useQuery<string>({
+    return useQuery<any>({
         queryKey: ["dramanova", "stream", id, episodeIndex],
-        queryFn: () => fetchJson<string>(`/api/dramanova/watch?id=${id}&episodeIndex=${episodeIndex}`),
+        queryFn: () => fetchJson<any>(`/api/dramanova/watch?id=${id}&episodeIndex=${episodeIndex}`),
         enabled: !!id && !!episodeIndex,
         staleTime: 5 * 60 * 1000,
     });
@@ -72,8 +78,13 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 export function useInfiniteDrmanova(category = 'all') {
   return useInfiniteQuery({
     queryKey: ["dramanova", "infinite", category],
-    queryFn: ({ pageParam = 1 }) =>
-      fetchJson<DrmanovaDrama[]>(`/api/dramanova/explore?page=${pageParam}&category=${category}`),
+    queryFn: async ({ pageParam = 1 }) => {
+      const data = await fetchJson<any>(`/api/dramanova/explore?page=${pageParam}&category=${category}`);
+      // Guard: pastikan selalu mengembalikan array
+      if (Array.isArray(data)) return data as DrmanovaDrama[];
+      if (data?.data && Array.isArray(data.data)) return data.data as DrmanovaDrama[];
+      return [] as DrmanovaDrama[];
+    },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       // DRAMANOVA API returns page lists, typically 10-20 items

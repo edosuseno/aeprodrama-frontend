@@ -3,7 +3,8 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+import { getBackendBase } from "@/lib/api-utils";
+const API_BASE = getBackendBase();
 
 export function useOnlineTracker() {
   // 1. Mutation untuk kirim Heartbeat

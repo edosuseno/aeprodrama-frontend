@@ -4,7 +4,7 @@ import { getBackendBase } from "@/lib/api-utils";
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-    // getBackendBase() mengembalikan URL dengan /api, contoh: http://localhost:5001/api
+    // getBackendBase() mengembalikan URL dengan /api, contoh: https://dracindo-rho.vercel.app/api
     const BACKEND_API = getBackendBase();
     // Untuk resolve path relatif dari backend (misal /api/dramabox/proxy?...),
     // kita butuh origin tanpa /api di akhir

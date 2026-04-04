@@ -51,8 +51,8 @@ export default function DramaWaveWatchPage() {
     useEffect(() => {
         if (videoUrl && videoRef.current) {
             const video = videoRef.current;
-            const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-            const proxiedUrl = `${backendUrl}/api/proxy?url=${encodeURIComponent(videoUrl)}`;
+            // Gunakan API Route internal frontend sebagai proxy utama agar CORS aman di Vercel
+            const proxiedUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}`;
             
             addLog(`Mencoba memutar via Proxy: ${proxiedUrl.substring(0, 50)}...`);
 
@@ -103,16 +103,24 @@ export default function DramaWaveWatchPage() {
 
     // Force Trigger Native Subtitle (Sangat Penting untuk HLS & React)
     useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
         const checkSubtitle = () => {
-            if (videoRef.current && videoRef.current.textTracks) {
-                const tracks = videoRef.current.textTracks;
+            if (video.textTracks) {
+                const tracks = video.textTracks;
                 for (let i = 0; i < tracks.length; i++) {
+                    // Aktifkan track Indonesia
                     if (tracks[i].language === 'id' || tracks[i].kind === 'subtitles') {
                         tracks[i].mode = 'showing';
                     }
                 }
             }
         };
+
+        // Hapus track lama jika ada (mencegah duplikasi di browser)
+        // const oldTracks = video.querySelectorAll('track');
+        // oldTracks.forEach(t => t.remove());
 
         const timeout1 = setTimeout(checkSubtitle, 500);
         const timeout2 = setTimeout(checkSubtitle, 1500);
@@ -160,7 +168,6 @@ export default function DramaWaveWatchPage() {
                 __html: `
                 video::cue {
                     color: #ffffff !important;
-                    background: transparent !important;
                     background-color: rgba(0, 0, 0, 0) !important;
                     text-shadow: 
                         2px 2px 0 #000,
@@ -170,19 +177,8 @@ export default function DramaWaveWatchPage() {
                         0 2px 4px rgba(0,0,0,0.8),
                         0 0 10px rgba(0,0,0,1) !important;
                     font-family: "Inter", -apple-system, sans-serif !important;
-                    font-size: 1.2rem !important;
-                    font-weight: 900 !important;
-                    outline: none !important;
-                }
-                ::-webkit-media-text-track-display {
-                    background: transparent !important;
-                    background-color: transparent !important;
-                    overflow: visible !important;
-                }
-                ::cue(c), ::cue(b), ::cue(v), ::cue(u), ::cue(i) {
-                    color: #fff !important;
-                    background: transparent !important;
-                    background-color: rgba(0,0,0,0) !important;
+                    font-size: 1.15rem !important;
+                    font-weight: 800 !important;
                 }
                 `
             }} />
@@ -195,7 +191,10 @@ export default function DramaWaveWatchPage() {
                         className="flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10"
                     >
                         <ChevronLeft className="w-6 h-6" />
-                        <span className="text-primary font-bold hidden sm:inline">AE PRO</span>
+                        <div className="flex flex-col -gap-1">
+                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+                            <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-widest">PUSAT DRAMA</span>
+                        </div>
                     </Link>
 
                     <div className="text-center flex-1 px-4 min-w-0">
@@ -245,13 +244,16 @@ export default function DramaWaveWatchPage() {
                         playsInline
                         onEnded={handleVideoEnded}
                     >
-                        {streamData?.subtitles?.find((sub: any) => sub.label === 'Indonesia' || sub.language === 'id-ID' || sub.language === 'id') && (
+                        {(streamData?.subtitle || (streamData?.subtitles && streamData.subtitles.length > 0)) && (
                             <track 
                                 key={currentEpisode}
                                 label="Indonesia"
                                 kind="subtitles"
                                 srcLang="id"
-                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/proxy?url=${encodeURIComponent(streamData.subtitles.find((sub: any) => sub.label === 'Indonesia' || sub.language === 'id-ID' || sub.language === 'id')?.url || "")}&t=${Date.now()}`}
+                                src={
+                                    streamData.subtitle || 
+                                    (streamData.subtitles?.find((s:any) => (s.lang || s.language || '').toLowerCase().includes('id'))?.url || "")
+                                }
                                 default
                             />
                         )}

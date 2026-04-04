@@ -57,26 +57,55 @@ export function UnifiedMediaCard({
       {/* Visual Container */}
       <div className="aspect-[2/3] relative overflow-hidden rounded-xl bg-muted/20">
         <img
-          src={cover && cover.trim()
-            ? (cover.includes(".heic") && !cover.includes("wsrv.nl")
-              ? `https://wsrv.nl/?url=${encodeURIComponent(cover)}&output=jpg`
-              : cover)
-            : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E"}
+          src={(() => {
+            if (!cover || typeof cover !== 'string' || !cover.trim()) {
+              return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+            }
+            const finalCover = cover.startsWith('//') ? `https:${cover}` : cover;
+            
+            // Jika cover sudah berupa wsrv.nl atau menggunakan proxy backend internal kita, JANGAN wrap lagi!
+            if (finalCover.includes('wsrv.nl') || finalCover.includes('/api/proxy') || finalCover.includes('/api/image-proxy')) {
+                return finalCover;
+            }
+            // Khusus provider yang menolak wsrv.nl atau image yg HTTPS-nya bermasalah (http://)
+            if (finalCover.includes('montagehub.xyz') || finalCover.includes('hikeuniverses.xyz') || finalCover.includes('sansekai') || finalCover.includes('stardusttv.cc') || finalCover.includes('fizzopic.org') || finalCover.startsWith('http://')) {
+                return `/api/image-proxy?url=${encodeURIComponent(finalCover)}`;
+            }
+
+            return `https://wsrv.nl/?url=${encodeURIComponent(finalCover)}&w=400&output=webp`;
+          })()}
           alt={title}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           loading="lazy"
           referrerPolicy="no-referrer"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            const originalSrc = target.src;
+            const currentSrc = target.src || "";
             
-            // If it's not already using our proxy and not the fallback SVG
-            if (cover && !originalSrc.includes('/api/image-proxy') && !originalSrc.startsWith('data:')) {
-              console.log(`[UnifiedMediaCard] Image failed, trying proxy: ${title}`);
-              target.src = `/api/image-proxy?url=${encodeURIComponent(cover)}`;
-            } else if (!originalSrc.startsWith('data:image/svg+xml')) {
+            // Jika sudah pakai proxy atau sudah ditandai error, stop agar tidak infinite loop/banjir request
+            if (target.dataset.triedProxy || currentSrc.includes('/api/image-proxy') || currentSrc.includes('/api/proxy')) {
               target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+              return;
             }
+
+            target.dataset.triedProxy = "true";
+            console.log(`[UnifiedMediaCard] Image failed, trying fallback proxy for: ${title}`);
+            
+            if (!cover || typeof cover !== 'string') {
+              target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+              return;
+            }
+
+            let finalCoverUrl = cover.startsWith('//') ? `https:${cover}` : cover;
+            
+            // Ekstrak URL asli jika saat ini sedang menggunakan wsrv.nl link
+            if (finalCoverUrl.includes('wsrv.nl/?url=')) {
+                try {
+                    const extracted = finalCoverUrl.split('wsrv.nl/?url=')[1].split('&')[0];
+                    finalCoverUrl = decodeURIComponent(extracted);
+                } catch (err) {}
+            }
+            target.src = `/api/image-proxy?url=${encodeURIComponent(finalCoverUrl)}`;
           }}
         />
 

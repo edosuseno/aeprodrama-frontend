@@ -59,46 +59,72 @@ export default function VeloloWatchPage() {
         }
     }, [currentEpisode, detailData, id]);
 
+    // Handle Stream Object & Proxy Logic
+    const { processedVideoUrl, processedSubtitleUrl } = useMemo(() => {
+        const streamObj = typeof videoUrl === 'object' && videoUrl !== null ? (videoUrl as any) : null;
+        const url = streamObj?.url || (typeof videoUrl === 'string' ? videoUrl : null) || (currentEpisodeData as any)?.videoAddress;
+        const subUrl = streamObj?.subtitle || currentEpisodeData?.subtitle || "";
+
+        if (!url) return { processedVideoUrl: "", processedSubtitleUrl: "" };
+        
+        let pUrl = url;
+        // JANGAN gunakan double proxy jika URL sudah berasal dari vidrama.asia/api/video-proxy
+        if (pUrl.startsWith("http") && !pUrl.includes("vidrama.asia/api/video-proxy")) {
+            pUrl = `/api/proxy?url=${encodeURIComponent(pUrl)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+        }
+
+        let pSub = subUrl;
+        if (pSub && pSub.startsWith("http")) {
+            // Hanya gunakan proxy jika belum diproses oleh backend (tidak dimulai dengan /api/proxy atau mengandung domain vercel mana pun)
+            if (!pSub.startsWith("/api/proxy") && !pSub.includes("vercel.app")) {
+                const encodedSubUrl = encodeURIComponent(pSub);
+                pSub = `/api/proxy?url=${encodedSubUrl}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+            }
+        }
+
+        return { processedVideoUrl: pUrl, processedSubtitleUrl: pSub };
+    }, [videoUrl, currentEpisodeData]);
+
     useEffect(() => {
-        if (videoUrl && videoRef.current) {
+        if (processedVideoUrl && videoRef.current) {
             const video = videoRef.current;
             
-            // Gunakan Universal Proxy untuk menghindari CORS
-            const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-            const proxiedUrl = `${backendUrl}/api/proxy?url=${encodeURIComponent(videoUrl)}`;
-            
-            console.log(`[Velolo] Playing via Proxy: ${proxiedUrl.substring(0, 50)}...`);
+            console.log(`[Velolo] Playing: ${processedVideoUrl.substring(0, 50)}...`);
 
             if (hlsRef.current) {
                 hlsRef.current.destroy();
                 hlsRef.current = null;
             }
 
-            const isHlsUrl = videoUrl.includes('.m3u8');
+            const isHlsUrl = processedVideoUrl.includes('.m3u8') || processedVideoUrl.includes('index.m3u8');
 
             if (isHlsUrl && Hls.isSupported()) {
                 const hls = new Hls({
                     enableWorker: true,
-                    fragLoadingMaxRetry: 3,
+                    lowLatencyMode: true,
+                    backBufferLength: 90,
                 });
                 hlsRef.current = hls;
-                hls.loadSource(proxiedUrl);
+                hls.loadSource(processedVideoUrl);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                    video.play().catch(() => console.log("Autoplay blocked"));
+                    video.play().catch(() => {});
                 });
             } else {
-                video.src = proxiedUrl;
-                video.play().catch(() => console.log("Play blocked"));
+                video.src = processedVideoUrl;
+                video.play().catch(() => {});
             }
         }
-    }, [videoUrl]);
+    }, [processedVideoUrl]);
 
     // Force Trigger Native Subtitle (Sangat Penting untuk HLS & React)
     useEffect(() => {
+        const video = videoRef.current;
+        if (!video) return;
+
         const checkSubtitle = () => {
-            if (videoRef.current && videoRef.current.textTracks) {
-                const tracks = videoRef.current.textTracks;
+            if (video.textTracks) {
+                const tracks = video.textTracks;
                 for (let i = 0; i < tracks.length; i++) {
                     if (tracks[i].language === 'id' || tracks[i].kind === 'subtitles') {
                         tracks[i].mode = 'showing';
@@ -107,14 +133,18 @@ export default function VeloloWatchPage() {
             }
         };
 
+        // Hapus track lama tidak diperlukan dan merusak sinkronisasi React DOM
+        // const oldTracks = video.querySelectorAll('track');
+        // oldTracks.forEach(t => t.remove());
+
         const timeout1 = setTimeout(checkSubtitle, 500);
-        const timeout2 = setTimeout(checkSubtitle, 1500);
+        const timeout2 = setTimeout(checkSubtitle, 2000);
 
         return () => {
             clearTimeout(timeout1);
             clearTimeout(timeout2);
         };
-    }, [currentEpisode, detailData]);
+    }, [currentEpisode, processedSubtitleUrl]);
 
     const goToEpisode = (ep: number) => {
         if (ep === currentEpisode) return;
@@ -180,7 +210,6 @@ export default function VeloloWatchPage() {
                 __html: `
                 video::cue {
                     color: #ffffff !important;
-                    background: transparent !important;
                     background-color: rgba(0, 0, 0, 0) !important;
                     text-shadow: 
                         2px 2px 0 #000,
@@ -190,31 +219,20 @@ export default function VeloloWatchPage() {
                         0 2px 4px rgba(0,0,0,0.8),
                         0 0 10px rgba(0,0,0,1) !important;
                     font-family: "Inter", -apple-system, sans-serif !important;
-                    font-size: 1.2rem !important;
-                    font-weight: 900 !important;
-                    outline: none !important;
-                }
-                ::-webkit-media-text-track-display {
-                    background: transparent !important;
-                    background-color: transparent !important;
-                    overflow: visible !important;
-                }
-                ::cue(c), ::cue(b), ::cue(v), ::cue(u), ::cue(i) {
-                    color: #fff !important;
-                    background: transparent !important;
-                    background-color: rgba(0,0,0,0) !important;
+                    font-size: 1.15rem !important;
+                    font-weight: 800 !important;
                 }
                 `
             }} />
             
             {/* Header - Fixed Overlay (Seragam dengan FreeReels/Melolo) */}
-            <div className="absolute top-0 left-0 right-0 z-40 h-16 pointer-events-none">
+            <div className="absolute top-0 left-0 right-0 z-50 h-16 pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent" />
 
                 <div className="relative z-10 flex items-center justify-between h-full px-4 max-w-7xl mx-auto pointer-events-auto">
                     <Link
                         href={`/detail/velolo/${id}`}
-                        className="flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10"
+                        className="flex items-center gap-3 p-2 bg-black/20 backdrop-blur rounded-full text-white hover:bg-white/20 transition"
                     >
                         <ChevronLeft className="w-6 h-6" />
                         <div className="flex flex-col -gap-1">
@@ -224,22 +242,20 @@ export default function VeloloWatchPage() {
                     </Link>
 
                     <div className="text-center flex-1 px-4 min-w-0">
-                        <h1 className="text-white font-medium truncate text-sm sm:text-base drop-shadow-md">
+                        <h1 className="text-white font-bold truncate text-sm sm:text-base drop-shadow-md">
                             {dramaTitle}
                         </h1>
-                        <p className="text-white/80 text-xs drop-shadow-md">
-                            Episode {currentEpisode}
+                        <p className="text-white/80 text-[10px] sm:text-xs drop-shadow-md uppercase tracking-widest">
+                            Episode {currentEpisode} / {totalEpisodes}
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={() => setShowEpisodeList(!showEpisodeList)}
-                            className="p-2 text-white/90 hover:text-white transition-colors rounded-full hover:bg-white/10"
-                        >
-                            <List className="w-6 h-6 drop-shadow-md" />
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setShowEpisodeList(!showEpisodeList)}
+                        className="p-2 bg-black/20 backdrop-blur rounded-full text-white hover:bg-white/20 transition"
+                    >
+                        <List className="w-6 h-6 drop-shadow-md" />
+                    </button>
                 </div>
             </div>
 
@@ -276,13 +292,13 @@ export default function VeloloWatchPage() {
                         crossOrigin="anonymous"
                         onEnded={handleVideoEnded}
                     >
-                        {currentEpisodeData?.subtitle && (
+                        {processedSubtitleUrl && (
                             <track 
                                 key={currentEpisode}
                                 label="Indonesia"
                                 kind="subtitles"
                                 srcLang="id"
-                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitle)}&t=${Date.now()}`}
+                                src={processedSubtitleUrl}
                                 default
                             />
                         )}
@@ -322,14 +338,9 @@ export default function VeloloWatchPage() {
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
                         onClick={() => setShowEpisodeList(false)}
                     />
-                    <div className="fixed inset-y-0 right-0 w-72 bg-zinc-900 z-[70] overflow-y-auto border-l border-white/10 shadow-2xl animate-in slide-in-from-right">
-                        <div className="p-4 border-b border-white/10 sticky top-0 bg-zinc-900 z-10 flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                                <h2 className="font-bold text-white">Daftar Episode</h2>
-                                <span className="text-xs text-white/60 bg-white/10 px-2 py-0.5 rounded-full">
-                                    Total {totalEpisodes}
-                                </span>
-                            </div>
+                    <div className="fixed inset-y-0 right-0 w-72 bg-zinc-900/95 backdrop-blur-xl z-[70] overflow-hidden border-l border-white/10 shadow-2xl animate-in slide-in-from-right flex flex-col">
+                        <div className="p-4 border-b border-white/10 bg-zinc-900/50 z-10 flex items-center justify-between text-white">
+                            <h2 className="font-bold">Daftar Episode</h2>
                             <button
                                 onClick={() => setShowEpisodeList(false)}
                                 className="p-1 text-white/70 hover:text-white"
@@ -337,17 +348,17 @@ export default function VeloloWatchPage() {
                                 <ChevronRight className="w-6 h-6" />
                             </button>
                         </div>
-                        <div className="p-3 grid grid-cols-5 gap-2">
+                        <div className="flex-1 overflow-y-auto p-3 grid grid-cols-4 gap-2 content-start no-scrollbar">
                             {Array.from({ length: totalEpisodes }).map((_, i) => {
                                 const epNum = i + 1;
                                 return (
                                     <button
-                                        key={epNum}
+                                        key={`ep-item-${epNum}`}
                                         onClick={() => goToEpisode(epNum)}
                                         className={cn(
-                                            "aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all",
+                                            "aspect-square flex items-center justify-center rounded-lg text-sm font-bold transition-all shadow-sm",
                                             epNum === currentEpisode
-                                                ? "bg-primary text-white shadow-lg shadow-primary/20"
+                                                ? "bg-red-600 text-white shadow-lg"
                                                 : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
                                         )}
                                     >

@@ -73,8 +73,8 @@ export default function FreeReelsWatchPage() {
 
   const proxiedSubtitleUrl = useMemo(() => {
     if (!currentEpisodeData?.subtitleUrl) return "";
-    const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-    return `${backendBase}/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
+    // Gunakan path relatif agar aman CORS di Chrome (Vercel)
+    return `/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
   }, [currentEpisodeData]);
 
   // Load video with HLS support
@@ -280,7 +280,6 @@ export default function FreeReelsWatchPage() {
         __html: `
                 video::cue {
                     color: #ffffff !important;
-                    background: transparent !important;
                     background-color: rgba(0, 0, 0, 0) !important;
                     text-shadow: 
                         2px 2px 0 #000,
@@ -290,14 +289,8 @@ export default function FreeReelsWatchPage() {
                         0 2px 4px rgba(0,0,0,0.8),
                         0 0 10px rgba(0,0,0,1) !important;
                     font-family: "Inter", -apple-system, sans-serif !important;
-                    font-size: 1.2rem !important;
-                    font-weight: 900 !important;
-                    outline: none !important;
-                }
-                ::-webkit-media-text-track-display {
-                    background: transparent !important;
-                    background-color: transparent !important;
-                    overflow: visible !important;
+                    font-size: 1.15rem !important;
+                    font-weight: 800 !important;
                 }
                 `
       }} />

@@ -42,7 +42,7 @@ export function ExploreMovieBox() {
     if (isError) return null;
 
     return (
-        <section className="mt-10">
+        <section className="">
             <div className="flex items-center gap-2 mb-6">
                 <Film className="w-5 h-5 text-primary" />
                 <h2 className="text-xl font-bold">Jelajahi Film Lainnya</h2>

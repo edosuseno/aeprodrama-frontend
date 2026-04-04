@@ -9,16 +9,29 @@ export async function GET(request: NextRequest) {
         const requestHeaders = new Headers();
 
         // Forward critical headers
-        // Tentukan Referer yang tepat berdasarkan domain tujuan
-        let referer = "https://www.dramabox.com/";
-        let origin = "https://www.dramabox.com";
+        let referer = "https://www.google.com/";
+        let origin = "";
 
-        if (urlStr.includes('shortmax') || urlStr.includes('akamai') || urlStr.includes('shortttv')) {
+        if (urlStr.includes('dramabox')) {
+            referer = "https://www.dramabox.com/";
+            origin = "https://www.dramabox.com";
+        } else if (urlStr.includes('shortmax') || urlStr.includes('akamai') || urlStr.includes('shortttv')) {
             referer = "https://www.shortmax.com/";
             origin = "https://www.shortmax.com";
         } else if (urlStr.includes('flickreels') || urlStr.includes('farsunpteltd') || urlStr.includes('playlet-hls')) {
             referer = "https://www.flickreels.com/";
             origin = "https://www.flickreels.com";
+        } else if (urlStr.includes('melolo') || urlStr.includes('velolo') || urlStr.includes('dramawave')) {
+            referer = "https://vidrama.asia/";
+            origin = "https://vidrama.asia";
+        } else if (urlStr.includes('jobsamg') || urlStr.includes('dnk7') || urlStr.includes('sansekai')) {
+            referer = "https://www.dramanova.com/";
+            origin = "https://www.dramanova.com";
+        } else {
+            // Generic fallback: use the domain of the target URL as referer
+            try {
+                referer = `${targetUrl.protocol}//${targetUrl.host}/`;
+            } catch (e) {}
         }
 
         requestHeaders.set("User-Agent", "Mozilla/5.0 (iPhone; CPU iPhone OS 17_4 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.4 Mobile/15E148 Safari/604.1");
@@ -70,16 +83,41 @@ export async function GET(request: NextRequest) {
                 return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}`;
             };
 
-            // Rewrite segments
+            // Rewrite segments and keys
             text = text.split('\n').map(line => {
-                let trimmed = line.trim();
+                const trimmed = line.trim();
                 if (!trimmed) return line;
-                if (!trimmed.startsWith('#')) return proxyRewrite(trimmed);
-                if (trimmed.includes('URI=')) {
-                    return trimmed.replace(/URI=(['"]?)(.*?)\1/g, (match, quote, uri) => {
+
+                const proxyRewrite = (uri: string) => {
+                    let cleanUri = uri.replace(/^["'](.*)["']$/, '$1');
+                    let absoluteUrl = cleanUri;
+                    
+                    if (!cleanUri.startsWith('http')) {
+                        try {
+                            const urlObj = new URL(cleanUri, baseUrl);
+                            if (urlObj.search === '') {
+                                parentUrlSearchParams.forEach((value, key) => {
+                                    urlObj.searchParams.set(key, value);
+                                });
+                            }
+                            absoluteUrl = urlObj.toString();
+                        } catch (e) { return uri; }
+                    }
+                    return `/api/proxy?url=${encodeURIComponent(absoluteUrl)}`;
+                };
+
+                // Jika baris adalah tag yang mengandung URI (X-KEY, X-MAP, dll)
+                if (trimmed.startsWith('#') && trimmed.includes('URI=')) {
+                    return trimmed.replace(/URI=(['"]?)(.*?)\1/g, (m, quote, uri) => {
                         return `URI="${proxyRewrite(uri)}"`;
                     });
                 }
+                
+                // Jika baris adalah URL segmen (tidak dimulai dengan #)
+                if (!trimmed.startsWith('#')) {
+                    return proxyRewrite(trimmed);
+                }
+
                 return line;
             }).join('\n');
 
@@ -88,6 +126,36 @@ export async function GET(request: NextRequest) {
                     "Content-Type": "application/vnd.apple.mpegurl",
                     "Access-Control-Allow-Origin": "*",
                     "Cache-Control": "no-cache"
+                }
+            });
+        }
+
+        // JIKA SUBTITLE (SRT/VTT): Convert ke VTT (Wajib untuk Chrome)
+        const isSubtitle = urlStr.includes(".srt") || urlStr.includes(".vtt") || urlStr.includes("mime_type=text_plain") || urlStr.includes("hikeuniverses.xyz") ||
+                         contentType.includes("subrip") || contentType.includes("text/vtt") ||
+                         (contentType.includes("application/octet-stream") && (urlStr.toLowerCase().endsWith(".srt") || urlStr.toLowerCase().endsWith(".vtt")));
+
+        if (isSubtitle && response.ok) {
+            let content = await response.text();
+            // Bersihkan BOM
+            content = content.replace(/^\ufeff/, '').trim();
+            
+            let vttContent = content;
+            if (!content.startsWith('WEBVTT')) {
+                // Konversi SRT ke VTT: Ganti koma ke titik pada timestamp
+                vttContent = 'WEBVTT\n\n' + content
+                    .replace(/(\d{1,2}:\d{2}:\d{2}),(\d{2,3})/g, '$1.$2');
+            } else {
+                // Pastikan format timestamp konsisten (titik)
+                vttContent = content.replace(/(\d{1,2}:\d{2}:\d{2}),(\d{2,3})/g, '$1.$2');
+            }
+
+            return new NextResponse(vttContent, {
+                headers: {
+                    "Content-Type": "text/vtt; charset=utf-8",
+                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Methods": "GET, OPTIONS",
+                    "Cache-Control": "public, max-age=3600"
                 }
             });
         }

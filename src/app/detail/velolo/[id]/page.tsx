@@ -40,7 +40,11 @@ export default function VeloloDetailPage() {
 
     const detail = data;
     const posterUrl = detail.cover || `https://res.velolo.tv/indonesiaPlay/${id}/Poster ID.jpg`;
-    const proxyPosterUrl = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/image-proxy?url=${encodeURIComponent(posterUrl)}`;
+    // Gunakan URL langsung dari backend karena sudah dibungkus wsrv.nl. 
+    // Jika belum (fallback), baru tambahkan wsrv.nl di sini secara direct (tanpa localhost:5001).
+    const displayPosterUrl = posterUrl.includes('wsrv.nl') 
+        ? posterUrl 
+        : `https://wsrv.nl/?url=${encodeURIComponent(posterUrl)}&w=500&output=webp`;
 
     return (
         <main className="min-h-screen pt-20">
@@ -49,7 +53,7 @@ export default function VeloloDetailPage() {
                 {/* Background Blur */}
                 <div className="absolute inset-0 overflow-hidden">
                     <img
-                        src={proxyPosterUrl}
+                        src={displayPosterUrl}
                         alt=""
                         className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
                     />
@@ -70,12 +74,12 @@ export default function VeloloDetailPage() {
                         {/* Cover */}
                         <div className="relative group">
                             <img
-                                src={proxyPosterUrl}
+                                src={displayPosterUrl}
                                 alt={detail.title}
                                 className="w-full max-w-[300px] mx-auto rounded-2xl shadow-2xl"
                             />
-                            {/* Overlay Play Button on Cover */}
-                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
+                            {/* Overlay Play Button on Cover - Posisi ke bawah (pb-4) agar elegan seperti StardustTV */}
+                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
                                 <Link
                                     href={`/watch/velolo/${detail.id}?ep=1`}
                                     className="px-8 py-3 rounded-full bg-primary text-primary-foreground font-semibold flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"

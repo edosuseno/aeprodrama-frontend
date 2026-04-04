@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -64,8 +63,8 @@ export default function DrmanovaWatchPage() {
     useEffect(() => {
         if (videoUrl && videoRef.current) {
             const video = videoRef.current;
-            const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-            const proxiedUrl = `${backendUrl}/api/proxy?url=${encodeURIComponent(videoUrl)}`;
+            // Gunakan API Route internal frontend sebagai proxy utama agar CORS aman di Vercel
+            const proxiedUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}`;
             
             addLog(`Mencoba memutar via Proxy: ${proxiedUrl.substring(0, 50)}...`);
 
@@ -173,7 +172,6 @@ export default function DrmanovaWatchPage() {
                 __html: `
                 video::cue {
                     color: #ffffff !important;
-                    background: transparent !important;
                     background-color: rgba(0, 0, 0, 0) !important;
                     text-shadow: 
                         2px 2px 0 #000,
@@ -183,44 +181,38 @@ export default function DrmanovaWatchPage() {
                         0 2px 4px rgba(0,0,0,0.8),
                         0 0 10px rgba(0,0,0,1) !important;
                     font-family: "Inter", -apple-system, sans-serif !important;
-                    font-size: 1.2rem !important;
-                    font-weight: 900 !important;
-                    outline: none !important;
-                }
-                ::-webkit-media-text-track-display {
-                    background: transparent !important;
-                    background-color: transparent !important;
-                    overflow: visible !important;
-                }
-                ::cue(c), ::cue(b), ::cue(v), ::cue(u), ::cue(i) {
-                    color: #fff !important;
-                    background: transparent !important;
-                    background-color: rgba(0,0,0,0) !important;
+                    font-size: 1.15rem !important;
+                    font-weight: 800 !important;
                 }
                 `
             }} />
 
-            <div className="absolute top-0 left-0 right-0 z-40 h-16 pointer-events-none">
+            <div className="absolute top-0 left-0 right-0 z-50 h-16 pointer-events-none">
                 <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent" />
                 <div className="relative z-10 flex items-center justify-between h-full px-4 max-w-7xl mx-auto pointer-events-auto">
                     <Link
                         href={`/detail/dramanova/${id}`}
-                        className="flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10"
+                        className="flex items-center gap-3 p-2 bg-black/20 backdrop-blur rounded-full text-white hover:bg-white/20 transition"
                     >
                         <ChevronLeft className="w-6 h-6" />
-                        <span className="text-primary font-bold hidden sm:inline">AE PRO</span>
+                        <div className="flex flex-col -gap-1">
+                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+                            <span className="text-[10px] text-white/70 hidden sm:inline leading-none">PUSAT DRAMA</span>
+                        </div>
                     </Link>
 
                     <div className="text-center flex-1 px-4 min-w-0">
-                        <h1 className="text-white font-medium truncate text-sm sm:text-base drop-shadow-md">
+                        <h1 className="text-white font-bold truncate text-sm sm:text-base drop-shadow-md">
                             {dramaTitle}
                         </h1>
-                        <p className="text-white/80 text-xs drop-shadow-md">Episode {currentEpisode}</p>
+                        <p className="text-white/80 text-[10px] sm:text-xs drop-shadow-md uppercase tracking-widest">
+                            Episode {currentEpisode} / {totalEpisodes}
+                        </p>
                     </div>
 
                     <button
                         onClick={() => setShowEpisodeList(!showEpisodeList)}
-                        className="p-2 text-white/90 hover:text-white transition-colors rounded-full hover:bg-white/10"
+                        className="p-2 bg-black/20 backdrop-blur rounded-full text-white hover:bg-white/20 transition"
                     >
                         <List className="w-6 h-6 drop-shadow-md" />
                     </button>
@@ -264,7 +256,7 @@ export default function DrmanovaWatchPage() {
                                 label="Indonesia"
                                 kind="subtitles"
                                 srcLang="id"
-                                src={`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/proxy?url=${encodeURIComponent(streamData.subtitles.find((sub: any) => sub.label === 'Indonesia' || sub.language === 'id-ID' || sub.language === 'id' || sub.language === 'in')?.url || "")}&t=${Date.now()}`}
+                                src={`/api/proxy?url=${encodeURIComponent(streamData.subtitles.find((sub: any) => sub.label === 'Indonesia' || sub.language === 'id-ID' || sub.language === 'id' || sub.language === 'in')?.url || "")}&t=${Date.now()}`}
                                 default
                             />
                         )}
@@ -285,21 +277,21 @@ export default function DrmanovaWatchPage() {
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
                         onClick={() => setShowEpisodeList(false)}
                     />
-                    <div className="fixed inset-y-0 right-0 w-72 bg-zinc-900 z-[70] overflow-y-auto border-l border-white/10 shadow-2xl animate-in slide-in-from-right">
-                        <div className="p-4 border-b border-white/10 sticky top-0 bg-zinc-900 z-10 flex items-center justify-between">
-                            <h2 className="font-bold text-white">Daftar Episode</h2>
+                    <div className="fixed inset-y-0 right-0 w-72 bg-zinc-900/95 backdrop-blur-xl z-[70] overflow-hidden border-l border-white/10 shadow-2xl animate-in slide-in-from-right flex flex-col">
+                        <div className="p-4 border-b border-white/10 bg-zinc-900/50 z-10 flex items-center justify-between text-white">
+                            <h2 className="font-bold">Daftar Episode</h2>
                             <button onClick={() => setShowEpisodeList(false)} className="p-1 text-white/70 hover:text-white">
                                 <ChevronRight className="w-6 h-6" />
                             </button>
                         </div>
-                        <div className="p-3 grid grid-cols-5 gap-2">
+                        <div className="flex-1 overflow-y-auto p-3 grid grid-cols-4 gap-2 content-start no-scrollbar">
                             {Array.from({ length: totalEpisodes }).map((_, i) => {
                                 const epNum = i + 1;
                                 return (
                                     <button
-                                        key={epNum}
+                                        key={`ep-item-${epNum}`}
                                         onClick={() => goToEpisode(epNum)}
-                                        className={`aspect-square flex items-center justify-center rounded-lg text-sm font-medium transition-all ${epNum === currentEpisode ? "bg-primary text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
+                                        className={`aspect-square flex items-center justify-center rounded-lg text-sm font-bold transition-all shadow-sm ${epNum === currentEpisode ? "bg-red-600 text-white" : "bg-white/5 text-white/70 hover:bg-white/10"}`}
                                     >
                                         {epNum}
                                     </button>

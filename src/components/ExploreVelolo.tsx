@@ -45,7 +45,7 @@ export function ExploreVelolo() {
     if (isError) return null;
 
     return (
-        <section className="mt-10">
+        <section className="">
             <h2 className="font-display font-bold text-xl md:text-2xl text-foreground mb-6 uppercase tracking-tight">
                 Velolo Collection
             </h2>
@@ -68,7 +68,7 @@ export function ExploreVelolo() {
                 {/* Skeletons while loading initial data */}
                 {isLoading &&
                     Array.from({ length: 18 }).map((_, i) => (
-                        <UnifiedMediaCardSkeleton key={i} />
+                        <UnifiedMediaCardSkeleton key={i} index={i} />
                     ))}
             </div>
             

@@ -82,11 +82,12 @@ export interface FlickReelsDetailResponse {
   episodes: FlickReelsEpisode[];
 }
 
-export function useFlickReelsForYou() {
+export function useFlickReelsForYou(enabled: boolean = true) {
   return useQuery<FlickReelsForYouResponse>({
     queryKey: ["flickreels", "foryou"],
     queryFn: () => fetchJson<FlickReelsForYouResponse>("/api/flickreels/foryou"),
     staleTime: 5 * 60 * 1000,
+    enabled
   });
 }
 

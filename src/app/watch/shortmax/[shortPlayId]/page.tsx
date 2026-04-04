@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Hls from "hls.js";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
+import { getBackendBase } from "@/lib/api-utils";
 
 export default function ShortMaxWatchPage() {
     const params = useParams<{ shortPlayId: string }>();
@@ -45,18 +46,24 @@ export default function ShortMaxWatchPage() {
     const addLog = (msg: string) => {
         console.log(`[ShortMax Player] ${msg}`);
     };
-
-    // Konversi URL video ke proxy Backend untuk mencegah HLS.js decryption errors
+// Konversi URL video ke proxy Backend untuk mencegah HLS.js decryption errors
     const buildProxyUrl = (videoUrl: string): string => {
-        const rawBase = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5001';
-        const baseUrl = rawBase.endsWith('/api') ? rawBase.replace('/api', '') : rawBase;
+        // Jika sudah berupa link proxy/decrypt sansekai, gunakan langsung
+        if (videoUrl.includes('/api/shortmax/hls') || videoUrl.includes('/api/shortmax/proxy') || videoUrl.includes('/api/proxy') || videoUrl.includes('/api/dramabox/decrypt') || videoUrl.includes('sansekai.my.id')) {
+            return videoUrl;
+        }
+
+        const backendUrl = getBackendBase();
+        const baseUrl = backendUrl.endsWith('/api') ? backendUrl.replace('/api', '') : backendUrl;
         return `${baseUrl}/api/shortmax/proxy?url=${encodeURIComponent(videoUrl)}`;
     };
 
     useEffect(() => {
-        if (episodeData?.episode?.videoUrl && videoRef.current) {
+        // BUG #4 Fix: fallback ke episodeData.url jika episode.videoUrl tidak ada
+        const resolvedVideoUrl = episodeData?.episode?.videoUrl || (episodeData as any)?.url;
+        if (resolvedVideoUrl && videoRef.current) {
             const video = videoRef.current;
-            const rawVideoUrl = episodeData.episode.videoUrl;
+            const rawVideoUrl = resolvedVideoUrl;
 
             addLog(`URL Asli: ${rawVideoUrl}`);
 
@@ -88,6 +95,24 @@ export default function ShortMaxWatchPage() {
                     addLog("Manifest HLS dimuat, mulai memutar.");
                     video.play().catch((e) => addLog(`Autoplay diblokir: ${e.message}`));
                 });
+
+                // --- FIX SHORTMAX: FRONTEND TRIMMING (METODE VIDRAMA ASIA) ---
+                // Kita memotong header sampah di browser agar tidak merusak HTTP Range/Size di backend.
+                hls.on(Hls.Events.FRAG_LOADED, (event, data) => {
+                    try {
+                        if (data.payload && data.payload.byteLength > 2168) {
+                            const uint8 = new Uint8Array(data.payload);
+                            // Cek signature "shortmax" (73 68 6f 72)
+                            if (uint8[0] === 0x73 && uint8[1] === 0x68 && uint8[2] === 0x6f && uint8[3] === 0x72) {
+                                data.payload = data.payload.slice(2168);
+                                // addLog("Berhasil memotong header sampah 2168 byte di frontend.");
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Gagal melakukan trimming fragmen:", e);
+                    }
+                });
+
                 hls.on(Hls.Events.ERROR, (_, data) => {
                     addLog(`HLS Error [${data.type}]: ${data.details}`);
                     if (data.fatal) {
@@ -131,7 +156,7 @@ export default function ShortMaxWatchPage() {
                 hlsRef.current = null;
             }
         };
-    }, [episodeData?.episode?.videoUrl]);
+    }, [episodeData]);
 
     // Auto-fullscreen pada mobile saat video mulai diputar (dinonaktifkan)
     // useEffect(() => {

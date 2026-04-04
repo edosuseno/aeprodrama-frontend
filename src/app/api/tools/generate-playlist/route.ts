@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { decryptData } from "@/lib/crypto";
+import { getBackendBase } from "@/lib/api-utils";
 
 // Use your actual backend URL
-const BACKEND_BASE = "https://aeprodrama-backend.vercel.app/api";
+const BACKEND_BASE = getBackendBase();
 
 export async function POST(request: NextRequest) {
     try {

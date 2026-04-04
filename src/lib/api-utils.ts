@@ -22,7 +22,18 @@ export function getBackendBase() {
   }
 
   // 2. PRODUCTION / EXPLICIT OVERRIDE
-  let base = process.env.NEXT_PUBLIC_API_BASE_URL || "https://dracindo.vercel.app/api";
+  // Prioritaskan environment variable NEXT_PUBLIC_API_BASE_URL
+  let base = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+  // Jika di Vercel dan env kosong, coba gunakan URL sistem atau fallback aman
+  if (!base) {
+    base = "https://backend-gamma-eight-75.vercel.app";
+  }
+
+  // Pastikan selalu ada protokol agar tidak dianggap path relatif oleh browser
+  if (!base.startsWith('http')) {
+    base = `https://${base}`;
+  }
 
   // Clean trailing slash
   if (base.endsWith('/')) {
@@ -30,7 +41,6 @@ export function getBackendBase() {
   }
 
   // Prevent double API segment (e.g., /api/api)
-  // If base already ends with /api, return it as is
   if (base.endsWith('/api')) {
     return base;
   }
@@ -40,8 +50,7 @@ export function getBackendBase() {
     return `${base}/api`;
   }
 
-  // Default behaviour: if it doesn't end in /api, append it? 
-  // Safety: usually base url is just the domain.
+  // Default behaviour: if it doesn't end in /api, append it
   if (!base.includes('/api')) {
     return `${base}/api`;
   }
@@ -60,7 +69,12 @@ export function encryptedResponse(data: any, status = 200) {
  */
 export function getProxiedImage(url: string, width: number = 400) {
   if (!url) return "";
-  if (url.includes("wsrv.nl")) return url;
+  if (url.includes("wsrv.nl") || url.includes("/api/proxy")) return url;
+  
+  // Bypass wsrv.nl untuk host yang diketahui menolak (akan memicu 400 Bad Request)
+  if (url.startsWith("http://") || url.includes("montagehub.xyz") || url.includes("hikeuniverses.xyz") || url.includes("sansekai") || url.includes("fizzopic.org")) {
+    return `/api/proxy?url=${encodeURIComponent(url)}`;
+  }
   
   // Gunakan wsrv.nl: output=webp untuk kompresi maksimal, w=width untuk resize
   return `https://wsrv.nl/?url=${encodeURIComponent(url)}&w=${width}&output=webp&q=80`;

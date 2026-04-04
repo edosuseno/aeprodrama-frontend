@@ -12,6 +12,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "**", 
       },
+      {
+        protocol: "https",
+        hostname: "gkcnbnlfqdlotnjaizxx.supabase.co",
+      }
     ],
   },
   devIndicators: {
@@ -25,3 +29,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+// Force route reload: 2026-03-28 19:17

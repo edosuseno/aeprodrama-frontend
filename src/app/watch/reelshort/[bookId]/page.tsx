@@ -300,6 +300,7 @@ export default function ReelShortWatchPage() {
   useEffect(() => {
     if (!activeUrl || !videoRef.current) return;
 
+    // Gunakan referer asli situs agar diizinkan oleh CDN
     loadVideo(activeUrl);
 
     return () => {
@@ -365,14 +366,33 @@ export default function ReelShortWatchPage() {
     };
   }, [currentEpisode, totalEpisodes]);
 
-  return (
-    <main className="fixed inset-0 bg-black flex flex-col">
-      {/* Header - Fixed Overlay with improved visibility */}
-      <div className="absolute top-0 left-0 right-0 z-40 h-16 pointer-events-none">
-        {/* Gradient background for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent" />
+    return (
+        <main className="fixed inset-0 bg-black flex flex-col overflow-hidden">
+            {/* Custom Subtitle Styling VIP - Ultra Force */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                video::cue {
+                    color: #ffffff !important;
+                    background-color: rgba(0, 0, 0, 0) !important;
+                    text-shadow: 
+                        2px 2px 0 #000,
+                       -2px -2px 0 #000,
+                        2px -2px 0 #000,
+                       -2px  2px 0 #000,
+                        0 2px 4px rgba(0,0,0,0.8),
+                        0 0 10px rgba(0,0,0,1) !important;
+                    font-family: "Inter", -apple-system, sans-serif !important;
+                    font-size: 1.15rem !important;
+                    font-weight: 800 !important;
+                }
+                `
+            }} />
 
-        <div className="relative z-10 flex items-center justify-between h-full px-4 max-w-7xl mx-auto pointer-events-auto">
+            {/* Header - Fixed Overlay with improved visibility */}
+            <div className="absolute top-0 left-0 right-0 z-40 h-16 pointer-events-none">
+                <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent" />
+
+                <div className="relative z-10 flex items-center justify-between h-full px-4 max-w-7xl mx-auto pointer-events-auto">
           {/* Header content... */}
           <Link
             href={`/detail/reelshort/${bookId}`}
@@ -467,13 +487,16 @@ export default function ReelShortWatchPage() {
           )}
 
           {/* Video Player */}
-          <video
-            ref={videoRef}
-            className="w-full h-full object-contain max-h-[100dvh]"
-            controls
-            autoPlay
-            onEnded={handleVideoEnded}
-          />
+            <video
+              ref={videoRef}
+              className="w-full h-full object-contain max-h-[100dvh]"
+              controls
+              playsInline
+              autoPlay
+              crossOrigin="anonymous"
+              {...({ disableRemotePlayback: true } as any)}
+              onEnded={handleVideoEnded}
+            />
         </div>
 
         {/* Navigation Controls Overlay - Bottom */}

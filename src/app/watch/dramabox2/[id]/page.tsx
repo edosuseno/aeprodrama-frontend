@@ -35,7 +35,7 @@ export default function Dramabox2WatchPage() {
   }, [searchParams, episodes]);
 
   // Fetch Stream URL
-  const { data: directStreamUrl, isLoading: streamLoading } = useDramabox2Watch(id || "", currentEpisode?.index || 1);
+  const { data: directStreamUrl, isLoading: streamLoading } = useDramabox2Watch(id || "", currentEpisode?.id || currentEpisode?.index || 1);
 
   useEffect(() => {
     if (detail && currentEpisode) {
@@ -56,9 +56,10 @@ export default function Dramabox2WatchPage() {
     const url = directStreamUrl || currentEpisode?.videoAddress;
     if (!url) return "";
     
-    // Use backend proxy to bypass CORS
+    // Use internal frontend proxy to bypass CORS
     if (url.startsWith("http")) {
-      return `${getBackendBase()}/proxy?url=${encodeURIComponent(url)}`;
+      // Menggunakan proxy universal agar pemutaran stabil
+      return `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
     }
     return url;
   }, [directStreamUrl, currentEpisode]);
@@ -75,10 +76,16 @@ export default function Dramabox2WatchPage() {
   return (
     <div className="relative h-screen w-full bg-black flex flex-col">
       {/* Navbar Overlay */}
-      <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-        <Link href={`/detail/dramabox2/${id}`} className="pointer-events-auto flex items-center gap-2 p-2 bg-black/20 backdrop-blur rounded-full text-white hover:bg-white/20 transition">
+      <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent">
+        <Link 
+          href={`/detail/dramabox2/${id}`} 
+          className="flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10"
+        >
           <ChevronLeft className="w-6 h-6" />
-          <span className="text-primary font-bold hidden sm:inline leading-none">AE PRO v2</span>
+          <div className="flex flex-col -gap-1">
+            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+            <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-tighter">Pusat Drama</span>
+          </div>
         </Link>
         <div className="text-white text-center drop-shadow-md">
           <h2 className="font-bold text-sm md:text-base line-clamp-1">{detail?.title || "Dramabox v2"}</h2>
@@ -115,7 +122,7 @@ export default function Dramabox2WatchPage() {
             <div className="flex flex-col items-center gap-4 text-center px-4">
                 <AlertCircle className="h-12 w-12 text-red-500" />
                 <p className="text-white font-medium">Video Gagal Dimuat</p>
-                <p className="text-white/50 text-xs max-w-xs">Token vidrama mungkin sudah kadaluarsa atau video ini memerlukan akses VIP.</p>
+                <p className="text-white/50 text-xs max-w-xs">Tautan video mungkin sudah kedaluwarsa atau sistem sedang dalam pemeliharaan.</p>
             </div>
         )}
 
@@ -158,28 +165,62 @@ export default function Dramabox2WatchPage() {
 }
 
 function VideoPlayer({ src, poster, onEnded }: { src: string; poster: string; onEnded?: () => void }) {
-  const videoRef = (el: HTMLVideoElement | null) => {
-    if (!el || !src) return;
-    
-    if (Hls.isSupported() && (src.includes('.m3u8') || src.includes('.m3u') || src.includes('proxy'))) {
-      const hls = new Hls();
+  const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
+
+  useEffect(() => {
+    if (!videoElement || !src) return;
+
+    const isHls = src.includes('.m3u8') || src.includes('.m3u');
+    let hls: Hls | null = null;
+
+    if (Hls.isSupported() && isHls) {
+      hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 60 * 1.5,
+      });
       hls.loadSource(src);
-      hls.attachMedia(el);
-      hls.on(Hls.Events.MANIFEST_PARSED, () => el.play().catch(() => {}));
+      hls.attachMedia(videoElement);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        videoElement.play().catch(() => {});
+      });
+      
+      hls.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          switch (data.type) {
+            case Hls.ErrorTypes.NETWORK_ERROR:
+              hls?.startLoad();
+              break;
+            case Hls.ErrorTypes.MEDIA_ERROR:
+              hls?.recoverMediaError();
+              break;
+            default:
+              hls?.destroy();
+              break;
+          }
+        }
+      });
     } else {
-      el.src = src;
-      el.play().catch(() => {});
+      videoElement.src = src;
+      videoElement.play().catch(() => {});
     }
-  };
+
+    return () => {
+      if (hls) {
+        hls.destroy();
+      }
+    };
+  }, [src, videoElement]);
 
   return (
     <video
-      ref={videoRef}
+      ref={setVideoElement}
       controls
       autoPlay
       className="w-full h-full object-contain"
       poster={poster}
       onEnded={onEnded}
+      playsInline
     />
   );
 }

@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dramabox2";
+export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dramabox2" | "dotdrama" | "goodshort" | "meloshort";
 
 export interface PlatformInfo {
   id: Platform;
@@ -96,6 +96,24 @@ export const PLATFORMS: PlatformInfo[] = [
     logo: "/dramabox.webp",
     apiBase: "/api/dramabox2",
   },
+  {
+    id: "dotdrama",
+    name: "Dot Drama",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/dotdrama.webp",
+    apiBase: "/api/dotdrama",
+  },
+  {
+    id: "goodshort",
+    name: "GoodShort",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/goodshort.webp",
+    apiBase: "/api/goodshort",
+  },
+  {
+    id: "meloshort",
+    name: "MeloShort",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/meloshort.webp",
+    apiBase: "/api/meloshort",
+  },
 ];
 
 interface PlatformState {
@@ -136,5 +154,8 @@ export function usePlatform() {
     isDramaNova: currentPlatform === "dramanova",
     isVelolo: currentPlatform === "velolo",
     isDramabox2: currentPlatform === "dramabox2",
+    isDotDrama: currentPlatform === "dotdrama",
+    isGoodShort: currentPlatform === "goodshort",
+    isMeloShort: currentPlatform === "meloshort",
   };
 }

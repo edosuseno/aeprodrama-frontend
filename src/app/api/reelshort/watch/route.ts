@@ -2,7 +2,7 @@ import { safeJson, encryptedResponse, getBackendBase } from "@/lib/api-utils";
 import { NextRequest, NextResponse } from "next/server";
 
 // FORCE Backend URL to ensure we hit our proxy, not Sansekai direct
-const UPSTREAM_API = "https://aeprodrama-backend.vercel.app/api/reelshort";
+const UPSTREAM_API = `${getBackendBase()}/reelshort`;
 
 export async function GET(request: NextRequest) {
   try {

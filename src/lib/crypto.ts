@@ -1,6 +1,7 @@
 import CryptoJS from "crypto-js";
 
-const SECRET_KEY = process.env.NEXT_PUBLIC_CRYPTO_SECRET || "Sansekai-SekaiDrama";
+const rawSecret = process.env.NEXT_PUBLIC_CRYPTO_SECRET || "Sansekai-SekaiDrama";
+const SECRET_KEY = rawSecret.replace(/\r\n|\r|\n/g, '').trim();
 
 export function encryptData(data: any): string {
   // If data is an object/array, stringify it first
@@ -16,10 +17,15 @@ export function decryptData<T>(ciphertext: string): T {
     if (!decryptedString) {
         throw new Error("Decryption failed: Empty result");
     }
-
-    return JSON.parse(decryptedString);
+    try {
+        return JSON.parse(decryptedString);
+    } catch (e) {
+        // Jika gagal di-parse, artinya data aslinya memang sebuah string biasa (misal: URL video)
+        return decryptedString as any;
+    }
   } catch (error) {
     console.error("Decryption Error:", error);
     throw error;
   }
+
 }

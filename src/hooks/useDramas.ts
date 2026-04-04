@@ -7,27 +7,30 @@ import { fetchJson } from "@/lib/fetcher";
 
 // ... existing imports
 
-export function useForYouDramas() {
+export function useForYouDramas(enabled: boolean = true) {
   return useQuery({
     queryKey: ["dramas", "foryou"],
     queryFn: () => fetchJson<Drama[]>(`${API_BASE}/foryou`),
     staleTime: 1000 * 60 * 5,
+    enabled
   });
 }
 
-export function useLatestDramas() {
+export function useLatestDramas(enabled: boolean = true) {
   return useQuery({
     queryKey: ["dramas", "latest"],
     queryFn: () => fetchJson<Drama[]>(`${API_BASE}/latest`),
     staleTime: 1000 * 60 * 5,
+    enabled
   });
 }
 
-export function useTrendingDramas() {
+export function useTrendingDramas(enabled: boolean = true) {
   return useQuery({
     queryKey: ["dramas", "trending"],
     queryFn: () => fetchJson<Drama[]>(`${API_BASE}/trending`),
     staleTime: 1000 * 60 * 5,
+    enabled
   });
 }
 
@@ -45,11 +48,12 @@ export function useSearchDramas(query: string) {
   });
 }
 
-export function useDubindoDramas() {
+export function useDubindoDramas(enabled: boolean = true) {
   return useQuery({
     queryKey: ["dramas", "dubindo"],
     queryFn: () => fetchJson<Drama[]>(`${API_BASE}/dubindo`),
     staleTime: 1000 * 60 * 5,
+    enabled
   });
 }
 

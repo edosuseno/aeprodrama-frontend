@@ -24,11 +24,12 @@ export interface ShortMaxDramaDetail {
     episodes?: any[];
 }
 
-export function useShortMaxLatest() {
+export function useShortMaxLatest(enabled: boolean = true) {
     return useQuery<ShortMaxDrama[]>({
         queryKey: ["shortmax", "latest"],
         queryFn: () => fetchJson<ShortMaxDrama[]>("/api/shortmax/latest"),
         staleTime: 5 * 60 * 1000,
+        enabled
     });
 }
 
@@ -65,7 +66,27 @@ export function useShortMaxDetail(shortPlayId: string) {
 export function useShortMaxEpisode(shortPlayId: string, episodeNumber: number) {
     return useQuery<{ shortPlayId: string; shortPlayName: string; episode: any }>({
         queryKey: ["shortmax", "episode", shortPlayId, episodeNumber],
-        queryFn: () => fetchJson<{ shortPlayId: string; shortPlayName: string; episode: any }>(`/api/shortmax/episode?shortPlayId=${shortPlayId}&episodeNumber=${episodeNumber}`),
+        queryFn: async () => {
+            const response = await fetch(`/api/shortmax/episode?shortPlayId=${shortPlayId}&episodeNumber=${episodeNumber}`);
+            if (!response.ok) throw new Error("Failed to fetch episode");
+            const json = await response.json();
+
+            // Jika data terenkripsi (string), dekripsi dulu
+            if (json.data && typeof json.data === "string") {
+                const decrypted = decryptData(json.data) as any;
+                // decrypted = { url: "...", episode: { videoUrl: "..." }, provider: "shortmax" }
+                // Ambil sub-properti .episode jika ada, fallback ke seluruh objek
+                const streamData = decrypted?.data || decrypted;
+                const episodeObj = streamData?.episode || streamData;
+                return { 
+                    ...json, 
+                    ...streamData,
+                    episode: episodeObj // Pastikan episode.videoUrl terbaca oleh Watch Page
+                };
+            }
+
+            return json;
+        },
         enabled: !!shortPlayId && !!episodeNumber,
         staleTime: 5 * 60 * 1000,
     });

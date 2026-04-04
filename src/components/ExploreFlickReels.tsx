@@ -44,7 +44,7 @@ export function ExploreFlickReels() {
     if (isError) return null;
 
     return (
-        <section className="mt-10">
+        <section className="">
             <h2 className="font-display font-bold text-xl md:text-2xl text-foreground mb-6">
                 Drama Lainnya
             </h2>

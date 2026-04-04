@@ -24,7 +24,13 @@ export interface VeloloDetail extends VeloloDrama {
 export function useVeloloExplore(page = 1) {
   return useQuery<VeloloDrama[]>({
     queryKey: ["velolo", "explore", page],
-    queryFn: () => fetchJson<VeloloDrama[]>(`/api/velolo/explore?page=${page}`),
+    queryFn: async () => {
+      const data = await fetchJson<any>(`/api/velolo/explore?page=${page}`);
+      // Guard: pastikan selalu mengembalikan array
+      if (Array.isArray(data)) return data as VeloloDrama[];
+      if (data?.data && Array.isArray(data.data)) return data.data as VeloloDrama[];
+      return [] as VeloloDrama[];
+    },
     staleTime: 5 * 60 * 1000,
   });
 }
@@ -32,8 +38,13 @@ export function useVeloloExplore(page = 1) {
 export function useInfiniteVelolo() {
   return useInfiniteQuery({
     queryKey: ["velolo", "infinite"],
-    queryFn: ({ pageParam = 1 }) =>
-      fetchJson<VeloloDrama[]>(`/api/velolo/explore?page=${pageParam}`),
+    queryFn: async ({ pageParam = 1 }) => {
+      const data = await fetchJson<any>(`/api/velolo/explore?page=${pageParam}`);
+      // Guard: pastikan selalu mengembalikan array
+      if (Array.isArray(data)) return data as VeloloDrama[];
+      if (data?.data && Array.isArray(data.data)) return data.data as VeloloDrama[];
+      return [] as VeloloDrama[];
+    },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage || lastPage.length < 5) return undefined;

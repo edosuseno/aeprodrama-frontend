@@ -22,18 +22,22 @@ import { ExploreDramanova } from "@/components/ExploreDramanova";
 import { ExploreVelolo } from "@/components/ExploreVelolo";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { Dramabox2List } from "@/components/Dramabox2List";
+import { DotDramaList } from "@/components/DotDramaList";
+import { GoodShortList } from "@/components/GoodShortList";
+import { MeloShortList } from "@/components/MeloShortList";
 import { HomeView } from "@/components/HomeView";
 import { useForYouDramas, useLatestDramas, useTrendingDramas, useDubindoDramas } from "@/hooks/useDramas";
 import { usePlatform } from "@/hooks/usePlatform";
 
 export default function HomeContent() {
-  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDramabox2 } = usePlatform();
+  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDramabox2, isDotDrama, isGoodShort, isMeloShort } = usePlatform();
 
-  // Fetch data for all DramaBox sections
-  const { data: popularDramas, isLoading: loadingPopular, error: errorPopular, refetch: refetchPopular } = useForYouDramas();
-  const { data: latestDramas, isLoading: loadingLatest, error: errorLatest, refetch: refetchLatest } = useLatestDramas();
-  const { data: trendingDramas, isLoading: loadingTrending, error: errorTrending, refetch: refetchTrending } = useTrendingDramas();
-  const { data: dubindoDramas, isLoading: loadingDubindo, error: errorDubindo, refetch: refetchDubindo } = useDubindoDramas();
+  // Fetch data for all DramaBox sections (Only when in Home or DramaBox)
+  const isDramaBoxActive = isHome || isDramaBox;
+  const { data: popularDramas, isLoading: loadingPopular, error: errorPopular, refetch: refetchPopular } = useForYouDramas(isDramaBoxActive);
+  const { data: latestDramas, isLoading: loadingLatest, error: errorLatest, refetch: refetchLatest } = useLatestDramas(isDramaBoxActive);
+  const { data: trendingDramas, isLoading: loadingTrending, error: errorTrending, refetch: refetchTrending } = useTrendingDramas(isDramaBoxActive);
+  const { data: dubindoDramas, isLoading: loadingDubindo, error: errorDubindo, refetch: refetchDubindo } = useDubindoDramas(isDramaBoxActive);
 
   return (
     <main className="min-h-screen pt-20 pb-20">
@@ -159,6 +163,27 @@ export default function HomeContent() {
       {isDramabox2 && (
         <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <Dramabox2List />
+        </div>
+      )}
+
+      {/* Dot Drama Content */}
+      {isDotDrama && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <DotDramaList />
+        </div>
+      )}
+
+      {/* GoodShort Content */}
+      {isGoodShort && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <GoodShortList />
+        </div>
+      )}
+
+      {/* MeloShort Content */}
+      {isMeloShort && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <MeloShortList />
         </div>
       )}
     </main>

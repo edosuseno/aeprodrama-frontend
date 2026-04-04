@@ -1,8 +1,7 @@
-
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useInfiniteDrmanova } from "@/hooks/useDrmanova";
+import { useInfiniteDrmanova, useDrmanovaExplore } from "@/hooks/useDrmanova";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
 import { Loader2 } from "lucide-react";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
@@ -16,6 +15,8 @@ export function ExploreDramanova() {
         isLoading,
         isError,
     } = useInfiniteDrmanova('all');
+
+    const { data: hot18, isLoading: loading18 } = useDrmanovaExplore(1, 'drama18');
 
     const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -45,10 +46,44 @@ export function ExploreDramanova() {
     if (isError) return null;
 
     return (
-        <section className="mt-10">
-            <h2 className="font-display font-bold text-xl md:text-2xl text-foreground mb-6 uppercase tracking-tight">
-                DramaNova Collection
-            </h2>
+        <section className="overflow-hidden">
+            {/* 1. HOT 18+ SECTION (TOP PRIORITY) */}
+            <div className="mb-14">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="w-2 h-8 bg-primary rounded-full shadow-glow-sm" />
+                    <h2 className="font-display font-bold text-2xl md:text-3xl text-foreground uppercase tracking-tight">
+                        DRAMANOVA COLLECTION
+                    </h2>
+                </div>
+
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
+                    {loading18 ? (
+                        Array.from({ length: 9 }).map((_, i) => (
+                            <UnifiedMediaCardSkeleton key={`hot-skel-${i}`} index={i} />
+                        ))
+                    ) : (
+                        hot18?.map((drama: any, idx: number) => (
+                            <UnifiedMediaCard
+                                key={`hot-${drama.id}-${idx}`}
+                                title={drama.title}
+                                cover={drama.cover}
+                                link={`/detail/dramanova/${drama.id}`}
+                                episodes={drama.chapterCount}
+                                index={idx}
+                                badge="18+"
+                            />
+                        ))
+                    )}
+                </div>
+            </div>
+
+            {/* 2. REGULAR COLLECTION */}
+            <div className="flex items-center gap-3 mb-6 opacity-60">
+                <div className="w-1.5 h-6 bg-muted-foreground rounded-full" />
+                <h2 className="font-display font-bold text-lg md:text-xl text-foreground uppercase tracking-tight">
+                    Koleksi Lainnya
+                </h2>
+            </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
                 {data?.pages.map((page, pageIdx) =>
@@ -68,7 +103,7 @@ export function ExploreDramanova() {
                 {/* Skeletons while loading initial data */}
                 {isLoading &&
                     Array.from({ length: 18 }).map((_, i) => (
-                        <UnifiedMediaCardSkeleton key={i} />
+                        <UnifiedMediaCardSkeleton key={i} index={i} />
                     ))}
             </div>
             

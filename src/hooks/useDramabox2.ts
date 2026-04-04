@@ -1,6 +1,4 @@
-"use client";
-
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { fetchJson } from "@/lib/fetcher";
 
 export interface Dramabox2Drama {
@@ -35,13 +33,27 @@ export function useDramabox2Explore(page = 1) {
         queryKey: ["dramabox2", "explore", page],
         queryFn: async () => {
             const data = await fetchJson<any>(`/api/dramabox2/explore?page=${page}`);
-            // If data is decrypted array directly
-            if (Array.isArray(data)) return data as Dramabox2Drama[];
-            // If it's an object { success, data }
-            if (data?.data && Array.isArray(data.data)) return data.data as Dramabox2Drama[];
-            return [] as Dramabox2Drama[];
+            const items = data?.data || data;
+            return (Array.isArray(items) ? items : []) as Dramabox2Drama[];
         },
         staleTime: 5 * 60 * 1000,
+    });
+}
+
+export function useInfiniteDramabox2() {
+    return useInfiniteQuery({
+        queryKey: ["dramabox2", "infinite"],
+        queryFn: async ({ pageParam = 1 }) => {
+            const data = await fetchJson<any>(`/api/dramabox2/explore?page=${pageParam}`);
+            const items = data?.data || data;
+            return (Array.isArray(items) ? items : []) as Dramabox2Drama[];
+        },
+        initialPageParam: 1,
+        getNextPageParam: (lastPage, allPages) => {
+            if (!lastPage || lastPage.length < 5) return undefined;
+            return allPages.length + 1;
+        },
+        staleTime: 1000 * 60 * 5,
     });
 }
 
@@ -49,26 +61,34 @@ export function useDramabox2Detail(id: string) {
     return useQuery({
         queryKey: ["dramabox2", "detail", id],
         queryFn: async () => {
-            const data = await fetchJson<any>(`/api/dramabox2/detail?id=${id}`);
-            if (data?.id) return data as Dramabox2Detail;
-            if (data?.data) return data.data as Dramabox2Detail;
-            return data as Dramabox2Detail;
+            try {
+                const res = await fetchJson<any>(`/api/dramabox2/detail?id=${id}`);
+                if (!res) return null;
+                // Sangat penting: jangan biarkan return undefined
+                const detailData = res.data || res;
+                return detailData as Dramabox2Detail || null;
+            } catch (err) {
+                console.error("Error in useDramabox2Detail:", err);
+                return null;
+            }
         },
         enabled: !!id,
         staleTime: 10 * 60 * 1000,
     });
 }
 
-export function useDramabox2Watch(id: string, episodeIndex: number) {
+export function useDramabox2Watch(id: string, episodeId: string | number) {
     return useQuery({
-        queryKey: ["dramabox2", "watch", id, episodeIndex],
+        queryKey: ["dramabox2", "watch", id, episodeId],
         queryFn: async () => {
-            const data = await fetchJson<any>(`/api/dramabox2/watch?id=${id}&episodeIndex=${episodeIndex}`);
+            const data = await fetchJson<any>(`/api/dramabox2/watch?id=${id}&episodeIndex=${episodeId}`);
+            if (!data) return null;
             if (typeof data === "string") return data;
+            if (data?.url) return data.url as string;
             if (data?.data) return data.data as string;
-            return data as string;
+            return data as unknown as string || null;
         },
-        enabled: !!id && !!episodeIndex,
+        enabled: !!id && !!episodeId,
         staleTime: 2 * 60 * 1000,
     });
 }

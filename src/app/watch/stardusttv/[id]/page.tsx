@@ -154,7 +154,10 @@ export default function StardustTVWatchPage() {
                         className="flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10"
                     >
                         <ChevronLeft className="w-6 h-6" />
-                        <span className="text-primary font-bold hidden sm:inline">AE PRO</span>
+                        <div className="flex flex-col -gap-1">
+                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+                            <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-tighter">Pusat Drama</span>
+                        </div>
                     </Link>
 
                     <div className="text-center flex-1 px-4 min-w-0">

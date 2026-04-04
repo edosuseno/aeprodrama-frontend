@@ -10,12 +10,13 @@ import { decryptData } from "@/lib/crypto";
 
 const API_BASE = "/api/reelshort";
 
-export function useReelShortHomepage() {
+export function useReelShortHomepage(enabled: boolean = true) {
   return useQuery({
     queryKey: ["reelshort", "homepage"],
     queryFn: () => fetchJson<ReelShortHomepageResponse>(`${API_BASE}/homepage`),
-    staleTime: 1000 * 60 * 10, // Increased to 10 minutes
-    gcTime: 1000 * 60 * 30, // Keep in cache for 30 minutes
+    staleTime: 1000 * 60 * 10,
+    gcTime: 1000 * 60 * 30,
+    enabled
   });
 }
 
@@ -50,7 +51,19 @@ interface ReelShortEpisodeData {
 export function useReelShortEpisode(bookId: string, episodeNumber: number, enabled: boolean = true) {
   return useQuery({
     queryKey: ["reelshort", "episode", bookId, episodeNumber],
-    queryFn: () => fetchJson<ReelShortEpisodeData>(`${API_BASE}/watch?bookId=${bookId}&episodeNumber=${episodeNumber}`),
+    queryFn: async () => {
+      const response = await fetch(`${API_BASE}/watch?bookId=${bookId}&episodeNumber=${episodeNumber}`);
+      if (!response.ok) throw new Error("Failed to fetch episode");
+      const json = await response.json();
+      
+      // Jika data terenkripsi (string), dekripsi dulu
+      if (json.data && typeof json.data === "string") {
+        const decrypted = decryptData(json.data) as any;
+        return { ...json, ...(decrypted?.data || decrypted) } as ReelShortEpisodeData;
+      }
+      
+      return json as ReelShortEpisodeData;
+    },
     enabled: enabled && !!bookId && episodeNumber > 0,
     staleTime: 1000 * 60 * 10, // Cache for 10 minutes
     gcTime: 1000 * 60 * 30, // Keep in memory for 30 minutes
