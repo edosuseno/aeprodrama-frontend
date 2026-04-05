@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useFreeReelsDetail } from "@/hooks/useFreeReels";
 import { ChevronLeft, ChevronRight, Loader2, List, AlertCircle } from "lucide-react";
+import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import Hls from "hls.js";
@@ -28,6 +29,7 @@ export default function FreeReelsWatchPage() {
   const swipeContainerRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, error } = useFreeReelsDetail(bookId);
+  const { addToHistory } = useHistoryStore();
 
   // Sync state from URL params
   useEffect(() => {
@@ -49,6 +51,20 @@ export default function FreeReelsWatchPage() {
   const currentEpisodeData = useMemo(() => {
     return episodes[currentEpisodeIndex] || episodes[0] || null;
   }, [episodes, currentEpisodeIndex]);
+
+  // Catat ke History
+  useEffect(() => {
+    if (drama && bookId && currentEpisodeData) {
+      addToHistory({
+        id: bookId,
+        title: drama.title,
+        poster: drama.cover,
+        platform: "FreeReels",
+        episodeNumber: (currentEpisodeData.index || currentEpisodeIndex) + 1,
+        link: `/watch/freereels/${bookId}?ep=${(currentEpisodeData.index || currentEpisodeIndex) + 1}`
+      });
+    }
+  }, [bookId, currentEpisodeIndex, drama, currentEpisodeData, addToHistory]);
 
   // Determine current video URL based on quality selection
   const currentVideoUrl = useMemo(() => {

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useNetShortDetail } from "@/hooks/useNetShort";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, List } from "lucide-react";
+import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Hls from "hls.js";
@@ -39,6 +40,22 @@ export default function NetShortWatchPage() {
 
   // Fetch detail with all episodes
   const { data, isLoading, error } = useNetShortDetail(shortPlayId || "");
+
+  const { addToHistory } = useHistoryStore();
+
+  // Catat ke History
+  useEffect(() => {
+    if (data && shortPlayId) {
+      addToHistory({
+        id: String(shortPlayId),
+        title: data.title,
+        poster: data.cover,
+        platform: "NetShort",
+        episodeNumber: currentEpisode,
+        link: `/watch/netshort/${shortPlayId}?ep=${currentEpisode}`
+      });
+    }
+  }, [shortPlayId, currentEpisode, data, addToHistory]);
 
   // Get current episode data
   const currentEpisodeData = data?.episodes?.find(

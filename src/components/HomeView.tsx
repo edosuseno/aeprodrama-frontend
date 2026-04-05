@@ -241,7 +241,6 @@ export function HomeView() {
                platform="dramawave"
             />
 
-            {/* DRAMABOX V2 */}
             <DramaSection
                title="DRAMABOX V2"
                dramas={dramabox2Home}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useShortMaxDetail, useShortMaxEpisode } from "@/hooks/useShortMax";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, List } from "lucide-react";
+import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Hls from "hls.js";
@@ -32,6 +33,22 @@ export default function ShortMaxWatchPage() {
 
     const { data: detailData, isLoading: loadingDetail } = useShortMaxDetail(shortPlayId || "");
     const { data: episodeData, isLoading: loadingEpisode, error: errorEpisode } = useShortMaxEpisode(shortPlayId || "", currentEpisode);
+
+    const { addToHistory } = useHistoryStore();
+
+    // Catat ke History
+    useEffect(() => {
+        if (detailData && shortPlayId) {
+            addToHistory({
+                id: String(shortPlayId),
+                title: detailData.title,
+                poster: detailData.cover,
+                platform: "ShortMax",
+                episodeNumber: currentEpisode,
+                link: `/watch/shortmax/${shortPlayId}?ep=${currentEpisode}`
+            });
+        }
+    }, [shortPlayId, currentEpisode, detailData, addToHistory]);
 
     const handleVideoEnded = useCallback(() => {
         if (!detailData) return;

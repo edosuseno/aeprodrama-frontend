@@ -56,10 +56,14 @@ export default function Dramabox2WatchPage() {
     const url = directStreamUrl || currentEpisode?.videoAddress;
     if (!url) return "";
     
-    // Use internal frontend proxy to bypass CORS
+    // Gunakan proxy universal untuk membypass CORS dan blokir ISP
     if (url.startsWith("http")) {
-      // Menggunakan proxy universal agar pemutaran stabil
-      return `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+      // Untuk Dramabox2, referer drama-box.com terkadang lebih stabil di mobile
+      const referer = url.includes('dramabox') || url.includes('cdndramatic') 
+        ? 'https://www.drama-box.com/' 
+        : 'https://vidrama.asia/';
+        
+      return `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent(referer)}`;
     }
     return url;
   }, [directStreamUrl, currentEpisode]);
@@ -221,6 +225,7 @@ function VideoPlayer({ src, poster, onEnded }: { src: string; poster: string; on
       poster={poster}
       onEnded={onEnded}
       playsInline
+      crossOrigin="anonymous"
     />
   );
 }

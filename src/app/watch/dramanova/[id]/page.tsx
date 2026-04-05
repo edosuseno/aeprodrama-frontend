@@ -64,7 +64,8 @@ export default function DrmanovaWatchPage() {
         if (videoUrl && videoRef.current) {
             const video = videoRef.current;
             // Gunakan API Route internal frontend sebagai proxy utama agar CORS aman di Vercel
-            const proxiedUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}`;
+            // Untuk Dramanova (Sansekai/HikeUniverses), referer www.vidrama.asia sangat krusial
+            const proxiedUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}&referer=${encodeURIComponent('https://www.vidrama.asia/')}`;
             
             addLog(`Mencoba memutar via Proxy: ${proxiedUrl.substring(0, 50)}...`);
 
@@ -256,7 +257,7 @@ export default function DrmanovaWatchPage() {
                                 label="Indonesia"
                                 kind="subtitles"
                                 srcLang="id"
-                                src={`/api/proxy?url=${encodeURIComponent(streamData.subtitles.find((sub: any) => sub.label === 'Indonesia' || sub.language === 'id-ID' || sub.language === 'id' || sub.language === 'in')?.url || "")}&t=${Date.now()}`}
+                                src={`/api/proxy?url=${encodeURIComponent(streamData.subtitles.find((sub: any) => sub.label === 'Indonesia' || sub.language === 'id-ID' || sub.language === 'id' || sub.language === 'in')?.url || "")}&referer=${encodeURIComponent('https://www.vidrama.asia/')}&t=${Date.now()}`}
                                 default
                             />
                         )}

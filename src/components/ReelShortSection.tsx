@@ -98,7 +98,7 @@ export function ReelShortSection() {
             {group.title}
           </h2>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-5">
+          <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-5">
             {group.books
               .filter((book) => book.book_id && book.book_pic)
               .slice(0, 6)
@@ -139,7 +139,7 @@ function SectionSkeleton() {
   return (
     <div>
       <div className="h-6 w-32 bg-muted/50 rounded animate-pulse mb-4" />
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-5">
+      <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-5">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i}>
             <div className="aspect-[2/3] rounded-lg bg-muted/50 animate-pulse" />

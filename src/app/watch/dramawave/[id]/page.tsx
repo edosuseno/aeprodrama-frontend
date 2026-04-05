@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useDramaWaveDetail, useDramaWaveStream } from "@/hooks/useDramaWave";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, List } from "lucide-react";
+import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
 import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Hls from "hls.js";
@@ -31,6 +32,22 @@ export default function DramaWaveWatchPage() {
 
     const { data: detailData, isLoading: loadingDetail } = useDramaWaveDetail(id || "");
     const { data: streamData, isLoading: loadingStream } = useDramaWaveStream(id || "", currentEpisode - 1);
+
+    const { addToHistory } = useHistoryStore();
+
+    // Catat ke History
+    useEffect(() => {
+        if (detailData && id) {
+            addToHistory({
+                id: id,
+                title: detailData.shortPlayName,
+                poster: detailData.cover,
+                platform: "DramaWave",
+                episodeNumber: currentEpisode,
+                link: `/watch/dramawave/${id}?ep=${currentEpisode}`
+            });
+        }
+    }, [id, currentEpisode, detailData, addToHistory]);
 
     const videoUrl = streamData?.url;
 

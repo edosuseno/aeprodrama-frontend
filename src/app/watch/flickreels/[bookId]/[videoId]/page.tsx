@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useFlickReelsDetail } from "@/hooks/useFlickReels";
 import { ChevronLeft, ChevronRight, Loader2, List, AlertCircle } from "lucide-react";
+import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
@@ -31,6 +32,8 @@ export default function FlickReelsWatchPage() {
 
   const { data, isLoading, error, refetch } = useFlickReelsDetail(bookId);
 
+  const { addToHistory } = useHistoryStore();
+
   // Sync state if URL param changes (e.g. back button)
   useEffect(() => {
     if (params.videoId && params.videoId !== activeVideoId) {
@@ -55,6 +58,20 @@ export default function FlickReelsWatchPage() {
 
   const totalEpisodes = episodes.length;
 
+  // Catat ke History
+  useEffect(() => {
+    if (data?.drama && bookId && currentEpisodeData) {
+      addToHistory({
+        id: bookId,
+        title: data.drama.title,
+        poster: data.drama.cover,
+        platform: "FlickReels",
+        episodeNumber: currentEpisodeData.index + 1,
+        link: `/watch/flickreels/${bookId}/${activeVideoId}`
+      });
+    }
+  }, [bookId, activeVideoId, data?.drama, currentEpisodeData, addToHistory]);
+
   // Update video src - combines warmup and src update
   // Set src langsung tanpa menunggu warmup, warmup hanya di background
   useEffect(() => {
@@ -63,10 +80,9 @@ export default function FlickReelsWatchPage() {
     // Update timestamp when video changes
     videoTimestamp.current = Date.now();
 
-    const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
     const videoUrl = currentEpisodeData.raw.videoUrl;
-    const newSrc = `${backendBase}/api/proxy?url=${encodeURIComponent(videoUrl)}&referer=${encodeURIComponent("https://www.flickreels.com/")}&_t=${videoTimestamp.current}`;
-    const warmupUrl = `${backendBase}/api/proxy?url=${encodeURIComponent(videoUrl)}&warmup=1`;
+    const newSrc = `/api/proxy?url=${encodeURIComponent(videoUrl)}&referer=${encodeURIComponent("https://www.flickreels.com/")}&_t=${videoTimestamp.current}`;
+    const warmupUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}&warmup=1`;
 
     // Langsung set video src tanpa menunggu warmup
     setVideoReady(true);
@@ -231,7 +247,7 @@ export default function FlickReelsWatchPage() {
               (!currentEpisodeData || !videoReady) && "invisible"
             )}
             poster={currentEpisodeData?.raw?.chapter_cover 
-              ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001'}/api/image-proxy?url=${encodeURIComponent(currentEpisodeData.raw.chapter_cover)}` 
+              ? `/api/image-proxy?url=${encodeURIComponent(currentEpisodeData.raw.chapter_cover)}` 
               : undefined}
             onEnded={handleVideoEnded}
             onError={async (e) => {

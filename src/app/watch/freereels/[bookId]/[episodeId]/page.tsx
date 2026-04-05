@@ -4,6 +4,7 @@ import { useMemo, useState, useEffect, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useFreeReelsDetail } from "@/hooks/useFreeReels";
 import { ChevronLeft, ChevronRight, Loader2, List, AlertCircle } from "lucide-react";
+import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +25,8 @@ export default function FreeReelsWatchPage() {
 
   const { data, isLoading, error } = useFreeReelsDetail(bookId);
 
+  const { addToHistory } = useHistoryStore();
+
   // Derived state
   const drama = data?.data;
   const episodes = useMemo(() => drama?.episodes || [], [drama]);
@@ -39,6 +42,20 @@ export default function FreeReelsWatchPage() {
 
   const totalEpisodes = episodes.length;
 
+  // Catat ke History
+  useEffect(() => {
+    if (drama && bookId && currentEpisodeData) {
+      addToHistory({
+        id: bookId,
+        title: drama.title,
+        poster: drama.cover,
+        platform: "FreeReels",
+        episodeNumber: (currentEpisodeData.index || 0) + 1,
+        link: `/watch/freereels/${bookId}/${activeEpisodeId}`
+      });
+    }
+  }, [bookId, activeEpisodeId, drama, currentEpisodeData, addToHistory]);
+
   // Determine current video URL based on quality selection
   const currentVideoUrl = useMemo(() => {
     if (!currentEpisodeData) return "";
@@ -50,8 +67,7 @@ export default function FreeReelsWatchPage() {
 
   const proxiedSubtitleUrl = useMemo(() => {
     if (!currentEpisodeData?.subtitleUrl) return "";
-    const backendBase = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001';
-    return `${backendBase}/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
+    return `/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
   }, [currentEpisodeData]);
 
   // Handlers

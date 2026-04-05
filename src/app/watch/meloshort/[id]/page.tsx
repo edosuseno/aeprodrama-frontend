@@ -90,12 +90,12 @@ function WatchContent() {
     
     let processedUrl = url;
     if (url.startsWith("http")) {
-      processedUrl = `${getBackendBase()}/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+      processedUrl = `/api/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
     }
 
     let processedSub = subUrl || "";
     if (processedSub && processedSub.startsWith("http")) {
-      processedSub = `${getBackendBase()}/proxy?url=${encodeURIComponent(processedSub)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+      processedSub = `/api/proxy?url=${encodeURIComponent(processedSub)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
     }
 
     return { videoUrl: processedUrl, subtitleUrl: processedSub };
