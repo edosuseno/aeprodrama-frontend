@@ -14,9 +14,10 @@ interface DramaSectionProps {
   platform: string; // New required prop
   error?: boolean;
   onRetry?: () => void;
+  isPriority?: boolean;
 }
 
-export function DramaSection({ title, dramas, isLoading, platform, error, onRetry }: DramaSectionProps) {
+export function DramaSection({ title, dramas, isLoading, platform, error, onRetry, isPriority }: DramaSectionProps) {
   if (error) {
     return (
       <section>
@@ -39,7 +40,7 @@ export function DramaSection({ title, dramas, isLoading, platform, error, onRetr
         <div className="h-7 md:h-8 w-48 bg-white/10 rounded-lg animate-pulse mb-4" />
 
         {/* Grid Skeleton */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+        <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <UnifiedMediaCardSkeleton key={i} />
           ))}
@@ -74,7 +75,7 @@ export function DramaSection({ title, dramas, isLoading, platform, error, onRetr
         {title}
       </h2>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-4">
+      <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-4">
         {validDramas.slice(0, displayCount).map((drama, index) => {
           const isPopular = drama.corner?.name?.toLowerCase().includes("populer");
           const badgeColor = isPopular ? "#E52E2E" : (drama.corner?.color || "#e5a00d");

@@ -165,9 +165,9 @@ export function UnifiedMediaCard({
       </div>
 
       {/* Title with Fixed Height Container for Alignment */}
-      <div className="pt-3 pb-1">
-        <div className="h-[2.5em] md:h-[2.8em] flex items-start overflow-hidden">
-          <h3 className="font-display font-medium text-xs md:text-sm leading-tight line-clamp-2 text-foreground group-hover:text-primary transition-colors w-full">
+      <div className="pt-2 md:pt-3 pb-1">
+        <div className="h-[2.2em] md:h-[2.8em] flex items-start overflow-hidden">
+          <h3 className="font-display font-medium text-[10px] md:text-sm leading-tight line-clamp-2 text-foreground group-hover:text-primary transition-colors w-full">
             {title}
           </h3>
         </div>

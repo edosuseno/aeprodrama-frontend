@@ -13,6 +13,9 @@ import { useInfiniteVelolo } from "@/hooks/useVelolo";
 import { useStardustTVExplore } from "@/hooks/useStardustTV";
 import { useDramaWaveExplore } from "@/hooks/useDramaWave";
 import { useDramabox2Explore } from "@/hooks/useDramabox2";
+import { useDotDramaExplore } from "@/hooks/useDotDrama";
+import { useGoodShortExplore } from "@/hooks/useGoodShort";
+import { useMeloShortExplore } from "@/hooks/useMeloShort";
 import { LucideIcon, Zap, Monitor, Star, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOnlineTracker } from "@/hooks/useStats";
@@ -41,6 +44,9 @@ export function HomeView() {
    const { data: stardustHome, isLoading: loadingStardust } = useStardustTVExplore(1);
    const { data: dramawaveHome, isLoading: loadingDramawave } = useDramaWaveExplore(1, 'popular');
    const { data: dramabox2Home, isLoading: loadingDramabox2 } = useDramabox2Explore(1);
+   const { data: dotDramaHome, isLoading: loadingDotDrama } = useDotDramaExplore(1);
+   const { data: goodShortHome, isLoading: loadingGoodShort } = useGoodShortExplore(1);
+   const { data: meloShortHome, isLoading: loadingMeloShort } = useMeloShortExplore(1);
 
    // Real-time Data from Backend (Real Count + Base 1000)
    const { data: onlineCountReal } = useOnlineTracker();
@@ -104,7 +110,7 @@ export function HomeView() {
    }, [popularDramas, reelShortHome, flickReelsHome, shortMaxHome, meloloHome, dramanovaHome, veloloHome, stardustHome, dramawaveHome]);
 
    return (
-      <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-12 pb-20">
+      <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-8 md:space-y-12 pb-20">
          {/* 1. Hero Section */}
          <HeroCarousel
             dramas={heroDramas}
@@ -112,7 +118,7 @@ export function HomeView() {
          />
 
          {/* 2. Stats Bar */}
-         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
             <StatCard
                icon={Zap}
                label="TOTAL LIBRARY"
@@ -145,7 +151,7 @@ export function HomeView() {
          </div>
 
          {/* 3. Multi-Platform Sections (9 Cards Each) */}
-         <div className="space-y-16">
+         <div className="space-y-10 md:space-y-16">
             {/* DRAMANOVA 18+ (PRIORITY TOP) */}
             <DramaSection
                title="DRAMANOVA 18+"
@@ -171,12 +177,12 @@ export function HomeView() {
                platform="reelshort"
             />
 
-            {/* FLICKREELS */}
+            {/* DOTDRAMA */}
             <DramaSection
-               title="FLICKREELS"
-               dramas={flickReelsHome?.data?.list}
-               isLoading={loadingFlickReels}
-               platform="flickreels"
+               title="DOTDRAMA"
+               dramas={dotDramaHome}
+               isLoading={loadingDotDrama}
+               platform="dotdrama"
             />
 
             {/* SHORTMAX */}
@@ -195,12 +201,12 @@ export function HomeView() {
                platform="melolo"
             />
 
-            {/* DRAMANOVA */}
+            {/* GOODSHORT */}
             <DramaSection
-               title="DRAMANOVA"
-               dramas={dramanovaHome}
-               isLoading={loadingDramanova}
-               platform="dramanova"
+               title="GOODSHORT"
+               dramas={goodShortHome}
+               isLoading={loadingGoodShort}
+               platform="goodshort"
             />
 
             {/* VELOLO */}
@@ -211,12 +217,12 @@ export function HomeView() {
                platform="velolo"
             />
 
-            {/* DRAMANOVA KOMIK */}
+            {/* MELOSHORT */}
             <DramaSection
-               title="DRAMANOVA KOMIK"
-               dramas={dramanovaKomik}
-               isLoading={loadingDramanovaKomik}
-               platform="dramanova"
+               title="MELOSHORT"
+               dramas={meloShortHome}
+               isLoading={loadingMeloShort}
+               platform="meloshort"
             />
 
             {/* STARDUSTTV */}
@@ -258,15 +264,15 @@ interface StatCardProps {
 
 function StatCard({ icon: Icon, label, value, color, bgColor, isOnline }: StatCardProps) {
    return (
-      <div className="flex items-center gap-4 p-4 bg-zinc-900/50 border border-white/5 rounded-2xl hover:bg-zinc-800/50 transition-all group overflow-hidden relative">
-         <div className={cn("p-3 rounded-xl transition-transform group-hover:scale-110", bgColor, color)}>
-            <Icon className="w-6 h-6" />
+      <div className="flex items-center gap-2.5 md:gap-4 p-3 md:p-4 bg-zinc-900/50 border border-white/5 rounded-2xl hover:bg-zinc-800/50 transition-all group overflow-hidden relative">
+         <div className={cn("p-2 md:p-3 rounded-xl transition-transform group-hover:scale-110", bgColor, color)}>
+            <Icon className="w-5 h-5 md:w-6 md:h-6" />
          </div>
-         <div className="flex flex-col">
-            <span className="text-[10px] font-black text-white/40 tracking-widest uppercase">{label}</span>
-            <div className="flex items-center gap-1.5">
-               <span className="text-white font-bold md:text-lg tracking-tight">{value}</span>
-               {isOnline && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-glow shadow-emerald-500/50" />}
+         <div className="flex flex-col min-w-0">
+            <span className="text-[9px] md:text-[10px] font-black text-white/40 tracking-widest uppercase truncate">{label}</span>
+            <div className="flex items-center gap-1">
+               <span className="text-white font-bold text-sm md:text-lg tracking-tight truncate leading-tight">{value}</span>
+               {isOnline && <div className="w-1 md:w-1.5 h-1 md:h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-glow shadow-emerald-500/50 shrink-0" />}
             </div>
          </div>
 

@@ -58,6 +58,18 @@ export function useInfiniteMeloShort() {
     });
 }
 
+export function useMeloShortSearch(keyword: string) {
+    return useQuery({
+        queryKey: [platform, "search", keyword],
+        queryFn: async () => {
+            const data = await fetchJson<any>(`/api/${platform}/search?keyword=${keyword}`);
+            const items = data?.data || data;
+            return (Array.isArray(items) ? items : []) as MeloShortDrama[];
+        },
+        enabled: !!keyword,
+    });
+}
+
 export function useMeloShortDetail(id: string) {
     return useQuery({
         queryKey: [platform, "detail", id],

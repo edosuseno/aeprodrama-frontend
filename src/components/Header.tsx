@@ -17,6 +17,10 @@ import { useStardustTVSearch } from "@/hooks/useStardustTV";
 import { useDramaWaveSearch } from "@/hooks/useDramaWave";
 import { useDrmanovaSearch } from "@/hooks/useDrmanova";
 import { useVeloloSearch } from "@/hooks/useVelolo";
+import { useDramabox2Search } from "@/hooks/useDramabox2";
+import { useDotDramaSearch } from "@/hooks/useDotDrama";
+import { useGoodShortSearch } from "@/hooks/useGoodShort";
+import { useMeloShortSearch } from "@/hooks/useMeloShort";
 import { usePlatform } from "@/hooks/usePlatform";
 import { useDebounce } from "@/hooks/useDebounce";
 import { usePathname } from "next/navigation";
@@ -40,7 +44,7 @@ export function Header() {
   }, []);
 
   // Platform context
-  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDramabox2, platformInfo, setPlatform } = usePlatform();
+  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDramabox2, isDotDrama, isGoodShort, isMeloShort, platformInfo, setPlatform } = usePlatform();
 
   // Search based on platform
   const { data: dramaBoxResults, isLoading: isSearchingDramaBox } = useSearchDramas(
@@ -79,6 +83,18 @@ export function Header() {
   const { data: veloloResults, isLoading: isSearchingVelolo } = useVeloloSearch(
     isVelolo ? normalizedQuery : ""
   );
+  const { data: dramabox2Results, isLoading: isSearchingDramabox2 } = useDramabox2Search(
+    isDramabox2 ? normalizedQuery : ""
+  );
+  const { data: dotDramaResults, isLoading: isSearchingDotDrama } = useDotDramaSearch(
+    isDotDrama ? normalizedQuery : ""
+  );
+  const { data: goodShortResults, isLoading: isSearchingGoodShort } = useGoodShortSearch(
+    isGoodShort ? normalizedQuery : ""
+  );
+  const { data: meloShortResults, isLoading: isSearchingMeloShort } = useMeloShortSearch(
+    isMeloShort ? normalizedQuery : ""
+  );
 
   const isSearching = isDramaBox
     ? isSearchingDramaBox
@@ -102,7 +118,15 @@ export function Header() {
                       ? isSearchingDramanova
                       : isVelolo
                         ? isSearchingVelolo
-                        : isSearchingMovieBox;
+                        : isDramabox2
+                          ? isSearchingDramabox2
+                          : isDotDrama
+                            ? isSearchingDotDrama
+                            : isGoodShort
+                              ? isSearchingGoodShort
+                              : isMeloShort
+                                ? isSearchingMeloShort
+                                : isSearchingMovieBox;
 
   // Search results processing
   const searchResults: any[] = (isDramaBox
@@ -127,7 +151,15 @@ export function Header() {
                       ? dramanovaResults
                       : isVelolo
                         ? veloloResults
-                        : movieBoxResults?.data) || [];
+                        : isDramabox2
+                          ? dramabox2Results
+                          : isDotDrama
+                            ? dotDramaResults
+                            : isGoodShort
+                              ? goodShortResults
+                              : isMeloShort
+                                ? meloShortResults
+                                : movieBoxResults?.data) || [];
 
   const handleSearchClose = () => {
     setSearchOpen(false);
@@ -709,6 +741,149 @@ export function Header() {
                             {drama.provider && (
                               <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
                                 {drama.provider}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Dramabox2 Results */}
+                {isDramabox2 && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.id}
+                        href={`/detail/dramabox2/${drama.id}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.cover}
+                          alt={drama.title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title}</h3>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            <span className="tag-pill text-[10px]">
+                              {drama.totalEpisodes || drama.chapterCount || 0} Episodes
+                            </span>
+                            {drama.provider && (
+                              <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                                Dramabox v2
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* Dot Drama Results */}
+                {isDotDrama && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.id}
+                        href={`/detail/dotdrama/${drama.id}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.cover}
+                          alt={drama.title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title}</h3>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            <span className="tag-pill text-[10px]">
+                              {drama.chapterCount || drama.totalEpisodes || 0} Episodes
+                            </span>
+                            {drama.provider && (
+                              <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                                Dot Drama
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* GoodShort Results */}
+                {isGoodShort && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.id}
+                        href={`/detail/goodshort/${drama.id}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.cover}
+                          alt={drama.title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title}</h3>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {drama.provider && (
+                              <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                                GoodShort
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* MeloShort Results */}
+                {isMeloShort && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.id}
+                        href={`/detail/meloshort/${drama.id}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.cover}
+                          alt={drama.title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title}</h3>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {drama.chapterCount ? (
+                                <span className="tag-pill text-[10px]">
+                                  {drama.chapterCount} Episodes
+                                </span>
+                            ) : null}
+                            {drama.provider && (
+                              <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                                MeloShort
                               </span>
                             )}
                           </div>
