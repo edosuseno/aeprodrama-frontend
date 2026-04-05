@@ -14,7 +14,7 @@ export function MobileBottomNav() {
   const pathname = usePathname();
   const router = useRouter();
 
-  const isHideNav = pathname?.includes("detail") || pathname?.includes("watch");
+  const isHideNav = pathname?.includes("watch");
 
   if (isHideNav) return null;
 

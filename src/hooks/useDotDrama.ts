@@ -91,3 +91,15 @@ export function useDotDramaWatch(id: string, episodeIndex: number) {
         staleTime: 2 * 60 * 1000,
     });
 }
+export function useDotDramaSearch(query: string) {
+    return useQuery<DotDramaDrama[]>({
+        queryKey: ["dotdrama", "search", query],
+        queryFn: async () => {
+            const data = await fetchJson<any>(`/api/dotdrama/search?query=${encodeURIComponent(query)}`);
+            const items = data?.data || data;
+            return (Array.isArray(items) ? items : []) as DotDramaDrama[];
+        },
+        enabled: !!query,
+        staleTime: 2 * 60 * 1000,
+    });
+}

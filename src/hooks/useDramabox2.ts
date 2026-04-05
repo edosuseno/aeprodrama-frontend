@@ -92,3 +92,15 @@ export function useDramabox2Watch(id: string, episodeId: string | number) {
         staleTime: 2 * 60 * 1000,
     });
 }
+export function useDramabox2Search(query: string) {
+    return useQuery<Dramabox2Drama[]>({
+        queryKey: ["dramabox2", "search", query],
+        queryFn: async () => {
+            const data = await fetchJson<any>(`/api/dramabox2/search?query=${encodeURIComponent(query)}`);
+            const items = data?.data || data;
+            return (Array.isArray(items) ? items : []) as Dramabox2Drama[];
+        },
+        enabled: !!query,
+        staleTime: 2 * 60 * 1000,
+    });
+}
