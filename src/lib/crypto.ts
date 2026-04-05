@@ -1,7 +1,7 @@
 import CryptoJS from "crypto-js";
 
 const rawSecret = process.env.NEXT_PUBLIC_CRYPTO_SECRET || "Sansekai-SekaiDrama";
-const SECRET_KEY = rawSecret.replace(/\r\n|\r|\n/g, '').trim();
+const SECRET_KEY = rawSecret.replace(/\r\n|\r|\n/g, '').replace(/['"]/g, '').trim();
 
 export function encryptData(data: any): string {
   // If data is an object/array, stringify it first

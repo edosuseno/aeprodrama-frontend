@@ -24,8 +24,15 @@ export function getBackendBase() {
   // 2. PRODUCTION / EXPLICIT OVERRIDE
   // Prioritaskan environment variable NEXT_PUBLIC_API_BASE_URL
   let base = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (base) base = base.replace(/['"]/g, ''); // Hapus tanda kutip jika ada
 
-  // Jika di Vercel dan env kosong, coba gunakan URL sistem atau fallback aman
+  // Jika di browser dan base kosong atau menunjuk ke Vercel (padahal kita mau mandiri), gunakan origin saat ini
+  if (typeof window !== 'undefined' && (!base || base.includes('vercel.app'))) {
+    // Kembalikan relative path atau domain saat ini agar Nginx menangani /api
+    return `${window.location.origin}/api`;
+  }
+
+  // Fallback terakhir: tetap gunakan Vercel JIKA benar-benar tidak ada pilihan lain (legacy support)
   if (!base) {
     base = "https://backend-gamma-eight-75.vercel.app";
   }
