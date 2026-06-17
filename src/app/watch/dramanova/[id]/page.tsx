@@ -63,18 +63,22 @@ export default function DrmanovaWatchPage() {
     useEffect(() => {
         if (videoUrl && videoRef.current) {
             const video = videoRef.current;
-            // Gunakan API Route internal frontend sebagai proxy utama agar CORS aman di Vercel
-            // Untuk Dramanova (Sansekai/HikeUniverses), referer www.vidrama.asia sangat krusial
-            const proxiedUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}&referer=${encodeURIComponent('https://www.vidrama.asia/')}`;
+            const isHlsUrl = videoUrl.includes('.m3u8') || videoUrl.includes('m3u');
             
-            addLog(`Mencoba memutar via Proxy: ${proxiedUrl.substring(0, 50)}...`);
+            // HANYA proxy URL jika itu adalah m3u8. Jika MP4, mainkan secara direct!
+            // Proxying MP4 via Vercel merusak HTTP 206 Partial Content untuk iOS Safari / Mobile Chrome.
+            let finalUrlToPlay = videoUrl;
+            if (isHlsUrl) {
+                finalUrlToPlay = `/api/proxy?url=${encodeURIComponent(videoUrl)}&referer=${encodeURIComponent('https://www.vidrama.asia/')}`;
+                addLog(`Mencoba memutar via Proxy (HLS): ${finalUrlToPlay.substring(0, 50)}...`);
+            } else {
+                addLog(`Mencoba memutar Direct (MP4): ${finalUrlToPlay.substring(0, 50)}...`);
+            }
 
             if (hlsRef.current) {
                 hlsRef.current.destroy();
                 hlsRef.current = null;
             }
-
-            const isHlsUrl = videoUrl.includes('.m3u8');
 
             if (isHlsUrl && Hls.isSupported()) {
                 const hls = new Hls({
@@ -82,7 +86,7 @@ export default function DrmanovaWatchPage() {
                     fragLoadingMaxRetry: 3,
                 });
                 hlsRef.current = hls;
-                hls.loadSource(proxiedUrl);
+                hls.loadSource(finalUrlToPlay);
                 hls.attachMedia(video);
                 hls.on(Hls.Events.MANIFEST_PARSED, () => {
                     video.play().catch((e) => addLog(`Autoplay diblokir: ${e.message}`));
@@ -102,14 +106,15 @@ export default function DrmanovaWatchPage() {
                         }
                     }
                 });
-            } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                video.src = proxiedUrl;
+            } else if (video.canPlayType('application/vnd.apple.mpegurl') && isHlsUrl) {
+                video.src = finalUrlToPlay;
                 video.addEventListener('loadedmetadata', () => {
                     video.play().catch((e) => addLog(`Autoplay Safari diblokir: ${e.message}`));
                 });
             } else {
-                video.src = proxiedUrl;
-                video.play().catch((e) => addLog(`Gagal putar: ${e.message}`));
+                // MP4 Native Playback (Sangat penting untuk mobile!)
+                video.src = finalUrlToPlay;
+                video.play().catch((e) => addLog(`Gagal putar MP4: ${e.message}`));
             }
         }
     }, [videoUrl]);
@@ -247,7 +252,6 @@ export default function DrmanovaWatchPage() {
                         className="w-full h-full object-contain max-h-[100dvh]"
                         controls
                         autoPlay
-                        crossOrigin="anonymous"
                         playsInline
                         onEnded={handleVideoEnded}
                     >

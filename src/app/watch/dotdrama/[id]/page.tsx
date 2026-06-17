@@ -103,12 +103,12 @@ export default function DotDramaWatchPage() {
 
     // JANGAN gunakan double proxy jika URL sudah berasal dari vidrama.asia/api/video-proxy
     if (processedUrl.startsWith("http") && !processedUrl.includes("vidrama.asia/api/video-proxy")) {
-      processedUrl = `${getBackendBase()}/proxy?url=${encodeURIComponent(processedUrl)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+      processedUrl = `/api/proxy?url=${encodeURIComponent(processedUrl)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
     }
 
     let processedSub = subUrl;
     if (processedSub && processedSub.startsWith("http")) {
-      processedSub = `${getBackendBase()}/proxy?url=${encodeURIComponent(processedSub)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+      processedSub = `/api/proxy?url=${encodeURIComponent(processedSub)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
     }
 
     return { videoUrl: processedUrl, subtitleUrl: processedSub };

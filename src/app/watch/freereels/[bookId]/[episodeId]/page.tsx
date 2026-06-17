@@ -17,7 +17,7 @@ export default function FreeReelsWatchPage() {
 
   const [showEpisodeList, setShowEpisodeList] = useState(false);
   const [videoQuality, setVideoQuality] = useState<'h264' | 'h265'>('h264');
-  const [useProxy, setUseProxy] = useState(true); // Default to true to avoid CORS issues
+  const [useProxy, setUseProxy] = useState(false); // Default to false to avoid CDN/Akamai blocking the proxy
   const videoRef = useRef<HTMLVideoElement | null>(null);
 
   // Ref untuk area swipe vertikal (mobile)
@@ -277,6 +277,8 @@ export default function FreeReelsWatchPage() {
               src={useProxy ? `/api/proxy/video?url=${encodeURIComponent(currentVideoUrl)}` : currentVideoUrl}
               controls
               autoPlay
+              playsInline
+              webkit-playsinline="true"
               className="w-full h-full object-contain max-h-[100dvh]"
               poster={drama.cover}
               onEnded={handleVideoEnded}

@@ -20,7 +20,7 @@ export default function FreeReelsWatchPage() {
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
   const [videoQuality, setVideoQuality] = useState<'h264' | 'h265'>('h264');
-  const [useProxy, setUseProxy] = useState(true); // Default to true to avoid CORS issues
+  const [useProxy, setUseProxy] = useState(false); // Default to false to avoid CDN/Akamai blocking the proxy
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -105,7 +105,8 @@ export default function FreeReelsWatchPage() {
     // ? `&sub=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`
     // : "";
 
-    const videoUrl = useProxy
+    const isHlsUrl = currentVideoUrl.includes('.m3u8') || currentVideoUrl.includes('.m3u');
+    const videoUrl = (useProxy && isHlsUrl)
       ? `/api/proxy/video?url=${encodeURIComponent(currentVideoUrl)}${subParam}`
       : currentVideoUrl;
 
@@ -375,6 +376,8 @@ export default function FreeReelsWatchPage() {
             ref={videoRef}
             controls
             autoPlay
+            playsInline
+            webkit-playsinline="true"
             className={cn(
               "w-full h-full object-contain max-h-[100dvh]",
               !currentVideoUrl && "invisible"
@@ -382,7 +385,6 @@ export default function FreeReelsWatchPage() {
             poster={drama.cover}
             onEnded={handleVideoEnded}
             {...({ disableRemotePlayback: true, referrerPolicy: "no-referrer" } as any)}
-            crossOrigin="anonymous"
           >
             {proxiedSubtitleUrl && (
               <track

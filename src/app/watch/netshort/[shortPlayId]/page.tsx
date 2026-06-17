@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNetShortDetail } from "@/hooks/useNetShort";
+import { useNetShortDetail, useNetShortWatch } from "@/hooks/useNetShort";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, List } from "lucide-react";
 import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
@@ -39,7 +39,12 @@ export default function NetShortWatchPage() {
   }, [searchParams]);
 
   // Fetch detail with all episodes
-  const { data, isLoading, error } = useNetShortDetail(shortPlayId || "");
+  const { data, isLoading: isDetailLoading, error } = useNetShortDetail(shortPlayId || "");
+
+  // Fetch stream via StardustTV fallback
+  const { data: watchData, isLoading: isWatchLoading } = useNetShortWatch(shortPlayId || "", currentEpisode);
+
+  const isLoading = isDetailLoading || isWatchLoading;
 
   const { addToHistory } = useHistoryStore();
 
@@ -76,9 +81,10 @@ export default function NetShortWatchPage() {
 
   // Load video with fallback support for MP4/HLS
   useEffect(() => {
-    if (currentEpisodeData?.videoUrl && videoRef.current) {
+    const videoUrlRaw = watchData?.url || currentEpisodeData?.videoUrl;
+    if (videoUrlRaw && videoRef.current) {
       const video = videoRef.current;
-      const videoUrl = currentEpisodeData.videoUrl;
+      const videoUrl = videoUrlRaw.replace(/^http:\/\//i, 'https://');
 
       addLog(`Loading video: ${videoUrl}`);
 
@@ -143,7 +149,7 @@ export default function NetShortWatchPage() {
         hlsRef.current = null;
       }
     };
-  }, [currentEpisodeData?.videoUrl]);
+  }, [watchData?.url, currentEpisodeData?.videoUrl]);
 
 
 
@@ -197,8 +203,9 @@ export default function NetShortWatchPage() {
     const video = videoRef.current;
     if (!video) return;
 
-    const subtitleUrl = currentEpisodeData?.subtitleUrl
-      ? `/api/proxy/video?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`
+    const subtitleUrlRaw = watchData?.subtitle || currentEpisodeData?.subtitleUrl;
+    const subtitleUrl = subtitleUrlRaw
+      ? `/api/proxy/video?url=${encodeURIComponent(subtitleUrlRaw)}`
       : "";
 
     // Helper to inject track safely
@@ -283,7 +290,7 @@ export default function NetShortWatchPage() {
         if (current) video.removeChild(current);
       } catch (e) { }
     };
-  }, [currentEpisodeData?.subtitleUrl]); // Run when subtitle URL changes
+  }, [watchData?.subtitle, currentEpisodeData?.subtitleUrl]); // Run when subtitle URL changes
 
   return (
     <main className="fixed inset-0 bg-black flex flex-col">
@@ -346,8 +353,8 @@ export default function NetShortWatchPage() {
             className="w-full h-full object-contain max-h-[100dvh]"
             controls
             playsInline
+            webkit-playsinline="true"
             autoPlay
-            crossOrigin="anonymous"
             {...({ disableRemotePlayback: true, referrerPolicy: "no-referrer" } as any)}
             onEnded={handleVideoEnded}
           />

@@ -46,7 +46,7 @@ export default function NetShortDetailPage() {
         {/* Background Blur */}
         <div className="absolute inset-0 overflow-hidden">
           <img
-            src={data.cover}
+            src={data.cover?.replace(/^http:\/\//i, 'https://')}
             alt=""
             className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
           />
@@ -67,7 +67,7 @@ export default function NetShortDetailPage() {
             {/* Cover */}
             <div className="relative group">
               <img
-                src={data.cover}
+                src={data.cover?.replace(/^http:\/\//i, 'https://')}
                 alt={data.title}
                 className="w-full max-w-[300px] mx-auto rounded-2xl shadow-2xl"
               />

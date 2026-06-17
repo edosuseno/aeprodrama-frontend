@@ -4,13 +4,11 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import { getBackendBase } from "@/lib/api-utils";
-const API_BASE = getBackendBase();
-
 export function useOnlineTracker() {
   // 1. Mutation untuk kirim Heartbeat
   const { mutate: sendHeartbeat } = useMutation({
     mutationFn: async () => {
-      const resp = await fetch(`${API_BASE}/stats/heartbeat`, {
+      const resp = await fetch(`${getBackendBase()}/stats/heartbeat`, {
         method: "POST",
       });
       return resp.json();
@@ -33,7 +31,7 @@ export function useOnlineTracker() {
   return useQuery({
     queryKey: ["online-users"],
     queryFn: async () => {
-      const resp = await fetch(`${API_BASE}/stats/online`);
+      const resp = await fetch(`${getBackendBase()}/stats/online`);
       const data = await resp.json();
       return data.count || 0;
     },

@@ -163,18 +163,20 @@ export async function GET(request: NextRequest) {
         // JIKA BUKAN M3U8 (MP4/TS): Stream langsung dengan support Range
         const responseHeaders = new Headers();
         responseHeaders.set("Access-Control-Allow-Origin", "*");
-        if (contentType) responseHeaders.set("Content-Type", contentType);
         
-        // Ensure status 206 for range requests
-        const status = response.status === 200 && range ? 206 : response.status;
-
+        let finalContentType = contentType;
+        if (urlStr.includes('decrypt?url=') || urlStr.toLowerCase().includes('.mp4')) {
+            finalContentType = "video/mp4";
+        }
+        if (finalContentType) responseHeaders.set("Content-Type", finalContentType);
+        
         // Forward Content-Range etc for seeking
         if (response.headers.get("Content-Length")) responseHeaders.set("Content-Length", response.headers.get("Content-Length")!);
         if (response.headers.get("Content-Range")) responseHeaders.set("Content-Range", response.headers.get("Content-Range")!);
         if (response.headers.get("Accept-Ranges")) responseHeaders.set("Accept-Ranges", response.headers.get("Accept-Ranges")!);
         
         return new NextResponse(response.body, {
-            status: status,
+            status: response.status,
             statusText: response.statusText,
             headers: responseHeaders
         });

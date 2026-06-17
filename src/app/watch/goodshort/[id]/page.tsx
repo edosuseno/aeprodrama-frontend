@@ -64,15 +64,16 @@ export default function GoodShortWatchPage() {
     if (!url) return { videoUrl: "", subtitleUrl: "" };
     
     let processedUrl = url;
-    // JANGAN gunakan double proxy jika URL sudah berasal dari vidrama.asia/api/video-proxy
-    // Ini menyebabkan 403 Forbidden dan durasi hilang.
-    if (url.startsWith("http") && !url.includes("vidrama.asia/api/video-proxy")) {
-      processedUrl = `${getBackendBase()}/proxy?url=${encodeURIComponent(url)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+    // Jika URL sudah di-proxy oleh backend (mengandung /api/proxy atau /api/goodshort/proxy),
+    // jangan proses ulang — langsung gunakan
+    // Jika URL masih raw (belum di-proxy), proses melalui backend proxy
+    if (processedUrl.startsWith("http") && !processedUrl.includes("/api/proxy") && !processedUrl.includes("/api/goodshort/proxy") && !processedUrl.includes("vidrama.asia/api/video-proxy")) {
+      processedUrl = `/api/proxy?url=${encodeURIComponent(processedUrl)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
     }
 
     let processedSub = subUrl;
-    if (processedSub && processedSub.startsWith("http")) {
-      processedSub = `${getBackendBase()}/proxy?url=${encodeURIComponent(processedSub)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+    if (processedSub && processedSub.startsWith("http") && !processedSub.includes("/api/proxy")) {
+      processedSub = `/api/proxy?url=${encodeURIComponent(processedSub)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
     }
 
     return { videoUrl: processedUrl, subtitleUrl: processedSub };
@@ -171,7 +172,7 @@ export default function GoodShortWatchPage() {
                 `
       }} />
       <div className="absolute top-0 left-0 right-0 z-50 flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent pointer-events-none">
-        <Link href={`/detail/gs/${id}`} className="pointer-events-auto flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10">
+        <Link href={`/detail/goodshort/${id}`} className="pointer-events-auto flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10">
           <ChevronLeft className="w-6 h-6" />
           <div className="flex flex-col -gap-1">
             <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>

@@ -12,7 +12,6 @@ import { useDrmanovaExplore } from "@/hooks/useDrmanova";
 import { useInfiniteVelolo } from "@/hooks/useVelolo";
 import { useStardustTVExplore } from "@/hooks/useStardustTV";
 import { useDramaWaveExplore } from "@/hooks/useDramaWave";
-import { useDramabox2Explore } from "@/hooks/useDramabox2";
 import { useDotDramaExplore } from "@/hooks/useDotDrama";
 import { useGoodShortExplore } from "@/hooks/useGoodShort";
 import { useMeloShortExplore } from "@/hooks/useMeloShort";
@@ -43,7 +42,6 @@ export function HomeView() {
    const { data: veloloHome, isLoading: loadingVelolo } = useInfiniteVelolo();
    const { data: stardustHome, isLoading: loadingStardust } = useStardustTVExplore(1);
    const { data: dramawaveHome, isLoading: loadingDramawave } = useDramaWaveExplore(1, 'popular');
-   const { data: dramabox2Home, isLoading: loadingDramabox2 } = useDramabox2Explore(1);
    const { data: dotDramaHome, isLoading: loadingDotDrama } = useDotDramaExplore(1);
    const { data: goodShortHome, isLoading: loadingGoodShort } = useGoodShortExplore(1);
    const { data: meloShortHome, isLoading: loadingMeloShort } = useMeloShortExplore(1);
@@ -152,30 +150,6 @@ export function HomeView() {
 
          {/* 3. Multi-Platform Sections (9 Cards Each) */}
          <div className="space-y-10 md:space-y-16">
-            {/* DRAMANOVA 18+ (PRIORITY TOP) */}
-            <DramaSection
-               title="DRAMANOVA 18+"
-               dramas={dramanova18}
-               isLoading={loadingDramanova18}
-               platform="dramanova"
-               isPriority={true}
-            />
-
-            {/* DRAMABOX */}
-            <DramaSection
-               title="DRAMABOX"
-               dramas={latestDramas}
-               isLoading={loadingLatest}
-               platform="dramabox"
-            />
-
-            {/* REELSHORT */}
-            <DramaSection
-               title="REELSHORT"
-               dramas={((reelShortHome as any)?.lists || (reelShortHome as any)?.data?.lists)?.find((l: any) => l.books)?.books || (Array.isArray(reelShortHome) ? reelShortHome : [])}
-               isLoading={loadingReelShort}
-               platform="reelshort"
-            />
 
             {/* DOTDRAMA */}
             <DramaSection
@@ -185,6 +159,7 @@ export function HomeView() {
                platform="dotdrama"
             />
 
+
             {/* SHORTMAX */}
             <DramaSection
                title="SHORTMAX"
@@ -193,13 +168,6 @@ export function HomeView() {
                platform="shortmax"
             />
 
-            {/* MELOLO */}
-            <DramaSection
-               title="MELOLO"
-               dramas={meloloHome?.books}
-               isLoading={loadingMelolo}
-               platform="melolo"
-            />
 
             {/* GOODSHORT */}
             <DramaSection
@@ -241,12 +209,6 @@ export function HomeView() {
                platform="dramawave"
             />
 
-            <DramaSection
-               title="DRAMABOX V2"
-               dramas={dramabox2Home}
-               isLoading={loadingDramabox2}
-               platform="dramabox2"
-            />
          </div>
       </div>
    );

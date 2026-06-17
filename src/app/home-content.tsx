@@ -21,7 +21,6 @@ import { ExploreDramaWave } from "@/components/ExploreDramaWave";
 import { ExploreDramanova } from "@/components/ExploreDramanova";
 import { ExploreVelolo } from "@/components/ExploreVelolo";
 import { HeroCarousel } from "@/components/HeroCarousel";
-import { Dramabox2List } from "@/components/Dramabox2List";
 import { DotDramaList } from "@/components/DotDramaList";
 import { GoodShortList } from "@/components/GoodShortList";
 import { MeloShortList } from "@/components/MeloShortList";
@@ -30,7 +29,7 @@ import { useForYouDramas, useLatestDramas, useTrendingDramas, useDubindoDramas }
 import { usePlatform } from "@/hooks/usePlatform";
 
 export default function HomeContent() {
-  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDramabox2, isDotDrama, isGoodShort, isMeloShort } = usePlatform();
+  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort } = usePlatform();
 
   // Fetch data for all DramaBox sections (Only when in Home or DramaBox)
   const isDramaBoxActive = isHome || isDramaBox;
@@ -156,13 +155,6 @@ export default function HomeContent() {
       {isVelolo && (
         <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <ExploreVelolo />
-        </div>
-      )}
-
-      {/* Dramabox v2 Content */}
-      {isDramabox2 && (
-        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
-          <Dramabox2List />
         </div>
       )}
 

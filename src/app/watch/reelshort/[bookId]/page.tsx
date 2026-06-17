@@ -493,7 +493,6 @@ export default function ReelShortWatchPage() {
               controls
               playsInline
               autoPlay
-              crossOrigin="anonymous"
               {...({ disableRemotePlayback: true } as any)}
               onEnded={handleVideoEnded}
             />

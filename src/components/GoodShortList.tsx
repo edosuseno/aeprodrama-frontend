@@ -89,7 +89,7 @@ export function GoodShortList() {
                         index={index}
                         title={drama.title}
                         cover={drama.cover}
-                        link={`/detail/gs/${drama.id}`}
+                        link={`/detail/goodshort/${drama.id}`}
                         episodes={drama.chapterCount}
                         onPrefetch={() => {
                             queryClient.prefetchQuery({

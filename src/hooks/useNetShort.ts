@@ -130,4 +130,23 @@ export function useInfiniteNetShort() {
   });
 }
 
+export function useNetShortWatch(shortPlayId: string, episodeIndex: number) {
+  return useQuery({
+    queryKey: ["netshort", "watch", shortPlayId, episodeIndex],
+    queryFn: async () => {
+      const res = await fetch(`/api/netshort/watch?shortPlayId=${shortPlayId}&episodeIndex=${episodeIndex}`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        if (typeof json.data === 'string') {
+          return decryptData(json.data);
+        }
+        return json.data;
+      }
+      throw new Error("Failed to load Netshort stream");
+    },
+    enabled: !!shortPlayId && episodeIndex > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export type { NetShortDrama, NetShortGroup, NetShortEpisode, DetailResponse };

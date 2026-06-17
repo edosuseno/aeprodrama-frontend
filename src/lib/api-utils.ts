@@ -16,30 +16,23 @@ export async function safeJson<T>(response: Response): Promise<T> {
 }
 
 export function getBackendBase() {
-  // 1. DEVELOPMENT: Auto-detect localhost (Local Backend)
-  if (process.env.NODE_ENV === 'development' && !process.env.NEXT_PUBLIC_API_BASE_URL) {
-    return "http://localhost:5001/api";
-  }
-
-  // 2. PRODUCTION / EXPLICIT OVERRIDE
   // Prioritaskan environment variable NEXT_PUBLIC_API_BASE_URL
   let base = process.env.NEXT_PUBLIC_API_BASE_URL;
-  if (base) base = base.replace(/['"]/g, ''); // Hapus tanda kutip jika ada
+  if (base) base = base.replace(/['"]/g, '');
 
-  // Jika di browser dan base kosong atau menunjuk ke Vercel (padahal kita mau mandiri), gunakan origin saat ini
-  if (typeof window !== 'undefined' && (!base || base.includes('vercel.app'))) {
-    // Kembalikan relative path atau domain saat ini agar Nginx menangani /api
+  // Jika di browser dan base kosong, gunakan origin saat ini (relatif)
+  if (typeof window !== 'undefined' && !base) {
     return `${window.location.origin}/api`;
   }
 
-  // Fallback terakhir: tetap gunakan Vercel JIKA benar-benar tidak ada pilihan lain (legacy support)
+  // Fallback terakhir: berjalan di server VPS (Node.js API route)
   if (!base) {
-    base = "https://backend-gamma-eight-75.vercel.app";
+    base = "http://localhost:5001";
   }
 
   // Pastikan selalu ada protokol agar tidak dianggap path relatif oleh browser
   if (!base.startsWith('http')) {
-    base = `https://${base}`;
+    base = `http://${base}`;
   }
 
   // Clean trailing slash
@@ -52,17 +45,8 @@ export function getBackendBase() {
     return base;
   }
 
-  // If base points to vercel but missing /api, append it
-  if (base.includes('vercel.app')) {
-    return `${base}/api`;
-  }
-
-  // Default behaviour: if it doesn't end in /api, append it
-  if (!base.includes('/api')) {
-    return `${base}/api`;
-  }
-
-  return base;
+  // Default behaviour: append /api
+  return `${base}/api`;
 }
 
 export function encryptedResponse(data: any, status = 200) {

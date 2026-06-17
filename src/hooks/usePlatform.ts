@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dramabox2" | "dotdrama" | "goodshort" | "meloshort";
+export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dotdrama" | "goodshort" | "meloshort";
 
 export interface PlatformInfo {
   id: Platform;
@@ -91,12 +91,6 @@ export const PLATFORMS: PlatformInfo[] = [
     apiBase: "/api/velolo",
   },
   {
-    id: "dramabox2",
-    name: "Dramabox v2",
-    logo: "/dramabox.webp",
-    apiBase: "/api/dramabox2",
-  },
-  {
     id: "dotdrama",
     name: "Dot Drama",
     logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/dotdrama.webp",
@@ -153,7 +147,6 @@ export function usePlatform() {
     isDramaWave: currentPlatform === "dramawave",
     isDramaNova: currentPlatform === "dramanova",
     isVelolo: currentPlatform === "velolo",
-    isDramabox2: currentPlatform === "dramabox2",
     isDotDrama: currentPlatform === "dotdrama",
     isGoodShort: currentPlatform === "goodshort",
     isMeloShort: currentPlatform === "meloshort",

@@ -105,9 +105,21 @@ export default function DramaBoxWatchPage() {
       return `${getBackendBase()}/tools/stream-resolver?source=dramabox&bookId=${bookId}&chapterId=${currentEpisode.chapterId || ""}&ep=${currentEpisode.chapterIndex || ""}`;
     }
 
+    // JIKA URL MENGANDUNG ENKREPSI (etavirp_nuyila / .encrypt.mp4), BUNGKUS DENGAN DECRYPTOR SANSEKAI
+    if (finalUrl && (finalUrl.includes('.encrypt.mp4') || finalUrl.includes('etavirp_nuyila'))) {
+      if (!finalUrl.includes('decrypt?url=')) {
+        finalUrl = `https://api.sansekai.my.id/api/dramabox/decrypt?url=${encodeURIComponent(finalUrl)}`;
+      }
+    }
+
     // USE PROXY to bypass CORS (Pointing to Backend port 5001)
     if (finalUrl && finalUrl.startsWith("http")) {
-      return `${getBackendBase()}/proxy?url=${encodeURIComponent(finalUrl)}`;
+      const isHlsUrl = finalUrl.includes('.m3u8') || finalUrl.includes('.m3u');
+      if (isHlsUrl) {
+        return `/api/proxy?url=${encodeURIComponent(finalUrl)}`;
+      }
+      // MP4 atau lainnya jangan diproksi (Bypass Vercel timeout & range bug)
+      return finalUrl;
     }
     return finalUrl;
   }, [currentEpisode, bookId, manualQuality]);
@@ -345,6 +357,7 @@ function HlsVideoPlayer({ src, poster, onEnded, onLevelsFound, manualLevel }: {
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
+  const [videoError, setVideoError] = useState<string | null>(null);
 
   // Handle Manual Level Switch
   useEffect(() => {
@@ -362,6 +375,9 @@ function HlsVideoPlayer({ src, poster, onEnded, onLevelsFound, manualLevel }: {
       hlsRef.current.destroy();
       hlsRef.current = null;
     }
+
+    // Reset error state
+    setVideoError(null);
 
     // Deteksi apakah URL adalah stream HLS (m3u8 atau proxy route)
     const isM3U8 = src.includes('.m3u8') || src.includes('/proxy/video') || src.includes('stream-resolver');
@@ -392,10 +408,13 @@ function HlsVideoPlayer({ src, poster, onEnded, onLevelsFound, manualLevel }: {
 
         video.play().catch(err => {
           console.warn("Autoplay was blocked - user interaction needed");
+          setVideoError("Autoplay diblokir oleh browser. Silakan klik play secara manual.");
         });
       });
 
       hls.on(Hls.Events.ERROR, (event, data) => {
+        console.error("HLS Error:", data.type, data.details, data.fatal);
+
         // Jika manifest gagal di-parse (bukan HLS), fallback ke native playback
         if (data.fatal && (data.details === 'manifestParsingError' || data.details === 'manifestIncompatibleCodecsError')) {
           console.log("Bukan stream HLS, fallback ke native playback...");
@@ -408,30 +427,70 @@ function HlsVideoPlayer({ src, poster, onEnded, onLevelsFound, manualLevel }: {
         }
 
         if (data.fatal) {
-          console.error("HLS Fatal Error:", data.type, data.details);
+          let errorMessage = "Terjadi kesalahan fatal pada stream video";
+
           switch (data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
+              errorMessage = "Kesalahan jaringan. Mencoba memulihkan...";
               console.log("Attemping to recover from network error...");
               hls.startLoad();
               break;
             case Hls.ErrorTypes.MEDIA_ERROR:
+              errorMessage = "Kesalahan media. Mencoba memulihkan...";
               console.log("Attemping to recover from media error...");
               hls.recoverMediaError();
               break;
             default:
+              errorMessage = `Kesalahan tidak terduga: ${data.details}`;
               console.log("Cannot recover, destroying...");
               hls.destroy();
               break;
           }
+
+          setVideoError(errorMessage);
         }
+      });
+
+      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+        console.log("Switched to level:", data.level);
       });
     } else {
       console.log("Using native video playback (Safari/MP4)");
       video.src = src;
       video.load();
-      video.play().catch(() => { });
-    }
 
+      video.play().catch((e) => {
+        console.warn("Native Autoplay blocked:", e);
+        setVideoError("Autoplay diblokir oleh browser. Silakan klik play secara manual.");
+      });
+
+      video.onerror = (e) => {
+        console.error("Native Video Error:", video.error?.code, video.error?.message);
+
+        let errorMessage = "Kesalahan video native";
+        if (video.error) {
+          switch (video.error.code) {
+            case 1: // MEDIA_ERR_ABORTED
+              errorMessage = "Video dibatalkan";
+              break;
+            case 2: // MEDIA_ERR_NETWORK
+              errorMessage = "Kesalahan jaringan";
+              break;
+            case 3: // MEDIA_ERR_DECODE
+              errorMessage = "Kesalahan dekode video";
+              break;
+            case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+              errorMessage = "Format video tidak didukung atau URL tidak valid";
+              break;
+            default:
+              errorMessage = `Kesalahan video: ${video.error.message}`;
+          }
+        }
+
+        setVideoError(errorMessage);
+        console.warn("Kemungkinan besar API Sansekai sedang down atau mengembalikan JSON error, sehingga gagal diputar sebagai video.");
+      };
+    }
 
     return () => {
       if (hlsRef.current) {
@@ -442,15 +501,74 @@ function HlsVideoPlayer({ src, poster, onEnded, onLevelsFound, manualLevel }: {
   }, [src]);
 
   return (
-    <video
-      ref={videoRef}
-      controls
-      playsInline
-      className="w-full h-full object-contain max-h-[100dvh]"
-      poster={poster}
-      onEnded={onEnded}
-      preload="auto"
-    />
+    <div className="w-full h-full flex items-center justify-center relative">
+      <video
+        ref={videoRef}
+        controls
+        playsInline
+        className="w-full h-full object-contain max-h-[100dvh]"
+        poster={poster}
+        onEnded={onEnded}
+        preload="auto"
+      />
+
+      {videoError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
+          <div className="text-center text-white p-6">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
+            <h3 className="text-lg font-bold mb-2">Gagal Memutar Video</h3>
+            <p className="text-sm opacity-90 mb-4 max-w-xs">{videoError}</p>
+
+            {videoError.includes("Autoplay diblokir") && (
+              <div className="mb-4 p-3 bg-white/10 rounded-lg">
+                <p className="text-xs mb-2 text-white/80">Cara mengatasi:</p>
+                <ul className="text-xs text-white/60 space-y-1">
+                  <li>• Klik ikon play di tengah video</li>
+                  <li>• Di browser, izinkan autoplay untuk situs ini</li>
+                  <li>• Di Chrome/Safari: klik ikon "i" di address bar</li>
+                  <li>• Di Firefox: atur "Autoplay" ke "Allow"</li>
+                </ul>
+              </div>
+            )}
+
+            <button
+              onClick={() => {
+                const video = videoRef.current;
+                if (video) {
+                  video.play().catch(() => { });
+                  setVideoError(null);
+                }
+              }}
+              className="px-6 py-3 bg-primary text-white rounded-full hover:bg-primary/80 transition font-medium shadow-lg"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Overlay Play Button for Autoplay Blocked */}
+      {!videoError && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/30 z-10 pointer-events-none">
+          <button
+            onClick={() => {
+              const video = videoRef.current;
+              if (video) {
+                video.play().catch((e) => {
+                  console.warn("Manual play failed:", e);
+                  setVideoError("Gagal memutar video. Silakan coba lagi.");
+                });
+              }
+            }}
+            className="w-16 h-16 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center pointer-events-auto hover:bg-white/30 transition transform hover:scale-110"
+          >
+            <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z"/>
+            </svg>
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
