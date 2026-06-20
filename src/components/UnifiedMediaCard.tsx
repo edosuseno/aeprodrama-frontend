@@ -68,7 +68,7 @@ export function UnifiedMediaCard({
                 return finalCover;
             }
             // Khusus provider yang menolak wsrv.nl atau image yg HTTPS-nya bermasalah (http://)
-            if (finalCover.includes('montagehub.xyz') || finalCover.includes('hikeuniverses.xyz') || finalCover.includes('sansekai') || finalCover.includes('stardusttv.cc') || finalCover.includes('fizzopic.org') || finalCover.startsWith('http://')) {
+            if (finalCover.includes('montagehub.xyz') || finalCover.includes('hikeuniverses.xyz') || finalCover.includes('sansekai') || finalCover.includes('stardusttv.cc') || finalCover.includes('fizzopic.org') || finalCover.includes('idrama.video') || finalCover.startsWith('http://')) {
                 return `/api/image-proxy?url=${encodeURIComponent(finalCover)}`;
             }
 

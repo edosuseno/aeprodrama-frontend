@@ -7,6 +7,45 @@ import { ChevronLeft, ChevronRight, Loader2, List, AlertCircle } from "lucide-re
 import { useHistoryStore } from "@/hooks/useHistory";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import Hls from "hls.js";
+
+// --- VTT Parser & CSS Subtitle Overlay ---
+interface VttCue {
+  start: number;
+  end: number;
+  text: string;
+}
+
+function parseVttTime(timeStr: string): number {
+  const parts = timeStr.trim().split(':');
+  if (parts.length === 3) return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+  if (parts.length === 2) return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+  return 0;
+}
+
+function parseVtt(vttText: string): VttCue[] {
+  const cues: VttCue[] = [];
+  let text = vttText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+  const blocks = text.split(/\n\s*\n/);
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    let timeLine = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes('-->')) { timeLine = i; break; }
+    }
+    if (timeLine === -1) continue;
+    const [startStr, endStr] = lines[timeLine].split('-->').map(s => s.trim().split(' ')[0]);
+    const textLines = lines.slice(timeLine + 1).join('\n').trim();
+    if (startStr && endStr && textLines) {
+      cues.push({
+        start: parseVttTime(startStr),
+        end: parseVttTime(endStr),
+        text: textLines.replace(/<[^>]*>/g, ''),
+      });
+    }
+  }
+  return cues;
+}
 
 export default function FreeReelsWatchPage() {
   const params = useParams();
@@ -17,8 +56,14 @@ export default function FreeReelsWatchPage() {
 
   const [showEpisodeList, setShowEpisodeList] = useState(false);
   const [videoQuality, setVideoQuality] = useState<'h264' | 'h265'>('h264');
-  const [useProxy, setUseProxy] = useState(false); // Default to false to avoid CDN/Akamai blocking the proxy
+  const [useProxy, setUseProxy] = useState(true); // Wajib true di VPS untuk bypass CORS dari CDN mydramawave
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
+
+  // State untuk CSS-based subtitle overlay
+  const [currentSubtitleText, setCurrentSubtitleText] = useState<string>("");
+  const vttCuesRef = useRef<VttCue[]>([]);
+  const subtitleAnimFrameRef = useRef<number>(0);
 
   // Ref untuk area swipe vertikal (mobile)
   const swipeContainerRef = useRef<HTMLDivElement>(null);
@@ -67,7 +112,8 @@ export default function FreeReelsWatchPage() {
 
   const proxiedSubtitleUrl = useMemo(() => {
     if (!currentEpisodeData?.subtitleUrl) return "";
-    return `/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
+    const proxyBaseUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
+    return `${proxyBaseUrl}/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
   }, [currentEpisodeData]);
 
   // Handlers
@@ -92,29 +138,126 @@ export default function FreeReelsWatchPage() {
     }
   };
 
-  // Force Trigger Native Subtitle (Pola Velolo)
+  // Handle HLS.js Video Loading
   useEffect(() => {
-    const checkSubtitle = () => {
-      if (videoRef.current && videoRef.current.textTracks) {
-        const tracks = videoRef.current.textTracks;
-        for (let i = 0; i < tracks.length; i++) {
-          if (tracks[i].language === 'id' || tracks[i].kind === 'subtitles' || tracks[i].label === 'Indonesia') {
-            tracks[i].mode = 'showing';
+    const videoUrlRaw = currentVideoUrl;
+    if (videoUrlRaw && videoRef.current) {
+      const video = videoRef.current;
+      const proxyBaseUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
+      const videoUrl = useProxy ? `${proxyBaseUrl}/api/proxy?url=${encodeURIComponent(videoUrlRaw)}` : videoUrlRaw;
+
+      // Clean up previous HLS instance
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+
+      const isHlsUrl = videoUrl.includes('.m3u8') || videoUrl.includes('application/x-mpegURL');
+
+      // Priority 1: HLS.js for .m3u8 (if supported)
+      if (isHlsUrl && Hls.isSupported()) {
+        const hls = new Hls({
+          debug: false,
+          enableWorker: true,
+          xhrSetup: function (xhr, url) {
+            xhr.withCredentials = false;
+          },
+        });
+        hlsRef.current = hls;
+
+        hls.loadSource(videoUrl);
+        hls.attachMedia(video);
+
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.play().catch((e) => console.log(`Auto-play failed: ${e.message}`));
+        });
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          const errorMsg = `HLS Error: ${data.type} - ${data.details}`;
+          console.error(errorMsg);
+
+          if (data.fatal) {
+            hls.destroy();
           }
+        });
+      }
+      // Priority 2: Native playback (MP4 or Native HLS on Safari)
+      else {
+        video.src = videoUrl;
+        video.load(); // Ensure source update
+
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+          playPromise.catch((e) => {
+            console.log(`Native play failed: ${e.message}`);
+          });
         }
       }
+    }
+
+    return () => {
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
+    };
+  }, [currentVideoUrl, useProxy]);
+
+  // Manual Subtitle Injection & Enforcement (Hybrid: native track + CSS overlay)
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    setCurrentSubtitleText("");
+    vttCuesRef.current = [];
+    if (subtitleAnimFrameRef.current) {
+      cancelAnimationFrame(subtitleAnimFrameRef.current);
+      subtitleAnimFrameRef.current = 0;
+    }
+
+    if (!proxiedSubtitleUrl) return;
+
+    // --- STRATEGI 1: CSS Overlay ---
+    const fetchAndParseSubtitle = async () => {
+      try {
+        const res = await fetch(proxiedSubtitleUrl);
+        if (!res.ok) return;
+        const text = await res.text();
+        vttCuesRef.current = parseVtt(text);
+
+        const syncLoop = () => {
+          if (!videoRef.current || vttCuesRef.current.length === 0) return;
+          const currentTime = videoRef.current.currentTime;
+          const activeCue = vttCuesRef.current.find(
+            c => currentTime >= c.start && currentTime <= c.end
+          );
+          setCurrentSubtitleText(activeCue?.text || "");
+          subtitleAnimFrameRef.current = requestAnimationFrame(syncLoop);
+        };
+        subtitleAnimFrameRef.current = requestAnimationFrame(syncLoop);
+      } catch (err) {}
     };
 
-    const timeout1 = setTimeout(checkSubtitle, 500);
-    const timeout2 = setTimeout(checkSubtitle, 1500);
-    const interval = setInterval(checkSubtitle, 3000); // Penjaga berkala
+    fetchAndParseSubtitle();
+
+    // --- STRATEGI 2: Native <track> injection ---
+    const enforce = () => {
+      if (!video) return;
+      const tracks = Array.from(video.textTracks);
+      const indo = tracks.find(t => t.label === 'Indonesia' || t.language === 'id');
+      if (indo && indo.mode !== 'showing') {
+        indo.mode = 'showing';
+      }
+    };
+    const timeout1 = setTimeout(enforce, 500);
+    const interval = setInterval(enforce, 3000);
 
     return () => {
       clearTimeout(timeout1);
-      clearTimeout(timeout2);
       clearInterval(interval);
+      if (subtitleAnimFrameRef.current) cancelAnimationFrame(subtitleAnimFrameRef.current);
     };
-  }, [currentIndex, currentVideoUrl]);
+  }, [proxiedSubtitleUrl]);
 
 
 
@@ -272,12 +415,10 @@ export default function FreeReelsWatchPage() {
         <div className="relative w-full h-full flex items-center justify-center">
           {currentVideoUrl ? (
             <video
-              key={`${activeEpisodeId}-${videoQuality}`} // Force remount on episode or quality change
               ref={videoRef}
-              src={useProxy ? `/api/proxy/video?url=${encodeURIComponent(currentVideoUrl)}` : currentVideoUrl}
               controls
-              autoPlay
               playsInline
+              crossOrigin="anonymous"
               webkit-playsinline="true"
               className="w-full h-full object-contain max-h-[100dvh]"
               poster={drama.cover}
@@ -299,6 +440,26 @@ export default function FreeReelsWatchPage() {
           ) : (
             <div className="absolute inset-0 flex items-center justify-center z-20 flex-col gap-4">
               <p className="text-white/60">URL Video tidak ditemukan</p>
+            </div>
+          )}
+
+          {/* Subtitle Overlay (Hybrid CSS) */}
+          {currentSubtitleText && (
+            <div className="absolute bottom-24 sm:bottom-32 left-0 right-0 px-4 pointer-events-none z-[60]">
+              <div className="flex flex-col items-center gap-1">
+                {currentSubtitleText.split('\n').map((line, i) => (
+                  <span
+                    key={i}
+                    className="inline-block text-white text-center text-sm sm:text-base md:text-lg lg:text-xl font-bold tracking-wide"
+                    style={{
+                      textShadow: '2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 0 2px 4px rgba(0,0,0,0.8), 0 0 10px rgba(0,0,0,1)',
+                      lineHeight: '1.2'
+                    }}
+                  >
+                    {line}
+                  </span>
+                ))}
+              </div>
             </div>
           )}
         </div>

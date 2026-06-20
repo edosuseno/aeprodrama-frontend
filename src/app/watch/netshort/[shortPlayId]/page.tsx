@@ -9,6 +9,60 @@ import { useRouter, useParams, useSearchParams } from "next/navigation";
 import Hls from "hls.js";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
+// --- VTT Parser & CSS Subtitle Overlay untuk iOS Safari ---
+interface VttCue {
+  start: number;
+  end: number;
+  text: string;
+}
+
+function parseVttTime(timeStr: string): number {
+  // Format: HH:MM:SS.mmm atau MM:SS.mmm
+  const parts = timeStr.trim().split(':');
+  if (parts.length === 3) {
+    return parseFloat(parts[0]) * 3600 + parseFloat(parts[1]) * 60 + parseFloat(parts[2]);
+  } else if (parts.length === 2) {
+    return parseFloat(parts[0]) * 60 + parseFloat(parts[1]);
+  }
+  return 0;
+}
+
+function parseVtt(vttText: string): VttCue[] {
+  const cues: VttCue[] = [];
+  // Normalisasi SRT ke VTT (ganti koma dengan titik pada timestamp)
+  let text = vttText.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+  // Hapus header WEBVTT dan metadata
+  const blocks = text.split(/\n\s*\n/);
+  for (const block of blocks) {
+    const lines = block.trim().split('\n');
+    let timeLine = -1;
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].includes('-->')) {
+        timeLine = i;
+        break;
+      }
+    }
+    if (timeLine === -1) continue;
+    const [startStr, endStr] = lines[timeLine].split('-->').map(s => s.trim().split(' ')[0]);
+    const textLines = lines.slice(timeLine + 1).join('\n').trim();
+    if (startStr && endStr && textLines) {
+      cues.push({
+        start: parseVttTime(startStr),
+        end: parseVttTime(endStr),
+        text: textLines.replace(/<[^>]*>/g, ''), // Hapus tag HTML dalam cue
+      });
+    }
+  }
+  return cues;
+}
+
+// Deteksi iOS/iPadOS
+function isIOSDevice(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
 export default function NetShortWatchPage() {
   const params = useParams<{ shortPlayId: string }>();
   const searchParams = useSearchParams();
@@ -22,6 +76,11 @@ export default function NetShortWatchPage() {
 
   // Ref untuk area swipe vertikal (mobile)
   const swipeContainerRef = useRef<HTMLDivElement>(null);
+
+  // State untuk CSS-based subtitle overlay (fallback iOS Safari)
+  const [currentSubtitleText, setCurrentSubtitleText] = useState<string>("");
+  const vttCuesRef = useRef<VttCue[]>([]);
+  const subtitleAnimFrameRef = useRef<number>(0);
 
   // Debug log state (kept internal for now, can be exposed if needed)
   const [debugLog, setDebugLog] = useState<string[]>([]);
@@ -84,7 +143,25 @@ export default function NetShortWatchPage() {
     const videoUrlRaw = watchData?.url || currentEpisodeData?.videoUrl;
     if (videoUrlRaw && videoRef.current) {
       const video = videoRef.current;
-      const videoUrl = videoUrlRaw.replace(/^http:\/\//i, 'https://');
+      
+      // FIX: Ekstrak original URL dan pastikan selalu lewat frontend proxy untuk mencegah masalah CORS/Mixed Content di VPS
+      let originalUrl = videoUrlRaw;
+      if (videoUrlRaw.includes('/api/proxy')) {
+        try {
+          const parsed = new URL(videoUrlRaw, window.location.origin);
+          const extractedUrl = parsed.searchParams.get('url');
+          if (extractedUrl) {
+            originalUrl = extractedUrl;
+          }
+        } catch {}
+      }
+      
+      // Gunakan origin dinamis sesuai window.location agar sesuai dengan protokol saat ini (HTTP/HTTPS)
+      const proxyBaseUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
+      // BYPASS PROXY untuk awscdn.netshort.com karena Node.js sering gagal verifikasi SSL certificate-nya,
+      // dan browser bisa memutarnya langsung via <video src="..."> tanpa masalah CORS.
+      const isNetshortCdn = originalUrl.includes('awscdn.netshort.com');
+      const videoUrl = isNetshortCdn ? originalUrl : `${proxyBaseUrl}/api/proxy?url=${encodeURIComponent(originalUrl)}`;
 
       addLog(`Loading video: ${videoUrl}`);
 
@@ -198,97 +275,172 @@ export default function NetShortWatchPage() {
     };
   }, [currentEpisode, totalEpisodes]);
 
-  // Manual Subtitle Injection & Enforcement
+  // Manual Subtitle Injection & Enforcement (Hybrid: native track + CSS overlay untuk iOS)
   useEffect(() => {
     const video = videoRef.current;
     if (!video) return;
-
-    const subtitleUrlRaw = watchData?.subtitle || currentEpisodeData?.subtitleUrl;
-    const subtitleUrl = subtitleUrlRaw
-      ? `/api/proxy/video?url=${encodeURIComponent(subtitleUrlRaw)}`
-      : "";
-
-    // Helper to inject track safely
-    const injectTrack = () => {
-      if (!subtitleUrl) return;
-
-      // Check if already exists
-      const tracks = Array.from(video.getElementsByTagName('track'));
-      const existing = tracks.find(t => t.label === 'Indonesia' && t.srclang === 'id');
-
-      if (existing) {
-        if (existing.src === subtitleUrl) {
-          return; // Already has correct track
-        } else {
-          video.removeChild(existing);
+    // FIX: Prioritaskan currentEpisodeData (fresh dari API) di atas watchData (bisa jadi dari cache lama server yang URL-nya sudah expired / 404)
+    const subtitleUrlRaw = currentEpisodeData?.subtitleUrl || watchData?.subtitle;
+    // FIX: Hindari double proxy di VPS
+    // Backend sudah memproxy subtitle jadi 'https://vps-host/api/proxy?url=<asli>'
+    // Tapi browser mengirim request ke Next.js frontend yang hanya punya /api/proxy/video
+    // Solusi: ekstrak URL asli dari backend proxy, lalu bungkus ulang dengan frontend proxy
+    let subtitleProxyUrl = "";
+    if (subtitleUrlRaw) {
+      let originalSubUrl = subtitleUrlRaw;
+      // Jika URL sudah di-proxy backend (mengandung /api/proxy?url=), ekstrak URL aslinya
+      if (subtitleUrlRaw.includes('/api/proxy')) {
+        try {
+          const parsed = new URL(subtitleUrlRaw, window.location.origin);
+          const extractedUrl = parsed.searchParams.get('url');
+          if (extractedUrl) {
+            originalSubUrl = extractedUrl;
+          }
+        } catch {
+          // Jika gagal parse, gunakan apa adanya
         }
       }
+      // Selalu gunakan proxy /api/proxy yang terhubung ke backend kecuali untuk CDN yang punya CORS dan bermasalah dengan Node.js SSL
+      if (originalSubUrl.includes('awscdn.netshort.com')) {
+        subtitleProxyUrl = originalSubUrl;
+      } else {
+        subtitleProxyUrl = `/api/proxy?url=${encodeURIComponent(originalSubUrl)}`;
+      }
+    }
 
-      const track = document.createElement('track');
-      track.kind = 'subtitles';
-      track.label = 'Indonesia';
-      track.srclang = 'id';
-      track.default = true;
-      track.src = subtitleUrl;
+    // Reset CSS subtitle state
+    setCurrentSubtitleText("");
+    vttCuesRef.current = [];
+    if (subtitleAnimFrameRef.current) {
+      cancelAnimationFrame(subtitleAnimFrameRef.current);
+      subtitleAnimFrameRef.current = 0;
+    }
 
-      track.onload = () => {
-        if (track.track) track.track.mode = 'showing';
-      };
+    if (!subtitleProxyUrl) return;
 
-      video.appendChild(track);
-    };
+    const isiOS = isIOSDevice();
 
-    // Helper to Enforce Visibility
-    const enforce = () => {
-      const tracks = Array.from(video.textTracks);
-      const indo = tracks.find(t => t.label === 'Indonesia' || t.language === 'id');
-      if (indo && indo.mode !== 'showing') {
-        indo.mode = 'showing';
+    // --- STRATEGI 1: CSS Overlay (utama untuk iOS, fallback untuk semua) ---
+    // Fetch VTT/SRT lalu parse manual, render sebagai HTML overlay
+    const fetchAndParseSubtitle = async () => {
+      try {
+        addLog(`[Subtitle] Fetching subtitle: ${subtitleProxyUrl}`);
+        const res = await fetch(subtitleProxyUrl);
+        if (!res.ok) {
+          addLog(`[Subtitle] Fetch gagal: ${res.status}`);
+          return;
+        }
+        const text = await res.text();
+        const cues = parseVtt(text);
+        addLog(`[Subtitle] Parsed ${cues.length} cues`);
+        vttCuesRef.current = cues;
+
+        // Mulai loop sinkronisasi subtitle dengan waktu video
+        const syncLoop = () => {
+          if (!videoRef.current || vttCuesRef.current.length === 0) return;
+          const currentTime = videoRef.current.currentTime;
+          const activeCue = vttCuesRef.current.find(
+            c => currentTime >= c.start && currentTime <= c.end
+          );
+          setCurrentSubtitleText(activeCue?.text || "");
+          subtitleAnimFrameRef.current = requestAnimationFrame(syncLoop);
+        };
+        subtitleAnimFrameRef.current = requestAnimationFrame(syncLoop);
+      } catch (err) {
+        addLog(`[Subtitle] Parse error: ${(err as Error).message}`);
       }
     };
 
-    // Inject immediately logic
-    injectTrack();
+    fetchAndParseSubtitle();
 
-    // Listeners for enforcement
-    video.addEventListener('loadeddata', enforce);
-    video.addEventListener('canplay', enforce);
-    video.addEventListener('playing', enforce);
-    video.addEventListener('seeked', enforce);
+    // --- STRATEGI 2: Native <track> injection (untuk desktop/Android) ---
+    // Tetap coba inject native track sebagai backup
+    if (!isiOS) {
+      const injectTrack = () => {
+        if (!subtitleProxyUrl) return;
+        const tracks = Array.from(video.getElementsByTagName('track'));
+        const existing = tracks.find(t => t.label === 'Indonesia' && t.srclang === 'id');
 
-    // --- HLS Integration ---
-    if (hlsRef.current) {
-      hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (existing) {
+          if (existing.src === subtitleProxyUrl) return;
+          else video.removeChild(existing);
+        }
+
+        const track = document.createElement('track');
+        track.kind = 'subtitles';
+        track.label = 'Indonesia';
+        track.srclang = 'id';
+        track.default = true;
+        track.src = subtitleProxyUrl;
+
+        track.onload = () => {
+          if (track.track) track.track.mode = 'showing';
+        };
+
+        video.appendChild(track);
+      };
+
+      const enforce = () => {
+        const tracks = Array.from(video.textTracks);
+        const indo = tracks.find(t => t.label === 'Indonesia' || t.language === 'id');
+        if (indo && indo.mode !== 'showing') {
+          indo.mode = 'showing';
+        }
+      };
+
+      injectTrack();
+
+      video.addEventListener('loadeddata', enforce);
+      video.addEventListener('canplay', enforce);
+      video.addEventListener('playing', enforce);
+      video.addEventListener('seeked', enforce);
+
+      if (hlsRef.current) {
+        hlsRef.current.on(Hls.Events.MANIFEST_PARSED, () => {
+          injectTrack();
+          enforce();
+        });
+        hlsRef.current.on(Hls.Events.LEVEL_SWITCHED, () => {
+          injectTrack();
+          enforce();
+        });
+      }
+
+      let retries = 0;
+      const poll = setInterval(() => {
         injectTrack();
         enforce();
-      });
-      hlsRef.current.on(Hls.Events.LEVEL_SWITCHED, () => {
-        injectTrack();
-        enforce();
-      });
+        retries++;
+        if (retries > 10) clearInterval(poll);
+      }, 200);
+
+      return () => {
+        video.removeEventListener('loadeddata', enforce);
+        video.removeEventListener('canplay', enforce);
+        video.removeEventListener('playing', enforce);
+        video.removeEventListener('seeked', enforce);
+        clearInterval(poll);
+
+        if (subtitleAnimFrameRef.current) {
+          cancelAnimationFrame(subtitleAnimFrameRef.current);
+          subtitleAnimFrameRef.current = 0;
+        }
+
+        try {
+          const tracks = Array.from(video.getElementsByTagName('track'));
+          const current = tracks.find(t => t.src === subtitleProxyUrl);
+          if (current) video.removeChild(current);
+        } catch (e) { }
+      };
     }
 
-    // Polling for first 2 seconds (Race fix)
-    let retries = 0;
-    const poll = setInterval(() => {
-      injectTrack();
-      enforce();
-      retries++;
-      if (retries > 10) clearInterval(poll);
-    }, 200);
-
+    // Cleanup untuk iOS (hanya CSS overlay, tanpa native track)
     return () => {
-      video.removeEventListener('loadeddata', enforce);
-      video.removeEventListener('canplay', enforce);
-      video.removeEventListener('playing', enforce);
-      video.removeEventListener('seeked', enforce);
-      clearInterval(poll);
-
-      try {
-        const tracks = Array.from(video.getElementsByTagName('track'));
-        const current = tracks.find(t => t.src === subtitleUrl);
-        if (current) video.removeChild(current);
-      } catch (e) { }
+      if (subtitleAnimFrameRef.current) {
+        cancelAnimationFrame(subtitleAnimFrameRef.current);
+        subtitleAnimFrameRef.current = 0;
+      }
+      setCurrentSubtitleText("");
     };
   }, [watchData?.subtitle, currentEpisodeData?.subtitleUrl]); // Run when subtitle URL changes
 
@@ -353,11 +505,32 @@ export default function NetShortWatchPage() {
             className="w-full h-full object-contain max-h-[100dvh]"
             controls
             playsInline
+            crossOrigin="anonymous"
             webkit-playsinline="true"
             autoPlay
             {...({ disableRemotePlayback: true, referrerPolicy: "no-referrer" } as any)}
             onEnded={handleVideoEnded}
           />
+
+          {/* CSS Subtitle Overlay - Fallback untuk iOS Safari */}
+          {currentSubtitleText && (
+            <div
+              className="absolute bottom-16 md:bottom-20 left-0 right-0 z-30 flex justify-center pointer-events-none px-4"
+              style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.7)' }}
+            >
+              <div
+                className="max-w-[90%] md:max-w-[70%] text-center px-3 py-1.5 rounded-md"
+                style={{
+                  backgroundColor: 'rgba(0, 0, 0, 0.65)',
+                  backdropFilter: 'blur(2px)',
+                }}
+              >
+                <p className="text-white text-sm md:text-base leading-snug font-medium whitespace-pre-line">
+                  {currentSubtitleText}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Navigation Controls Overlay - Bottom */}

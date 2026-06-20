@@ -14,6 +14,7 @@ import { useFreeReelsSearch } from "@/hooks/useFreeReels";
 import { useMovieBoxSearch } from "@/hooks/useMovieBox";
 import { useShortMaxSearch } from "@/hooks/useShortMax";
 import { useStardustTVSearch } from "@/hooks/useStardustTV";
+import { useIdrama2Search } from "@/hooks/useIdrama2";
 import { useDramaWaveSearch } from "@/hooks/useDramaWave";
 import { useDrmanovaSearch } from "@/hooks/useDrmanova";
 import { useVeloloSearch } from "@/hooks/useVelolo";
@@ -43,7 +44,7 @@ export function Header() {
   }, []);
 
   // Platform context
-  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort, platformInfo, setPlatform } = usePlatform();
+  const { isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort, isIdrama2, platformInfo, setPlatform } = usePlatform();
 
   // Search based on platform
   const { data: dramaBoxResults, isLoading: isSearchingDramaBox } = useSearchDramas(
@@ -72,6 +73,9 @@ export function Header() {
   );
   const { data: stardustTVResults, isLoading: isSearchingStardustTV } = useStardustTVSearch(
     isStardustTV ? normalizedQuery : ""
+  );
+  const { data: idrama2Results, isLoading: isSearchingIdrama2 } = useIdrama2Search(
+    isIdrama2 ? normalizedQuery : ""
   );
   const { data: dramaWaveResults, isLoading: isSearchingDramaWave } = useDramaWaveSearch(
     isDramaWave ? normalizedQuery : ""
@@ -108,7 +112,9 @@ export function Header() {
                 ? isSearchingFreeReels
                 : isStardustTV
                   ? isSearchingStardustTV
-                  : isDramaWave
+                  : isIdrama2
+                    ? isSearchingIdrama2
+                    : isDramaWave
                     ? isSearchingDramaWave
                     : isDramaNova
                       ? isSearchingDramanova
@@ -139,7 +145,9 @@ export function Header() {
                 ? freeReelsResults
                 : isStardustTV
                   ? stardustTVResults
-                  : isDramaWave
+                  : isIdrama2
+                    ? idrama2Results
+                    : isDramaWave
                     ? dramaWaveResults
                     : isDramaNova
                       ? dramanovaResults
@@ -623,6 +631,37 @@ export function Header() {
                                 {drama.badge}
                               </span>
                             )}
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+
+                {/* iDrama Results */}
+                {isIdrama2 && searchResults && searchResults.length > 0 && (
+                  <div className="grid gap-3">
+                    {searchResults.map((drama: any, index: number) => (
+                      <Link
+                        key={drama.id}
+                        href={`/detail/idrama2/${drama.id}`}
+                        onClick={handleSearchClose}
+                        className="flex gap-4 p-4 rounded-2xl bg-card hover:bg-muted transition-all text-left animate-fade-up overflow-hidden"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        <img
+                          src={drama.cover || drama.book_pic}
+                          alt={drama.title || drama.book_title}
+                          className="w-16 h-24 object-cover rounded-xl flex-shrink-0"
+                          loading="lazy"
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-display font-semibold text-foreground truncate">{drama.title || drama.book_title}</h3>
+                          <div className="mt-2">
+                            <span className="tag-pill text-[10px] bg-primary/20 text-primary capitalize">
+                              iDrama
+                            </span>
                           </div>
                         </div>
                       </Link>

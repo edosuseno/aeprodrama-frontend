@@ -10,7 +10,9 @@ import { useShortMaxLatest } from "@/hooks/useShortMax";
 import { useMeloloTrending } from "@/hooks/useMelolo";
 import { useDrmanovaExplore } from "@/hooks/useDrmanova";
 import { useInfiniteVelolo } from "@/hooks/useVelolo";
+import { useInfiniteRadreels } from "@/hooks/useRadreels";
 import { useStardustTVExplore } from "@/hooks/useStardustTV";
+import { useIdrama2Explore } from "@/hooks/useIdrama2";
 import { useDramaWaveExplore } from "@/hooks/useDramaWave";
 import { useDotDramaExplore } from "@/hooks/useDotDrama";
 import { useGoodShortExplore } from "@/hooks/useGoodShort";
@@ -40,7 +42,9 @@ export function HomeView() {
    const { data: dramanova18, isLoading: loadingDramanova18 } = useDrmanovaExplore(1, 'drama18');
    const { data: dramanovaKomik, isLoading: loadingDramanovaKomik } = useDrmanovaExplore(1, 'komik');
    const { data: veloloHome, isLoading: loadingVelolo } = useInfiniteVelolo();
+   const { data: radreelsHome, isLoading: loadingRadreels } = useInfiniteRadreels();
    const { data: stardustHome, isLoading: loadingStardust } = useStardustTVExplore(1);
+   const { data: idrama2Home, isLoading: loadingIdrama2 } = useIdrama2Explore(1);
    const { data: dramawaveHome, isLoading: loadingDramawave } = useDramaWaveExplore(1, 'popular');
    const { data: dotDramaHome, isLoading: loadingDotDrama } = useDotDramaExplore(1);
    const { data: goodShortHome, isLoading: loadingGoodShort } = useGoodShortExplore(1);
@@ -94,9 +98,20 @@ export function HomeView() {
          mix.push(...veloloList.slice(0, 1).map((d: any) => ({ ...d, platform: "velolo" })));
       }
 
+      // 1 item from Radreels
+      const radreelsList = (radreelsHome as any)?.pages?.[0] || radreelsHome;
+      if (Array.isArray(radreelsList)) {
+         mix.push(...radreelsList.slice(0, 1).map((d: any) => ({ ...d, platform: "radreels" })));
+      }
+
       // 1 item from StardustTV
       if (Array.isArray(stardustHome) && stardustHome.length > 0) {
          mix.push(...stardustHome.slice(0, 1).map((d: any) => ({ ...d, platform: "stardusttv" })));
+      }
+
+      // 1 item from iDrama
+      if (Array.isArray(idrama2Home) && idrama2Home.length > 0) {
+         mix.push(...idrama2Home.slice(0, 1).map((d: any) => ({ ...d, platform: "idrama2" })));
       }
 
       // 1 item from DramaWave
@@ -105,7 +120,7 @@ export function HomeView() {
       }
 
       return mix;
-   }, [popularDramas, reelShortHome, flickReelsHome, shortMaxHome, meloloHome, dramanovaHome, veloloHome, stardustHome, dramawaveHome]);
+   }, [popularDramas, reelShortHome, flickReelsHome, shortMaxHome, meloloHome, dramanovaHome, veloloHome, radreelsHome, stardustHome, idrama2Home, dramawaveHome]);
 
    return (
       <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-8 md:space-y-12 pb-20">
@@ -185,6 +200,14 @@ export function HomeView() {
                platform="velolo"
             />
 
+            {/* RADREELS */}
+            <DramaSection
+               title="RADREELS"
+               dramas={(radreelsHome as any)?.pages?.[0] || radreelsHome}
+               isLoading={loadingRadreels}
+               platform="radreels"
+            />
+
             {/* MELOSHORT */}
             <DramaSection
                title="MELOSHORT"
@@ -199,6 +222,14 @@ export function HomeView() {
                dramas={stardustHome}
                isLoading={loadingStardust}
                platform="stardusttv"
+            />
+
+            {/* IDRAMA */}
+            <DramaSection
+               title="IDRAMA"
+               dramas={idrama2Home}
+               isLoading={loadingIdrama2}
+               platform="idrama2"
             />
 
             {/* DRAMAWAVE */}

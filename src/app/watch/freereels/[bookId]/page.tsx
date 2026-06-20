@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import Hls from "hls.js";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
+// Removed manual VTT parser as native track is styled with video::cue
+
 export default function FreeReelsWatchPage() {
   const params = useParams();
   const searchParams = useSearchParams();
@@ -20,10 +22,12 @@ export default function FreeReelsWatchPage() {
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
   const [videoQuality, setVideoQuality] = useState<'h264' | 'h265'>('h264');
-  const [useProxy, setUseProxy] = useState(false); // Default to false to avoid CDN/Akamai blocking the proxy
+  const [useProxy, setUseProxy] = useState(true); // FIX: Always proxy for FreeReels to bypass CORS
 
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
+
+
 
   // Ref untuk area swipe vertikal (mobile)
   const swipeContainerRef = useRef<HTMLDivElement>(null);
@@ -89,8 +93,8 @@ export default function FreeReelsWatchPage() {
 
   const proxiedSubtitleUrl = useMemo(() => {
     if (!currentEpisodeData?.subtitleUrl) return "";
-    // Gunakan path relatif agar aman CORS di Chrome (Vercel)
-    return `/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
+    const proxyBaseUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
+    return `${proxyBaseUrl}/api/proxy?url=${encodeURIComponent(currentEpisodeData.subtitleUrl)}`;
   }, [currentEpisodeData]);
 
   // Load video with HLS support
@@ -106,8 +110,9 @@ export default function FreeReelsWatchPage() {
     // : "";
 
     const isHlsUrl = currentVideoUrl.includes('.m3u8') || currentVideoUrl.includes('.m3u');
+    const proxyBaseUrl = typeof window !== 'undefined' ? `${window.location.protocol}//${window.location.host}` : '';
     const videoUrl = (useProxy && isHlsUrl)
-      ? `/api/proxy/video?url=${encodeURIComponent(currentVideoUrl)}${subParam}`
+      ? `${proxyBaseUrl}/api/proxy?url=${encodeURIComponent(currentVideoUrl)}${subParam}`
       : currentVideoUrl;
 
     const video = videoRef.current;
@@ -175,29 +180,29 @@ export default function FreeReelsWatchPage() {
   }, [currentVideoUrl, useProxy]);
 
 
-  // Force Trigger Native Subtitle (Pola Velolo)
+  // Manual Subtitle Injection & Enforcement (Hybrid: native track + CSS overlay)
   useEffect(() => {
-    const checkSubtitle = () => {
-      if (videoRef.current && videoRef.current.textTracks) {
-        const tracks = videoRef.current.textTracks;
-        for (let i = 0; i < tracks.length; i++) {
-          if (tracks[i].language === 'id' || tracks[i].kind === 'subtitles' || tracks[i].label === 'Indonesia') {
-            tracks[i].mode = 'showing';
-          }
-        }
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Hanya gunakan Native <track> injection
+
+    const enforce = () => {
+      if (!video) return;
+      const tracks = Array.from(video.textTracks);
+      const indo = tracks.find(t => t.label === 'Indonesia' || t.language === 'id');
+      if (indo && indo.mode !== 'showing') {
+        indo.mode = 'showing';
       }
     };
-
-    const timeout1 = setTimeout(checkSubtitle, 500);
-    const timeout2 = setTimeout(checkSubtitle, 1500);
-    const interval = setInterval(checkSubtitle, 3000); // Penjaga berkala
+    const timeout1 = setTimeout(enforce, 500);
+    const interval = setInterval(enforce, 3000);
 
     return () => {
       clearTimeout(timeout1);
-      clearTimeout(timeout2);
       clearInterval(interval);
     };
-  }, [currentEpisodeIndex, currentVideoUrl]);
+  }, [proxiedSubtitleUrl]);
 
   // Navigation Handler
   const handleEpisodeChange = (index: number) => {
@@ -403,6 +408,8 @@ export default function FreeReelsWatchPage() {
               <p className="text-white/60">Memuat Video...</p>
             </div>
           )}
+
+
         </div>
 
         {/* Navigation Controls Overlay - Bottom */}

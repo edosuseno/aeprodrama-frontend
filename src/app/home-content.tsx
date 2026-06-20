@@ -20,6 +20,10 @@ import { ExploreStardustTV } from "@/components/ExploreStardustTV";
 import { ExploreDramaWave } from "@/components/ExploreDramaWave";
 import { ExploreDramanova } from "@/components/ExploreDramanova";
 import { ExploreVelolo } from "@/components/ExploreVelolo";
+import { ExploreIdrama2 } from "@/components/ExploreIdrama2";
+import { ExploreVigloo } from "@/components/ExploreVigloo";
+import { ExploreRadreels } from "@/components/ExploreRadreels";
+import { ExploreFlexTV } from "@/components/ExploreFlexTV";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { DotDramaList } from "@/components/DotDramaList";
 import { GoodShortList } from "@/components/GoodShortList";
@@ -29,7 +33,7 @@ import { useForYouDramas, useLatestDramas, useTrendingDramas, useDubindoDramas }
 import { usePlatform } from "@/hooks/usePlatform";
 
 export default function HomeContent() {
-  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort } = usePlatform();
+  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isIdrama2, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort, isVigloo, isRadreels, isFlexTV } = usePlatform();
 
   // Fetch data for all DramaBox sections (Only when in Home or DramaBox)
   const isDramaBoxActive = isHome || isDramaBox;
@@ -137,6 +141,13 @@ export default function HomeContent() {
         </div>
       )}
 
+      {/* iDrama Content */}
+      {isIdrama2 && (
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExploreIdrama2 />
+        </div>
+      )}
+
       {/* DramaWave Content */}
       {isDramaWave && (
         <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
@@ -178,8 +189,27 @@ export default function HomeContent() {
           <MeloShortList />
         </div>
       )}
+
+      {/* Vigloo Content */}
+      {isVigloo && (
+        <div className="w-full max-w-[1600px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExploreVigloo />
+        </div>
+      )}
+
+      {/* Radreels Content */}
+      {isRadreels && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExploreRadreels />
+        </div>
+      )}
+
+      {/* FlexTV Content */}
+      {isFlexTV && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExploreFlexTV />
+        </div>
+      )}
     </main>
   );
 }
-
-

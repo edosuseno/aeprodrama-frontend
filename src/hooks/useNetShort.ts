@@ -93,7 +93,12 @@ export function useNetShortSearch(query: string) {
 }
 
 export async function fetchNetShortDetail(shortPlayId: string): Promise<DetailResponse> {
-  return fetchJson<DetailResponse>(`/api/netshort/detail?shortPlayId=${shortPlayId}`);
+  const data = await fetchJson<DetailResponse>(`/api/netshort/detail?shortPlayId=${shortPlayId}`);
+  // Validasi: jika response 200 tapi data kosong (tidak ada title/episodes), throw error agar React Query retry
+  if (!data?.title && !data?.episodes) {
+    throw new Error("Detail data kosong, kemungkinan API belum siap");
+  }
+  return data;
 }
 
 export function useNetShortDetail(shortPlayId: string) {
@@ -102,6 +107,8 @@ export function useNetShortDetail(shortPlayId: string) {
     queryFn: () => fetchNetShortDetail(shortPlayId),
     enabled: !!shortPlayId,
     staleTime: 5 * 60 * 1000,
+    retry: 2, // Retry 2x jika gagal (Sansekai sering lambat di request pertama)
+    retryDelay: 1000, // Tunggu 1 detik sebelum retry
   });
 }
 

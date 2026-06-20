@@ -1,26 +1,34 @@
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { fetchJson } from "@/lib/fetcher";
 
-const platform = "goodshort";
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 export function useGoodShortExplore(page: number = 1) {
     return useQuery({
-        queryKey: [platform, "explore", page],
+        queryKey: ["goodshort", "explore", page],
         queryFn: async () => {
-            const data = await fetchJson<any>(`/api/${platform}/explore?page=${page}`);
-            const items = data?.data || data;
-            return (Array.isArray(items) ? items : []) as any[];
+            try {
+                const data = await fetchJson<any[]>(`${BASE_URL}/api/goodshort/explore?page=${page}`);
+                return data || [];
+            } catch (err) {
+                console.error("[GoodShort] Explore error:", err);
+                return [];
+            }
         },
     });
 }
 
 export function useInfiniteGoodShort() {
     return useInfiniteQuery({
-        queryKey: [platform, "infinite"],
+        queryKey: ["goodshort", "infinite"],
         queryFn: async ({ pageParam = 1 }) => {
-            const data = await fetchJson<any>(`/api/${platform}/explore?page=${pageParam}`);
-            const items = data?.data || data;
-            return (Array.isArray(items) ? items : []) as any[];
+            try {
+                const data = await fetchJson<any[]>(`${BASE_URL}/api/goodshort/explore?page=${pageParam}`);
+                return data || [];
+            } catch (err) {
+                console.error("[GoodShort] Infinite error:", err);
+                return [];
+            }
         },
         initialPageParam: 1,
         getNextPageParam: (lastPage, allPages) => {
@@ -33,11 +41,15 @@ export function useInfiniteGoodShort() {
 
 export function useGoodShortSearch(keyword: string) {
     return useQuery({
-        queryKey: [platform, "search", keyword],
+        queryKey: ["goodshort", "search", keyword],
         queryFn: async () => {
-            const data = await fetchJson<any>(`/api/${platform}/search?keyword=${keyword}`);
-            const items = data?.data || data;
-            return (Array.isArray(items) ? items : []) as any[];
+            try {
+                const data = await fetchJson<any[]>(`${BASE_URL}/api/goodshort/search?keyword=${encodeURIComponent(keyword)}`);
+                return data || [];
+            } catch (err) {
+                console.error("[GoodShort] Search error:", err);
+                return [];
+            }
         },
         enabled: !!keyword,
     });
@@ -45,13 +57,11 @@ export function useGoodShortSearch(keyword: string) {
 
 export function useGoodShortDetail(id: string) {
     return useQuery({
-        queryKey: [platform, "detail", id],
+        queryKey: ["goodshort", "detail", id],
         queryFn: async () => {
             try {
-                const res = await fetchJson<any>(`/api/${platform}/detail?id=${id}`);
-                if (!res) return null;
-                // Unwrap data jika ada (setelah decrypt, data mungkin di-wrap dalam .data)
-                return (res.data || res) as any;
+                const data = await fetchJson<any>(`${BASE_URL}/api/goodshort/detail?bookId=${id}`);
+                return data || null;
             } catch (err) {
                 console.error("[GoodShort] Detail error:", err);
                 return null;
@@ -64,14 +74,11 @@ export function useGoodShortDetail(id: string) {
 
 export function useGoodShortWatch(id: string, episodeIndex: number) {
     return useQuery({
-        queryKey: [platform, "watch", id, episodeIndex],
+        queryKey: ["goodshort", "watch", id, episodeIndex],
         queryFn: async () => {
             try {
-                const res = await fetchJson<any>(`/api/${platform}/watch?id=${id}&episodeIndex=${episodeIndex}`);
-                if (!res) return null;
-                // Backend mengembalikan { url, subtitle } setelah decrypt
-                // Bisa juga string langsung (fallback)
-                return (typeof res === "string" ? res : (res.data || res)) as string | { url: string; subtitle?: string };
+                const data = await fetchJson<any>(`${BASE_URL}/api/goodshort/watch?bookId=${id}&episodeIndex=${episodeIndex}`);
+                return data || null;
             } catch (err) {
                 console.error("[GoodShort] Watch error:", err);
                 return null;
@@ -81,4 +88,3 @@ export function useGoodShortWatch(id: string, episodeIndex: number) {
         staleTime: 2 * 60 * 1000,
     });
 }
-

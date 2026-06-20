@@ -159,7 +159,7 @@ export async function fetchFreeReelsDetail(bookId: string) {
         return {
             id: ep.id || ep.chapterId || String(idx + 1),
             name: ep.name || ep.chapterName || ep.title || `Episode ${idx + 1}`,
-            index: ep.index ?? ep.chapterIndex ?? idx,
+            index: idx, // FIX: selalu gunakan array index (0-based) agar penomoran di frontend (idx + 1) konsisten dari Episode 1
             videoUrl: ep.video_url || ep.videoUrl || ep.external_audio_h264_m3u8 || ep.mp4 || "",
             m3u8_url: ep.m3u8_url || ep.hlsUrl || "",
             external_audio_h264_m3u8: ep.external_audio_h264_m3u8 || "",

@@ -192,10 +192,23 @@ export async function GET(req: NextRequest) {
     }
 
     // FALLBACK: Just return buffered content
-    return new NextResponse(buffer as any, {
+    let finalBuffer = buffer;
+    let finalContentType = contentType;
+
+    // Convert SRT to VTT for mobile browser compatibility
+    if (isVtt) {
+        let text = decoder.decode(buffer);
+        if (!text.trim().startsWith("WEBVTT") && text.includes("-->")) {
+            text = "WEBVTT\n\n" + text.replace(/(\d{2}:\d{2}:\d{2}),(\d{3})/g, '$1.$2');
+            finalBuffer = Buffer.from(text, 'utf-8');
+        }
+        finalContentType = "text/vtt";
+    }
+
+    return new NextResponse(finalBuffer as any, {
         status: upstreamRes.statusCode || 200,
         headers: {
-            "Content-Type": contentType,
+            "Content-Type": finalContentType,
             "Access-Control-Allow-Origin": "*",
         }
     });

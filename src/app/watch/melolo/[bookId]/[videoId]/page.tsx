@@ -17,16 +17,10 @@ import {
 import Hls from "hls.js";
 import { UnifiedVideoNavigation } from "@/components/UnifiedVideoNavigation";
 
-interface VideoQuality {
-  name: string;
-  url: string;
-}
-
 export default function MeloloWatchPage() {
   const params = useParams<{ bookId: string; videoId: string }>();
   const router = useRouter();
   const [showEpisodeList, setShowEpisodeList] = useState(false);
-  const [selectedQuality, setSelectedQuality] = useState<VideoQuality | null>(null);
 
   // Internal state for videoId to prevent page unmount/remount on navigation
   const [currentVideoId, setCurrentVideoId] = useState(params.videoId || "");
@@ -47,69 +41,82 @@ export default function MeloloWatchPage() {
   const { addToHistory } = useHistoryStore();
 
   const drama = detailData?.data?.video_data;
-  const rawVideoModel = streamData?.data?.video_model;
 
-  // Process video qualities
-  const qualities = useMemo(() => {
-    if (!rawVideoModel) return [];
-    try {
-      // Jika data sudah berbentuk objek, jangan di-parse lagi
-      const parsedModel = typeof rawVideoModel === 'string' ? JSON.parse(rawVideoModel) : rawVideoModel;
-      const videoList = parsedModel.video_list;
-      if (!videoList) return [];
+  // Ekstrak URL video, subtitle, dan qualities dari streamData
+  const { processedVideoUrl, processedSubtitleUrl, qualities } = useMemo(() => {
+    const streamObj = streamData as any;
+    if (!streamObj) return { processedVideoUrl: "", processedSubtitleUrl: "", qualities: [] };
 
-      const availableQualities: VideoQuality[] = [];
-      const qualityMap: Record<string, string> = {
-        video_1: "240p",
-        video_2: "360p",
-        video_3: "480p",
-        video_4: "540p",
-        video_5: "720p",
-        video_6: "1080p",
-      };
+    // Coba ambil URL dari berbagai kemungkinan format
+    const rawUrl = streamObj?.url ||
+                   streamObj?.data?.url ||
+                   streamObj?.data?.main_url ||
+                   streamObj?.data?.play_url ||
+                   streamObj?.data?.playUrl ||
+                   streamObj?.data?.videoUrl ||
+                   streamObj?.data?.video_url ||
+                   streamObj?.main_url ||
+                   streamObj?.play_url ||
+                   streamObj?.playUrl ||
+                   streamObj?.videoUrl ||
+                   streamObj?.video_url || "";
 
-      Object.entries(videoList).forEach(([key, value]: [string, any]) => {
-        if (value?.main_url) {
-          try {
-            const decoded = atob(value.main_url);
-            let url = decoded.startsWith("http") ? decoded : value.main_url;
+    const rawSubtitle = streamObj?.subtitle ||
+                        streamObj?.data?.subtitle || "";
 
-            availableQualities.push({
-              name: qualityMap[key] || (key.includes('video_') ? key.replace('video_', '') + 'p' : key),
-              url: url
-            });
-          } catch (e) {
-            let url = value.main_url;
-            availableQualities.push({
-              name: qualityMap[key] || (key.includes('video_') ? key.replace('video_', '') + 'p' : key),
-              url: url
-            });
-          }
-        }
-      });
-
-      // Sort qualities (highest resolution first)
-      return availableQualities.sort((a, b) => {
-        const resA = parseInt(a.name) || 0;
-        const resB = parseInt(b.name) || 0;
-        return resB - resA;
-      });
-    } catch (e) {
-      console.error("Error parsing video model", e);
-      return [];
+    const rawQualities = streamObj?.qualities || streamObj?.data?.video_model || [];
+    let extractedQualities: { name: string, url: string }[] = [];
+    
+    if (Array.isArray(rawQualities)) {
+      extractedQualities = rawQualities.map(q => ({
+        name: q.label || q.definition || q.name || "Unknown",
+        url: q.url
+      })).filter(q => q.url);
     }
-  }, [rawVideoModel]);
 
-  // Set default quality when qualities list updates (e.g. new episode loaded)
+    if (!rawUrl && extractedQualities.length === 0) return { processedVideoUrl: "", processedSubtitleUrl: "", qualities: [] };
+
+    // Helper proxy: Gunakan /api/proxy/video untuk streaming MP4/TS agar tidak memenuhi memori
+    const addProxyIfNeeded = (url: string) => {
+      if (!url) return url;
+      
+      if (url.startsWith("http") && !url.includes("vidrama.asia/api/video-proxy")) {
+        const isMp4 = url.includes('.mp4') || url.includes('mime_type=video_mp4');
+        const proxyPath = '/api/proxy';
+        return `${proxyPath}?url=${encodeURIComponent(url)}&referer=${encodeURIComponent('https://vidrama.asia/')}&is_mp4=1`;
+      }
+      return url;
+    };
+
+    let pUrl = addProxyIfNeeded(rawUrl || (extractedQualities.length > 0 ? extractedQualities[0].url : ""));
+    
+    // Proses subtitle URL
+    let pSub = rawSubtitle;
+    if (pSub && pSub.startsWith("http")) {
+      if (!pSub.startsWith("/api/proxy") && !pSub.includes("vercel.app")) {
+        pSub = `/api/proxy?url=${encodeURIComponent(pSub)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+      }
+    }
+
+    // Proxy qualities URL
+    const processedQualities = extractedQualities.map(q => ({
+      name: q.name,
+      url: addProxyIfNeeded(q.url)
+    }));
+
+    return { processedVideoUrl: pUrl, processedSubtitleUrl: pSub, qualities: processedQualities };
+  }, [streamData]);
+
+  const [selectedQuality, setSelectedQuality] = useState<{name: string, url: string} | null>(null);
+
   useEffect(() => {
     if (qualities.length > 0) {
-      setSelectedQuality((prev) => {
-        // If we had a quality selected, try to find the matching one in the new list
+      setSelectedQuality(prev => {
         if (prev) {
-          const match = qualities.find((q) => q.name === prev.name);
+          const match = qualities.find(q => q.name === prev.name);
           if (match) return match;
         }
-        // Otherwise default to best quality (first in list)
+        // Default ke kualitas terbaik atau pertama
         return qualities[0];
       });
     } else {
@@ -211,6 +218,26 @@ export default function MeloloWatchPage() {
 
   return (
     <main className="fixed inset-0 bg-black flex flex-col">
+      {/* Custom Subtitle Styling */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        video::cue {
+          color: #ffffff !important;
+          background-color: rgba(0, 0, 0, 0) !important;
+          text-shadow: 
+            2px 2px 0 #000,
+           -2px -2px 0 #000,
+            2px -2px 0 #000,
+           -2px  2px 0 #000,
+            0 2px 4px rgba(0,0,0,0.8),
+            0 0 10px rgba(0,0,0,1) !important;
+          font-family: "Inter", -apple-system, sans-serif !important;
+          font-size: 1.15rem !important;
+          font-weight: 800 !important;
+        }
+        `
+      }} />
+
       {/* Header Overlay */}
       <div className="absolute top-0 left-0 right-0 z-40 h-16 pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-black/90 via-black/50 to-transparent" />
@@ -237,25 +264,27 @@ export default function MeloloWatchPage() {
 
           <div className="flex items-center gap-2">
             {/* Quality Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-2 text-white/90 hover:text-white transition-colors rounded-full hover:bg-white/10 flex items-center gap-1">
-                  <Settings className="w-6 h-6 drop-shadow-md" />
-                  <span className="text-xs font-bold drop-shadow-md hidden sm:inline">{selectedQuality?.name || "..."}</span>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-black/90 border-white/10 text-white">
-                {qualities.map((q) => (
-                  <DropdownMenuItem
-                    key={q.name}
-                    className={`cursor-pointer ${selectedQuality?.name === q.name ? "bg-white/20" : "hover:bg-white/10"}`}
-                    onClick={() => setSelectedQuality(q)}
-                  >
-                    {q.name}
-                  </DropdownMenuItem>
-                ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {qualities.length > 0 && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="p-2 text-white/90 hover:text-white transition-colors rounded-full hover:bg-white/10 flex items-center gap-1">
+                    <Settings className="w-6 h-6 drop-shadow-md" />
+                    <span className="text-xs font-bold drop-shadow-md hidden sm:inline">{selectedQuality?.name || "..."}</span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="bg-black/90 border-white/10 text-white">
+                  {qualities.map((q) => (
+                    <DropdownMenuItem
+                      key={q.name}
+                      className={`cursor-pointer ${selectedQuality?.name === q.name ? "bg-white/20" : "hover:bg-white/10"}`}
+                      onClick={() => setSelectedQuality(q)}
+                    >
+                      {q.name}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
 
             <button
               onClick={() => setShowEpisodeList(!showEpisodeList)}
@@ -270,17 +299,25 @@ export default function MeloloWatchPage() {
       {/* Video Player */}
       <div ref={swipeContainerRef} className="flex-1 w-full h-full relative bg-black flex flex-col items-center justify-center">
         <div className="relative w-full h-full flex items-center justify-center">
-          <HlsVideoPlayer
-            src={selectedQuality?.url || ""}
-            onEnded={handleVideoEnded}
-            className={`w-full h-full object-contain max-h-[100dvh] ${!selectedQuality && "invisible"}`}
-          />
-
-          {!selectedQuality && !streamLoading && (
-            <div className="w-full h-full flex items-center justify-center text-white/50">
-              Video unavailable
+          {processedVideoUrl ? (
+            <HlsVideoPlayer
+              src={selectedQuality?.url || processedVideoUrl}
+              subtitleSrc={processedSubtitleUrl}
+              onEnded={handleVideoEnded}
+              className="w-full h-full object-contain max-h-[100dvh]"
+            />
+          ) : !streamLoading && !streamFetching ? (
+            <div className="flex flex-col items-center justify-center text-center p-4 gap-4">
+              <AlertCircle className="w-10 h-10 text-destructive" />
+              <p className="text-white font-medium">URL Video tidak ditemukan</p>
+              <button
+                onClick={() => router.refresh()}
+                className="px-6 py-2 bg-primary/20 text-primary rounded-lg font-medium hover:bg-primary/30 transition-colors"
+              >
+                Coba Lagi
+              </button>
             </div>
-          )}
+          ) : null}
 
           {/* Loading Overlay */}
           {(streamLoading || streamFetching || detailLoading) && (
@@ -346,24 +383,37 @@ export default function MeloloWatchPage() {
 
 function HlsVideoPlayer({
   src,
+  subtitleSrc,
   onEnded,
   className
 }: {
   src: string;
+  subtitleSrc?: string;
   onEnded?: () => void;
   className?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;
     if (!video || !src) return;
 
-    let hls: Hls | null = null;
-    const isM3U8 = src.includes('.m3u8') || src.includes('application/vnd.apple.mpegurl') || src.includes('proxy');
+    // Destroy previous HLS instance
+    if (hlsRef.current) {
+      hlsRef.current.destroy();
+      hlsRef.current = null;
+    }
+
+    const isM3U8 = (src.includes('.m3u8') || src.includes('application/vnd.apple.mpegurl') || (src.includes('proxy') && !src.includes('is_mp4=1'))) && !src.includes('.mp4') && !src.includes('mime_type=video_mp4');
 
     if (Hls.isSupported() && isM3U8) {
-      hls = new Hls();
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        backBufferLength: 90,
+      });
+      hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
@@ -377,9 +427,36 @@ function HlsVideoPlayer({
     }
 
     return () => {
-      if (hls) hls.destroy();
+      if (hlsRef.current) {
+        hlsRef.current.destroy();
+        hlsRef.current = null;
+      }
     };
   }, [src]);
+
+  // Force activate subtitle tracks
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video || !subtitleSrc) return;
+
+    const checkSubtitle = () => {
+      if (video.textTracks) {
+        for (let i = 0; i < video.textTracks.length; i++) {
+          if (video.textTracks[i].language === 'id' || video.textTracks[i].kind === 'subtitles') {
+            video.textTracks[i].mode = 'showing';
+          }
+        }
+      }
+    };
+
+    const timeout1 = setTimeout(checkSubtitle, 500);
+    const timeout2 = setTimeout(checkSubtitle, 2000);
+
+    return () => {
+      clearTimeout(timeout1);
+      clearTimeout(timeout2);
+    };
+  }, [subtitleSrc, src]);
 
   return (
     <video
@@ -389,6 +466,17 @@ function HlsVideoPlayer({
       onEnded={onEnded}
       autoPlay
       playsInline
-    />
+    >
+      {subtitleSrc && (
+        <track
+          label="Indonesia"
+          kind="subtitles"
+          srcLang="id"
+          src={subtitleSrc}
+          default
+        />
+      )}
+    </video>
   );
 }
+

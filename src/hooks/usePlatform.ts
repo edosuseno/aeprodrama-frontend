@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dotdrama" | "goodshort" | "meloshort";
+export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dotdrama" | "goodshort" | "meloshort" | "idrama2" | "vigloo" | "radreels" | "flextv";
 
 export interface PlatformInfo {
   id: Platform;
@@ -108,6 +108,30 @@ export const PLATFORMS: PlatformInfo[] = [
     logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/meloshort.webp",
     apiBase: "/api/meloshort",
   },
+  {
+    id: "idrama2",
+    name: "iDrama",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/idrama.webp",
+    apiBase: "/api/idrama2",
+  },
+  {
+    id: "vigloo",
+    name: "Vigloo",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/vigloo.webp",
+    apiBase: "/api/vigloo",
+  },
+  {
+    id: "radreels",
+    name: "RadReels",
+    logo: "/radreels.png",
+    apiBase: "/api/radreels",
+  },
+  {
+    id: "flextv",
+    name: "FlexTV",
+    logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/flextv.webp",
+    apiBase: "/api/flextv",
+  }
 ];
 
 interface PlatformState {
@@ -150,5 +174,9 @@ export function usePlatform() {
     isDotDrama: currentPlatform === "dotdrama",
     isGoodShort: currentPlatform === "goodshort",
     isMeloShort: currentPlatform === "meloshort",
+    isIdrama2: currentPlatform === "idrama2",
+    isVigloo: currentPlatform === "vigloo",
+    isRadreels: currentPlatform === "radreels",
+    isFlexTV: currentPlatform === "flextv",
   };
 }
