@@ -2,20 +2,23 @@
 
 import { create } from "zustand";
 
-export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dotdrama" | "goodshort" | "meloshort" | "idrama2" | "vigloo" | "radreels" | "flextv";
+export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dotdrama" | "goodshort" | "meloshort" | "idrama2" | "vigloo" | "radreels" | "flextv" | "reelife" | "pine";
+
+export type ProviderStatus = "active" | "maintenance" | "offline" | "coming_soon";
 
 export interface PlatformInfo {
   id: Platform;
   name: string;
   logo: string;
   apiBase: string;
+  status?: ProviderStatus;
 }
 
 export const PLATFORMS: PlatformInfo[] = [
   {
     id: "home",
     name: "Beranda",
-    logo: "/logo.png",
+    logo: "/logo.png?v=6",
     apiBase: "",
   },
   {
@@ -53,6 +56,7 @@ export const PLATFORMS: PlatformInfo[] = [
     name: "FlickReels",
     logo: "/flickreels.png",
     apiBase: "/api/flickreels",
+    status: "coming_soon",
   },
   {
     id: "freereels",
@@ -101,6 +105,7 @@ export const PLATFORMS: PlatformInfo[] = [
     name: "GoodShort",
     logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/goodshort.webp",
     apiBase: "/api/goodshort",
+    status: "coming_soon",
   },
   {
     id: "meloshort",
@@ -131,6 +136,18 @@ export const PLATFORMS: PlatformInfo[] = [
     name: "FlexTV",
     logo: "https://gkcnbnlfqdlotnjaizxx.supabase.co/storage/v1/object/public/provider-logos/flextv.webp",
     apiBase: "/api/flextv",
+  },
+  {
+    id: "reelife",
+    name: "Reelife",
+    logo: "/reelife.webp",
+    apiBase: "/api/reelife",
+  },
+  {
+    id: "pine",
+    name: "PineDrama",
+    logo: "/pine.png",
+    apiBase: "/api/pine",
   }
 ];
 
@@ -178,5 +195,7 @@ export function usePlatform() {
     isVigloo: currentPlatform === "vigloo",
     isRadreels: currentPlatform === "radreels",
     isFlexTV: currentPlatform === "flextv",
+    isReelife: currentPlatform === "reelife",
+    isPine: currentPlatform === "pine",
   };
 }
