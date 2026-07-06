@@ -52,6 +52,7 @@ export default function ReelShortWatchPage() {
 
   const [currentEpisode, setCurrentEpisode] = useState(1);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const [selectedQuality, setSelectedQuality] = useState<string>("auto");
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -347,18 +348,30 @@ export default function ReelShortWatchPage() {
 
   const totalEpisodes = detailData?.totalEpisodes || 1;
 
-  // Swipe vertikal untuk navigasi episode di mobile
+  // Swipe vertikal untuk navigasi episode di mobile & Double tap untuk full screen
   useEffect(() => {
     const el = swipeContainerRef.current;
     if (!el) return;
 
     let touchStartY = 0;
+    let lastTap = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
       touchStartY = e.touches[0].clientY;
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
+      // Double tap zoom feature
+      if (e.changedTouches.length === 1) {
+          const currentTime = new Date().getTime();
+          const tapLength = currentTime - lastTap;
+          if (tapLength < 300 && tapLength > 0) {
+              setIsZoomed(!isZoomed);
+              e.preventDefault();
+          }
+          lastTap = currentTime;
+      }
+
       // Hanya aktif di mobile
       if (window.innerWidth >= 768) return;
 
@@ -366,23 +379,20 @@ export default function ReelShortWatchPage() {
       const deltaY = touchStartY - touchEndY;
 
       // Threshold 80px agar tidak konflik dengan tap kontrol video
-      if (deltaY > 80) {
-        // Swipe ke atas → episode berikutnya
-        if (currentEpisode < totalEpisodes) goToEpisode(currentEpisode + 1);
-      } else if (deltaY < -80) {
-        // Swipe ke bawah → episode sebelumnya
-        if (currentEpisode > 1) goToEpisode(currentEpisode - 1);
+      if (Math.abs(deltaY) > 80) {
+        if (deltaY > 80 && currentEpisode < totalEpisodes) goToEpisode(currentEpisode + 1);
+        else if (deltaY < -80 && currentEpisode > 1) goToEpisode(currentEpisode - 1);
       }
     };
 
     el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    el.addEventListener('touchend', handleTouchEnd, { passive: true });
+    el.addEventListener('touchend', handleTouchEnd, { passive: false });
 
     return () => {
       el.removeEventListener('touchstart', handleTouchStart);
       el.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [currentEpisode, totalEpisodes]);
+  }, [currentEpisode, totalEpisodes, isZoomed]);
 
     return (
         <main className="fixed inset-0 bg-black flex flex-col overflow-hidden">
@@ -507,7 +517,8 @@ export default function ReelShortWatchPage() {
           {/* Video Player */}
             <video
               ref={videoRef}
-              className="w-full h-full object-contain max-h-[100dvh]"
+              className={`w-full h-full max-h-[100dvh] transition-all duration-300 ${isZoomed ? "object-cover" : "object-contain"}`}
+              controlsList="nofullscreen"
               controls
               playsInline
               autoPlay
@@ -518,6 +529,7 @@ export default function ReelShortWatchPage() {
 
         {/* Navigation Controls Overlay - Bottom */}
         <UnifiedVideoNavigation
+          isHidden={isZoomed}
           currentEpisode={currentEpisode}
           totalEpisodes={totalEpisodes}
           onPrev={() => currentEpisode > 1 && goToEpisode(currentEpisode - 1)}

@@ -18,6 +18,7 @@ export default function Idrama2WatchPage() {
 
     const [currentEpisode, setCurrentEpisode] = useState(1);
     const [showEpisodeList, setShowEpisodeList] = useState(false);
+    const [isZoomed, setIsZoomed] = useState(false);
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
@@ -159,22 +160,71 @@ export default function Idrama2WatchPage() {
     useEffect(() => {
         const el = swipeContainerRef.current;
         if (!el) return;
+        
         let touchStartY = 0;
-        const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
+        let initialPinchDistance = 0;
+        let lastTapTime = 0;
+
+        const handleTouchStart = (e: TouchEvent) => { 
+            if (e.touches.length === 1) {
+                touchStartY = e.touches[0].clientY; 
+                // Double tap detection
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    setIsZoomed(prev => !prev);
+                }
+                lastTapTime = now;
+            } else if (e.touches.length === 2) {
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        };
+
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && initialPinchDistance > 0) {
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                
+                if (currentDistance - initialPinchDistance > 40) {
+                    setIsZoomed(true); // Pinch out (Zoom)
+                    initialPinchDistance = currentDistance;
+                } else if (initialPinchDistance - currentDistance > 40) {
+                    setIsZoomed(false); // Pinch in (Fit)
+                    initialPinchDistance = currentDistance;
+                }
+            }
+        };
+
         const handleTouchEnd = (e: TouchEvent) => {
-            if (window.innerWidth >= 768) return;
+            if (e.touches.length === 0) {
+                initialPinchDistance = 0;
+            }
+            if (window.innerWidth >= 768 || e.changedTouches.length !== 1) return;
+            
             const touchEndY = e.changedTouches[0].clientY;
             const deltaY = touchStartY - touchEndY;
-            if (deltaY > 80 && currentEpisode < totalEpisodes) goToEpisode(currentEpisode + 1);
-            else if (deltaY < -80 && currentEpisode > 1) goToEpisode(currentEpisode - 1);
+            
+            // Allow swipe only if the swipe is significant and no pinch was happening
+            if (Math.abs(deltaY) > 80) {
+                const totalEps = detailData?.totalEpisodes || detailData?.episodes?.length || detailData?.chapterCount || 9999;
+                if (deltaY > 80 && currentEpisode < totalEps) goToEpisode(currentEpisode + 1);
+                else if (deltaY < -80 && currentEpisode > 1) goToEpisode(currentEpisode - 1);
+            }
         };
+
         el.addEventListener('touchstart', handleTouchStart, { passive: true });
+        el.addEventListener('touchmove', handleTouchMove, { passive: true });
         el.addEventListener('touchend', handleTouchEnd, { passive: true });
         return () => {
             el.removeEventListener('touchstart', handleTouchStart);
+            el.removeEventListener('touchmove', handleTouchMove);
             el.removeEventListener('touchend', handleTouchEnd);
         };
-    }, [currentEpisode, totalEpisodes]);
+    }, [currentEpisode, detailData]);
 
     return (
         <main className="fixed inset-0 bg-black flex flex-col">
@@ -231,7 +281,7 @@ export default function Idrama2WatchPage() {
 
                     <video
                         ref={videoRef}
-                        className="w-full h-full object-contain max-h-[100dvh]"
+                        className={`w-full h-full max-h-[100dvh] transition-all duration-300 ${isZoomed ? "object-cover" : "object-contain"}`} controlsList="nofullscreen"
                         controls
                         autoPlay
                         playsInline
@@ -239,7 +289,7 @@ export default function Idrama2WatchPage() {
                     />
                 </div>
 
-                <UnifiedVideoNavigation
+                <UnifiedVideoNavigation isHidden={isZoomed}
                     currentEpisode={currentEpisode}
                     totalEpisodes={totalEpisodes}
                     onPrev={() => currentEpisode > 1 && goToEpisode(currentEpisode - 1)}

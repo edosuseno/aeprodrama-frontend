@@ -48,7 +48,7 @@ export function UnifiedMediaDetail({
             <div className="relative">
                 <div className="absolute inset-0 overflow-hidden">
                     <img
-                        src={cover ? (cover.includes('wsrv.nl') || cover.includes('/api/proxy') || cover.includes('/api/image-proxy') ? cover : `/api/image-proxy?url=${encodeURIComponent(cover)}`) : ""}
+                        src={cover ? (cover.includes('wsrv.nl') || cover.includes('/api/proxy') || cover.includes('/api/image-proxy') || cover.includes('flextv.cc') ? cover : `/api/image-proxy?url=${encodeURIComponent(cover)}`) : ""}
                         alt=""
                         className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
                     />
@@ -66,7 +66,7 @@ export function UnifiedMediaDetail({
                     >
                         <ChevronLeft className="w-6 h-6" />
                         <div className="flex flex-col -gap-1">
-                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">DRACINDO</span>
                             <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-tighter">Pusat Drama</span>
                         </div>
                     </Link>
@@ -74,7 +74,7 @@ export function UnifiedMediaDetail({
                     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
                         <div className="relative group">
                             <img
-                                src={cover ? (cover.includes('wsrv.nl') || cover.includes('/api/proxy') || cover.includes('/api/image-proxy') ? cover : `/api/image-proxy?url=${encodeURIComponent(cover)}`) : ""}
+                                src={cover ? (cover.includes('wsrv.nl') || cover.includes('/api/proxy') || cover.includes('/api/image-proxy') || cover.includes('flextv.cc') ? cover : `/api/image-proxy?url=${encodeURIComponent(cover)}`) : ""}
                                 alt={title}
                                 className="w-full max-w-[300px] mx-auto rounded-2xl shadow-2xl transition-transform duration-500 group-hover:scale-[1.02]"
                             />
@@ -114,7 +114,7 @@ export function UnifiedMediaDetail({
                                     Sinopsis
                                 </h3>
                                 <p className="text-muted-foreground leading-relaxed text-sm md:text-base">
-                                    {description || "Nikmati drama pendek berkualitas tinggi secara eksklusif hanya di AE PRO Pusat Drama."}
+                                    {description || "Nikmati drama pendek berkualitas tinggi secara eksklusif hanya di DRACINDO Pusat Drama."}
                                 </p>
                             </div>
 

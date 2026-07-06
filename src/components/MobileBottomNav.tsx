@@ -3,16 +3,18 @@
 import { useState } from "react";
 import { usePlatform } from "@/hooks/usePlatform";
 import { cn } from "@/lib/utils";
-import { Home, Search, LayoutGrid, Clock, User, X, Zap, Clapperboard } from "lucide-react";
+import { Home, Search, LayoutGrid, Clock, User, X, Zap, Clapperboard, Lock } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import Image from "next/image";
+import { useToast } from "@/hooks/use-toast";
 
 export function MobileBottomNav() {
   const { currentPlatform, setPlatform, platforms } = usePlatform();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
 
   const isHideNav = pathname?.includes("watch");
 
@@ -132,6 +134,18 @@ export function MobileBottomNav() {
                   <button
                     key={platform.id}
                     onClick={() => {
+                      if (platform.status === "maintenance") {
+                        toast({ title: "Sedang Perbaikan", description: "Provider ini sedang dalam maintenance, beberapa fitur mungkin belum normal." });
+                      }
+                      if (platform.status === "offline") {
+                        toast({ title: "Sedang Offline", description: "Provider ini sedang offline dan tidak dapat diakses.", variant: "destructive" });
+                        return;
+                      }
+                      if (platform.status === "coming_soon") {
+                        toast({ title: "Coming Soon", description: "Provider ini akan segera hadir, nantikan!" });
+                        return;
+                      }
+
                       setPlatform(platform.id);
                       setIsModalOpen(false);
                       if (pathname !== "/") {
@@ -145,18 +159,35 @@ export function MobileBottomNav() {
                         : "bg-white/5 border border-transparent hover:bg-white/10"
                     )}
                   >
+                    {/* Unified Status Badge at Top Right (Flush to corner) */}
+                    {platform.status === "maintenance" && (
+                      <div className="absolute top-0 right-0 bg-orange-500/20 border-l border-b border-orange-500/20 text-orange-400 text-[8px] px-2 py-0.5 rounded-tr-xl rounded-bl-lg font-bold uppercase flex items-center">
+                        MT
+                      </div>
+                    )}
+                    {platform.status === "offline" && (
+                      <div className="absolute top-0 right-0 bg-red-500/20 border-l border-b border-red-500/20 text-red-400 text-[8px] px-2 py-0.5 rounded-tr-xl rounded-bl-lg font-bold uppercase flex items-center">
+                        OFF
+                      </div>
+                    )}
+                    {platform.status === "coming_soon" && (
+                      <div className="absolute top-0 right-0 bg-white/10 border-l border-b border-white/5 text-white/50 text-[8px] px-2 py-0.5 rounded-tr-xl rounded-bl-lg font-bold uppercase flex items-center">
+                        SOON
+                      </div>
+                    )}
+
                     <div className="relative w-8 h-8 rounded-lg overflow-hidden shrink-0">
                       <Image
                         src={platform.logo}
                         alt={platform.name}
                         fill
-                        className="object-cover"
+                        className={cn("object-cover", platform.status === "coming_soon" ? "opacity-50 grayscale" : "")}
                       />
                     </div>
                     
                     <div className="flex-1 text-left min-w-0">
                       <div className={cn(
-                        "font-medium text-[13px] truncate",
+                        "font-medium text-[13px] truncate pr-4",
                         isActive ? "text-white font-bold" : "text-white/70"
                       )}>
                         {platform.name}

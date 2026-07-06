@@ -47,12 +47,12 @@ export function ExploreStardustTV() {
     const isLoading = loadingInfinite;
     const isError = errorInfinite;
 
-    if (isError) return null;
+    if (isError && !data?.pages?.length) return null;
 
     return (
         <section>
             <div className="flex flex-col gap-6 mb-8">
-                <h2 className="font-display font-bold text-xl md:text-2xl text-foreground">
+                <h2 className="font-display font-bold text-xl md:text-2xl text-foreground uppercase tracking-tight">
                     StardustTV Originals
                 </h2>
 

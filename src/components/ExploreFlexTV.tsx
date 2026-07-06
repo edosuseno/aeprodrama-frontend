@@ -41,7 +41,7 @@ export function ExploreFlexTV() {
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    if (isError) return null;
+    if (isError && !data?.pages?.length) return null;
 
     return (
         <section className="">

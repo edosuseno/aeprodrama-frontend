@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useInfiniteRadreels } from "@/hooks/useRadreels";
 import { UnifiedMediaCard } from "./UnifiedMediaCard";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle, List } from "lucide-react";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
 
 export function ExploreRadreels() {
@@ -41,7 +41,8 @@ export function ExploreRadreels() {
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    if (isError) return null;
+    // Menghapus return null diam-diam agar jika error, muncul peringatan di layar
+    // if (isError && !data?.pages?.length) return null;
 
     return (
         <section className="">
@@ -69,6 +70,30 @@ export function ExploreRadreels() {
                     Array.from({ length: 18 }).map((_, i) => (
                         <UnifiedMediaCardSkeleton key={i} index={i} />
                     ))}
+                    
+                {/* Visual Error State */}
+                {isError && !data?.pages?.length && (
+                    <div className="col-span-full py-12 flex flex-col items-center justify-center text-center">
+                        <AlertCircle className="w-12 h-12 text-red-500 mb-4 opacity-80" />
+                        <h3 className="text-lg font-semibold text-white mb-2">Gagal Memuat Data</h3>
+                        <p className="text-sm text-gray-400 max-w-md mx-auto">
+                            Terjadi kesalahan saat menghubungi server atau koneksi diblokir oleh sistem keamanan.
+                        </p>
+                    </div>
+                )}
+                
+                {/* Empty State */}
+                {!isLoading && !isError && data?.pages?.[0]?.length === 0 && (
+                    <div className="col-span-full py-12 flex flex-col items-center justify-center text-center">
+                        <div className="w-12 h-12 rounded-full bg-gray-800 flex items-center justify-center mb-4">
+                            <List className="w-6 h-6 text-gray-400" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-white mb-2">Katalog Kosong</h3>
+                        <p className="text-sm text-gray-400 max-w-md mx-auto">
+                            Katalog Radreels sedang tidak tersedia.
+                        </p>
+                    </div>
+                )}
             </div>
             
             {/* Trigger Area */}

@@ -5,9 +5,10 @@ import Image from "next/image";
 import { usePlatform } from "@/hooks/usePlatform";
 import { useSidebarStore } from "@/hooks/useSidebar";
 import { cn } from "@/lib/utils";
-import { Home, LogIn, UserPlus, Clock } from "lucide-react";
+import { Home, LogIn, UserPlus, Clock, Settings, Lock, XCircle } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 export function Sidebar() {
   const { currentPlatform, setPlatform, platforms } = usePlatform();
@@ -15,7 +16,24 @@ export function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
+  const { toast } = useToast();
+
   const handlePlatformClick = (id: string) => {
+    const platform = platforms.find(p => p.id === id);
+    if (platform) {
+      if (platform.status === "maintenance") {
+        toast({ title: "Sedang Perbaikan", description: "Provider ini sedang dalam maintenance, beberapa fitur mungkin belum normal." });
+      }
+      if (platform.status === "offline") {
+        toast({ title: "Sedang Offline", description: "Provider ini sedang offline dan tidak dapat diakses.", variant: "destructive" });
+        return;
+      }
+      if (platform.status === "coming_soon") {
+        toast({ title: "Coming Soon", description: "Provider ini akan segera hadir, nantikan!" });
+        return;
+      }
+    }
+
     setPlatform(id as any);
     if (pathname !== "/") {
       router.push("/");
@@ -88,6 +106,23 @@ export function Sidebar() {
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
+                  {/* Unified Status Badge at Top Right (Flush to corner) */}
+                  {platform.status === "maintenance" && (
+                    <div className="absolute top-0 right-0 bg-orange-500/20 border-l border-b border-orange-500/20 text-orange-400 text-[8px] px-2 py-0.5 rounded-tr-xl rounded-bl-lg font-bold uppercase flex items-center">
+                      MT
+                    </div>
+                  )}
+                  {platform.status === "offline" && (
+                    <div className="absolute top-0 right-0 bg-red-500/20 border-l border-b border-red-500/20 text-red-400 text-[8px] px-2 py-0.5 rounded-tr-xl rounded-bl-lg font-bold uppercase flex items-center">
+                      OFF
+                    </div>
+                  )}
+                  {platform.status === "coming_soon" && (
+                    <div className="absolute top-0 right-0 bg-white/10 border-l border-b border-white/5 text-white/50 text-[8px] px-2 py-0.5 rounded-tr-xl rounded-bl-lg font-bold uppercase flex items-center">
+                      SOON
+                    </div>
+                  )}
+
                   <div className={cn(
                     "relative w-6 h-6 rounded-lg overflow-hidden shrink-0 transition-all duration-300",
                     isActive ? "ring-2 ring-primary/50 shadow-glow-sm scale-110" : "opacity-100 group-hover:scale-105"
@@ -96,18 +131,22 @@ export function Sidebar() {
                       src={platform.logo}
                       alt={platform.name}
                       fill
-                      className="object-cover"
+                      className={cn("object-cover", platform.status === "coming_soon" ? "opacity-50 grayscale" : "")}
                       sizes="24px"
                     />
                   </div>
 
-                  <span className={cn(
-                    "ml-4 font-medium text-sm transition-all duration-300 whitespace-nowrap",
-                    isExpanded ? "opacity-100" : "opacity-0 pointer-events-none",
-                    isActive ? "font-bold text-primary" : ""
+                  <div className={cn(
+                    "ml-4 flex items-center transition-all duration-300",
+                    isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"
                   )}>
-                    {platform.name}
-                  </span>
+                    <span className={cn(
+                      "font-medium text-sm whitespace-nowrap",
+                      isActive ? "font-bold text-primary" : ""
+                    )}>
+                      {platform.name}
+                    </span>
+                  </div>
 
                   {isActive && !isExpanded && (
                     <div className="absolute left-0 w-1 h-6 bg-primary rounded-r-full shadow-glow-sm" />

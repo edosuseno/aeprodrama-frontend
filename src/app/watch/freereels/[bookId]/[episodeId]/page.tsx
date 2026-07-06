@@ -55,6 +55,7 @@ export default function FreeReelsWatchPage() {
   const activeEpisodeId = params.episodeId as string;
 
   const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const [videoQuality, setVideoQuality] = useState<'h264' | 'h265'>('h264');
   const [useProxy, setUseProxy] = useState(true); // Wajib true di VPS untuk bypass CORS dari CDN mydramawave
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -263,42 +264,73 @@ export default function FreeReelsWatchPage() {
 
   // Swipe vertikal untuk navigasi episode di mobile
   useEffect(() => {
-    const el = swipeContainerRef.current;
-    if (!el) return;
+        const el = swipeContainerRef.current;
+        if (!el) return;
+        
+        let touchStartY = 0;
+        let initialPinchDistance = 0;
+        let lastTapTime = 0;
 
-    let touchStartY = 0;
+        const handleTouchStart = (e: TouchEvent) => { 
+            if (e.touches.length === 1) {
+                touchStartY = e.touches[0].clientY; 
+                // Double tap detection
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    setIsZoomed(prev => !prev);
+                }
+                lastTapTime = now;
+            } else if (e.touches.length === 2) {
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        };
 
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-    };
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && initialPinchDistance > 0) {
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                
+                if (currentDistance - initialPinchDistance > 40) {
+                    setIsZoomed(true); // Pinch out (Zoom)
+                    initialPinchDistance = currentDistance;
+                } else if (initialPinchDistance - currentDistance > 40) {
+                    setIsZoomed(false); // Pinch in (Fit)
+                    initialPinchDistance = currentDistance;
+                }
+            }
+        };
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      // Hanya aktif di mobile
-      if (window.innerWidth >= 768) return;
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (e.touches.length === 0) {
+                initialPinchDistance = 0;
+            }
+            if (window.innerWidth >= 768 || e.changedTouches.length !== 1) return;
+            
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaY = touchStartY - touchEndY;
+            
+            // Allow swipe only if the swipe is significant and no pinch was happening
+            if (Math.abs(deltaY) > 80) {
+                const totalEps = episodes?.length || 9999;
+                if (deltaY > 80 && currentEpisode < totalEps) goToEpisode(currentEpisode + 1);
+                else if (deltaY < -80 && currentEpisode > 1) goToEpisode(currentEpisode - 1);
+            }
+        };
 
-      const touchEndY = e.changedTouches[0].clientY;
-      const deltaY = touchStartY - touchEndY;
-
-      // Threshold 80px agar tidak konflik dengan tap kontrol video
-      if (deltaY > 80) {
-        // Swipe ke atas → episode berikutnya
-        const nextEp = episodes[currentIndex + 1];
-        if (nextEp) handleEpisodeChange(nextEp.id, true);
-      } else if (deltaY < -80) {
-        // Swipe ke bawah → episode sebelumnya
-        const prevEp = episodes[currentIndex - 1];
-        if (prevEp) handleEpisodeChange(prevEp.id, true);
-      }
-    };
-
-    el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    el.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-    return () => {
-      el.removeEventListener('touchstart', handleTouchStart);
-      el.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [currentIndex, episodes, handleEpisodeChange]);
+        el.addEventListener('touchstart', handleTouchStart, { passive: true });
+        el.addEventListener('touchmove', handleTouchMove, { passive: true });
+        el.addEventListener('touchend', handleTouchEnd, { passive: true });
+        return () => {
+            el.removeEventListener('touchstart', handleTouchStart);
+            el.removeEventListener('touchmove', handleTouchMove);
+            el.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [currentEpisode, episodes]);
 
   if (isLoading) {
     return (
@@ -420,7 +452,7 @@ export default function FreeReelsWatchPage() {
               playsInline
               crossOrigin="anonymous"
               webkit-playsinline="true"
-              className="w-full h-full object-contain max-h-[100dvh]"
+              className={`w-full h-full max-h-[100dvh] transition-all duration-300 ${isZoomed ? "object-cover" : "object-contain"}`} controlsList="nofullscreen"
               poster={drama.cover}
               onEnded={handleVideoEnded}
                // @ts-ignore
@@ -465,7 +497,7 @@ export default function FreeReelsWatchPage() {
         </div>
 
         {/* Navigation Controls Overlay - Bottom */}
-        <div className="absolute bottom-20 md:bottom-12 left-0 right-0 z-40 pointer-events-none flex justify-center pb-safe-area-bottom">
+        <div className={`absolute bottom-20 md:bottom-12 left-0 right-0 z-40 pointer-events-none flex justify-center pb-safe-area-bottom transition-opacity duration-300 ${isZoomed ? "opacity-0 pointer-events-none" : "opacity-100"}`}>
           <div className="flex items-center gap-2 md:gap-6 pointer-events-auto bg-black/60 backdrop-blur-md px-3 py-1.5 md:px-6 md:py-3 rounded-full border border-white/10 shadow-lg transition-all scale-90 md:scale-100 origin-bottom">
             <button
               onClick={() => {

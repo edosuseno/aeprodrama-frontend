@@ -340,7 +340,6 @@ function VideoPlayer({ src, poster, subtitleUrl, onEnded }: { src: string; poste
   return (
     <video
       ref={videoRef}
-      controls
       autoPlay
       className="w-full h-full object-contain"
       poster={poster}

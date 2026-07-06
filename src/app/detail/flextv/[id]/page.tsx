@@ -17,7 +17,7 @@ export default function FlexTVDetailPage() {
     const { setPlatform } = usePlatform();
 
     const handleBack = () => {
-        setPlatform("FlexTV");
+        setPlatform("flextv");
         router.push("/");
     };
 

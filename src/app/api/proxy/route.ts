@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
         const requestHeaders = new Headers();
 
         // Forward critical headers
-        let referer = "https://www.google.com/";
+        let referer = request.nextUrl.searchParams.get("referer") || "https://www.google.com/";
         let origin = "";
 
         if (urlStr.includes('dramabox')) {
@@ -27,8 +27,8 @@ export async function GET(request: NextRequest) {
         } else if (urlStr.includes('jobsamg') || urlStr.includes('dnk7') || urlStr.includes('sansekai')) {
             referer = "https://www.dramanova.com/";
             origin = "https://www.dramanova.com";
-        } else {
-            // Generic fallback: use the domain of the target URL as referer
+        } else if (!request.nextUrl.searchParams.has("referer")) {
+            // Generic fallback: use the domain of the target URL as referer only if no explicit referer provided
             try {
                 referer = `${targetUrl.protocol}//${targetUrl.host}/`;
             } catch (e) {}
@@ -43,6 +43,11 @@ export async function GET(request: NextRequest) {
         if (range) {
             requestHeaders.set("Range", range);
         }
+
+        // IP Spoofing to bypass Vercel/Cloudflare blocks on vidrama.asia
+        const randomIP = `114.122.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`;
+        requestHeaders.set("X-Forwarded-For", randomIP);
+        requestHeaders.set("X-Real-IP", randomIP);
 
         // Fetch content
         const response = await fetch(urlStr, {

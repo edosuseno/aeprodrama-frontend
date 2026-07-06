@@ -23,12 +23,11 @@ export function ReelShortSection() {
     // Handle null/undefined
     if (!homepageData) return { banners: [], bookGroups: [] };
 
-    // Handle Flat Array (Fallback from Explore)
     if (Array.isArray(homepageData)) {
       return {
         banners: [],
         bookGroups: [{
-          title: "Untuk Kamu",
+          title: "TERBARU",
           books: homepageData
         }]
       };

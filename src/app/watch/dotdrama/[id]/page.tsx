@@ -17,6 +17,7 @@ export default function DotDramaWatchPage() {
   // State
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [showList, setShowList] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const swipeContainerRef = useMemo(() => ({ current: null as HTMLDivElement | null }), []);
 
   // Fetch Data
@@ -38,27 +39,68 @@ export default function DotDramaWatchPage() {
     const el = swipeContainerRef.current;
     if (!el) return;
     let touchStartY = 0;
-    const handleTouchStart = (e: TouchEvent) => { touchStartY = e.touches[0].clientY; };
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (window.innerWidth >= 768) return; 
-      const touchEndY = e.changedTouches[0].clientY;
-      const deltaY = touchStartY - touchEndY;
-      // Geser ke atas (Finger moves up) -> Next Episode
-      if (deltaY > 80 && currentEpisodeIndex < episodes.length - 1) {
-        goToEpisode(currentEpisodeIndex + 1);
-      }
-      // Geser ke bawah (Finger moves down) -> Prev Episode
-      else if (deltaY < -80 && currentEpisodeIndex > 0) {
-        goToEpisode(currentEpisodeIndex - 1);
-      }
+    let initialPinchDistance = 0;
+    let lastTapTime = 0;
+
+    const handleTouchStart = (e: TouchEvent) => { 
+        if (e.touches.length === 1) {
+            touchStartY = e.touches[0].clientY; 
+            const now = Date.now();
+            if (now - lastTapTime < 300) {
+                setIsZoomed(prev => !prev);
+            }
+            lastTapTime = now;
+        } else if (e.touches.length === 2) {
+            initialPinchDistance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+        }
     };
+
+    const handleTouchMove = (e: TouchEvent) => {
+        if (e.touches.length === 2 && initialPinchDistance > 0) {
+            const currentDistance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            
+            if (currentDistance - initialPinchDistance > 40) {
+                setIsZoomed(true); // Pinch out (Zoom)
+                initialPinchDistance = currentDistance;
+            } else if (initialPinchDistance - currentDistance > 40) {
+                setIsZoomed(false); // Pinch in (Fit)
+                initialPinchDistance = currentDistance;
+            }
+        }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+        if (e.touches.length === 0) {
+            initialPinchDistance = 0;
+        }
+        if (window.innerWidth >= 768 || e.changedTouches.length !== 1) return;
+        
+        const touchEndY = e.changedTouches[0].clientY;
+        const deltaY = touchStartY - touchEndY;
+        
+        // Allow swipe only if the swipe is significant and no pinch was happening
+        if (Math.abs(deltaY) > 80) {
+            const totalEps = detail?.totalEpisodes || detail?.episodes?.length || detail?.chapterCount || 9999;
+            if (deltaY > 80 && currentEpisodeIndex + 1 < totalEps) goToEpisode(currentEpisodeIndex + 1);
+            else if (deltaY < -80 && currentEpisodeIndex + 1 > 1) goToEpisode(currentEpisodeIndex - 1);
+        }
+    };
+
     el.addEventListener('touchstart', handleTouchStart, { passive: true });
+    el.addEventListener('touchmove', handleTouchMove, { passive: true });
     el.addEventListener('touchend', handleTouchEnd, { passive: true });
     return () => {
-      el.removeEventListener('touchstart', handleTouchStart);
-      el.removeEventListener('touchend', handleTouchEnd);
+        el.removeEventListener('touchstart', handleTouchStart);
+        el.removeEventListener('touchmove', handleTouchMove);
+        el.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [currentEpisodeIndex, episodes.length]);
+  }, [currentEpisodeIndex, detail]);
 
   // Sync with URL ep param
   useEffect(() => {
@@ -160,6 +202,7 @@ export default function DotDramaWatchPage() {
                 src={videoUrl} 
                 poster={detail?.cover || ""} 
                 subtitleUrl={subtitleUrl}
+                isZoomed={isZoomed}
                 onEnded={() => {
                     if (currentEpisodeIndex < episodes.length - 1) {
                         setCurrentEpisodeIndex(prev => prev + 1);
@@ -174,7 +217,7 @@ export default function DotDramaWatchPage() {
             </div>
         )}
 
-        <UnifiedVideoNavigation
+        <UnifiedVideoNavigation isHidden={isZoomed}
           currentEpisode={currentEpisodeIndex + 1}
           totalEpisodes={episodes.length}
           onPrev={() => setCurrentEpisodeIndex((prev) => Math.max(0, prev - 1))}
@@ -212,7 +255,7 @@ export default function DotDramaWatchPage() {
   );
 }
 
-function VideoPlayer({ src, poster, subtitleUrl, onEnded }: { src: string; poster: string; subtitleUrl?: string; onEnded?: () => void }) {
+function VideoPlayer({ src, poster, subtitleUrl, isZoomed, onEnded }: { src: string; poster: string; subtitleUrl?: string; isZoomed?: boolean; onEnded?: () => void }) {
   const [videoElement, setVideoElement] = useState<HTMLVideoElement | null>(null);
 
   useEffect(() => {
@@ -265,7 +308,8 @@ function VideoPlayer({ src, poster, subtitleUrl, onEnded }: { src: string; poste
       ref={setVideoElement}
       controls
       autoPlay
-      className="w-full h-full object-contain"
+      className={`w-full h-full max-h-[100dvh] transition-all duration-300 ${isZoomed ? "object-cover" : "object-contain"}`}
+      controlsList="nofullscreen"
       poster={poster}
       onEnded={onEnded}
       playsInline

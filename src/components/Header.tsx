@@ -191,12 +191,12 @@ export function Header() {
             <Link href="/" onClick={() => setPlatform("home")} className="flex items-center gap-2.5 px-2 md:px-0 group">
               <img
                 src="/icon.png"
-                alt="AE PRO Logo"
+                alt="DRACINDO Logo"
                 className="w-10 h-10 rounded-xl group-hover:scale-110 transition-transform duration-300"
               />
               <div className="flex flex-col -gap-1">
                 <span className="font-display font-bold text-lg leading-none gradient-text tracking-wide">
-                  AE PRO
+                  DRACINDO
                 </span>
                 <span className="text-[10px] font-medium text-muted-foreground leading-none tracking-[0.2em]">
                   PUSAT DRAMA

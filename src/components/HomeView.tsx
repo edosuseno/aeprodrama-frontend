@@ -184,13 +184,6 @@ export function HomeView() {
             />
 
 
-            {/* GOODSHORT */}
-            <DramaSection
-               title="GOODSHORT"
-               dramas={goodShortHome}
-               isLoading={loadingGoodShort}
-               platform="goodshort"
-            />
 
             {/* VELOLO */}
             <DramaSection

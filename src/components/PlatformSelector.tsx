@@ -1,10 +1,11 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, Lock } from "lucide-react";
 import { usePlatform, type PlatformInfo } from "@/hooks/usePlatform";
 import { useState, useRef, useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { useToast } from "@/hooks/use-toast";
 
 export function PlatformSelector() {
   const { currentPlatform, setPlatform, platforms, getPlatformInfo } = usePlatform();
@@ -12,6 +13,7 @@ export function PlatformSelector() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
   const router = useRouter();
+  const { toast } = useToast();
   
   const currentPlatformInfo = getPlatformInfo(currentPlatform);
 
@@ -58,28 +60,59 @@ export function PlatformSelector() {
               <button
                 key={platform.id}
                 onClick={() => {
+                  if (platform.status === "maintenance") {
+                    toast({ title: "Sedang Perbaikan", description: "Provider ini sedang dalam maintenance, beberapa fitur mungkin belum normal." });
+                  }
+                  if (platform.status === "offline") {
+                    toast({ title: "Sedang Offline", description: "Provider ini sedang offline dan tidak dapat diakses.", variant: "destructive" });
+                    return;
+                  }
+                  if (platform.status === "coming_soon") {
+                    toast({ title: "Coming Soon", description: "Provider ini akan segera hadir, nantikan!" });
+                    return;
+                  }
+
                   setPlatform(platform.id);
                   setIsOpen(false);
                   if (pathname !== "/") {
                     router.push("/");
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
+                className={`w-full relative flex items-center gap-3 px-4 py-3 transition-colors ${
                   currentPlatform === platform.id 
                     ? 'bg-primary/10 text-primary' 
                     : 'hover:bg-muted/50'
                 }`}
               >
-                <div className="relative w-6 h-6 rounded-md overflow-hidden">
+                {/* Unified Status Badge at Top Right (Flush to corner) */}
+                {platform.status === "maintenance" && (
+                  <div className="absolute top-0 right-0 bg-orange-500/20 border-l border-b border-orange-500/20 text-orange-400 text-[8px] px-2 py-0.5 rounded-bl-lg font-bold uppercase flex items-center">
+                    MT
+                  </div>
+                )}
+                {platform.status === "offline" && (
+                  <div className="absolute top-0 right-0 bg-red-500/20 border-l border-b border-red-500/20 text-red-400 text-[8px] px-2 py-0.5 rounded-bl-lg font-bold uppercase flex items-center">
+                    OFF
+                  </div>
+                )}
+                {platform.status === "coming_soon" && (
+                  <div className="absolute top-0 right-0 bg-white/10 border-l border-b border-white/5 text-white/50 text-[8px] px-2 py-0.5 rounded-bl-lg font-bold uppercase flex items-center">
+                    SOON
+                  </div>
+                )}
+
+                <div className="relative w-6 h-6 rounded-md overflow-hidden shrink-0">
                   <Image
                     src={platform.logo}
                     alt={platform.name}
                     fill
-                    className="object-cover"
+                    className={`object-cover ${platform.status === "coming_soon" ? "opacity-50 grayscale" : ""}`}
                     sizes="24px"
                   />
                 </div>
-                <span className="font-medium">{platform.name}</span>
+                <div className="flex flex-col items-start pr-6">
+                  <span className="font-medium leading-none">{platform.name}</span>
+                </div>
                 {currentPlatform === platform.id && (
                   <span className="ml-auto w-2 h-2 rounded-full bg-primary" />
                 )}
@@ -97,6 +130,18 @@ export function PlatformSelector() {
             platform={platform}
             isActive={currentPlatform === platform.id}
             onClick={() => {
+              if (platform.status === "maintenance") {
+                toast({ title: "Sedang Perbaikan", description: "Provider ini sedang dalam maintenance, beberapa fitur mungkin belum normal." });
+              }
+              if (platform.status === "offline") {
+                toast({ title: "Sedang Offline", description: "Provider ini sedang offline dan tidak dapat diakses.", variant: "destructive" });
+                return;
+              }
+              if (platform.status === "coming_soon") {
+                toast({ title: "Coming Soon", description: "Provider ini akan segera hadir, nantikan!" });
+                return;
+              }
+
               setPlatform(platform.id);
               if (pathname !== "/") {
                 router.push("/");
@@ -129,23 +174,42 @@ function PlatformButton({ platform, isActive, onClick }: PlatformButtonProps) {
         }
       `}
     >
-      <div className="relative w-6 h-6 rounded-md overflow-hidden">
+      {/* Unified Status Badge at Top Right (Flush to pill border) */}
+      {platform.status === "maintenance" && (
+        <div className="absolute top-0 right-0 bg-orange-500/20 border-l border-b border-orange-500/20 text-orange-400 text-[8px] px-2 py-0.5 rounded-tr-full rounded-bl-lg font-bold uppercase flex items-center">
+          MT
+        </div>
+      )}
+      {platform.status === "offline" && (
+        <div className="absolute top-0 right-0 bg-red-500/20 border-l border-b border-red-500/20 text-red-400 text-[8px] px-2 py-0.5 rounded-tr-full rounded-bl-lg font-bold uppercase flex items-center">
+          OFF
+        </div>
+      )}
+      {platform.status === "coming_soon" && (
+        <div className="absolute top-0 right-0 bg-white/10 border-l border-b border-white/5 text-white/50 text-[8px] px-2 py-0.5 rounded-tr-full rounded-bl-lg font-bold uppercase flex items-center">
+          SOON
+        </div>
+      )}
+
+      <div className="relative w-6 h-6 rounded-md overflow-hidden shrink-0">
         <Image
           src={platform.logo}
           alt={platform.name}
           fill
-          className="object-cover"
+          className={`object-cover ${platform.status === "coming_soon" ? "opacity-50 grayscale" : ""}`}
           sizes="24px"
         />
       </div>
-      <span
-        className={`
-          font-medium text-sm whitespace-nowrap
-          ${isActive ? "text-primary" : "text-muted-foreground"}
-        `}
-      >
-        {platform.name}
-      </span>
+      <div className="flex flex-col items-start leading-none pr-1">
+        <span
+          className={`
+            font-medium text-sm whitespace-nowrap
+            ${isActive ? "text-primary" : "text-muted-foreground"}
+          `}
+        >
+          {platform.name}
+        </span>
+      </div>
       {isActive && (
         <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-2 h-2 rounded-full bg-primary animate-pulse" />
       )}

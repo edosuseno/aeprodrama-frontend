@@ -50,7 +50,7 @@ export function HeroCarousel({ dramas, isLoading }: HeroCarouselProps) {
             const bookId = drama.playlet_id || drama.book_id || drama.bookId || drama.shortPlayId || drama.key || drama.id;
             const cover = drama.coverWap || drama.cover || drama.book_pic || drama.thumb_url || drama.shortPlayCover || drama.poster || drama.image;
             const title = drama.bookName || drama.book_title || drama.title || drama.book_name || drama.shortPlayName;
-            const introduction = drama.introduction || drama.abstract || drama.desc || drama.description || "Nikmati tontonan berkualitas tinggi dengan alur cerita yang mendalam dan penuh emosi, hanya tersedia di AE PRO.";
+            const introduction = drama.introduction || drama.abstract || drama.desc || drama.description || "Nikmati tontonan berkualitas tinggi dengan alur cerita yang mendalam dan penuh emosi, hanya tersedia di DRACINDO.";
             
             return (
               <div key={idx} className="flex-[0_0_100%] min-w-0 relative h-full">

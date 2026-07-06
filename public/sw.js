@@ -10,6 +10,19 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Simple pass-through for now to satisfy PWA requirements
+  // Jangan intercept request video/media lintas domain untuk mencegah error CORS dan Range
+  const url = new URL(event.request.url);
+  if (
+    event.request.destination === 'video' || 
+    event.request.destination === 'audio' ||
+    url.pathname.endsWith('.mp4') ||
+    url.pathname.endsWith('.m3u8') ||
+    url.pathname.endsWith('.ts') ||
+    url.origin !== self.location.origin
+  ) {
+    return; // Biarkan browser menangani secara native
+  }
+
+  // Simple pass-through untuk resource lokal
   event.respondWith(fetch(event.request));
 });

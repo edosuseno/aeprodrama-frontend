@@ -18,6 +18,7 @@ export default function FlickReelsWatchPage() {
   // Use separate state for active ID to allow instant UI updates
   const [activeVideoId, setActiveVideoId] = useState(initialVideoId);
   const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
   const [videoReady, setVideoReady] = useState(false);
   const [warmupError, setWarmupError] = useState(false);
@@ -135,42 +136,73 @@ export default function FlickReelsWatchPage() {
 
   // Swipe vertikal untuk navigasi episode di mobile
   useEffect(() => {
-    const el = swipeContainerRef.current;
-    if (!el) return;
+        const el = swipeContainerRef.current;
+        if (!el) return;
+        
+        let touchStartY = 0;
+        let initialPinchDistance = 0;
+        let lastTapTime = 0;
 
-    let touchStartY = 0;
+        const handleTouchStart = (e: TouchEvent) => { 
+            if (e.touches.length === 1) {
+                touchStartY = e.touches[0].clientY; 
+                // Double tap detection
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    setIsZoomed(prev => !prev);
+                }
+                lastTapTime = now;
+            } else if (e.touches.length === 2) {
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        };
 
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-    };
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && initialPinchDistance > 0) {
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                
+                if (currentDistance - initialPinchDistance > 40) {
+                    setIsZoomed(true); // Pinch out (Zoom)
+                    initialPinchDistance = currentDistance;
+                } else if (initialPinchDistance - currentDistance > 40) {
+                    setIsZoomed(false); // Pinch in (Fit)
+                    initialPinchDistance = currentDistance;
+                }
+            }
+        };
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      // Hanya aktif di mobile
-      if (window.innerWidth >= 768) return;
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (e.touches.length === 0) {
+                initialPinchDistance = 0;
+            }
+            if (window.innerWidth >= 768 || e.changedTouches.length !== 1) return;
+            
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaY = touchStartY - touchEndY;
+            
+            // Allow swipe only if the swipe is significant and no pinch was happening
+            if (Math.abs(deltaY) > 80) {
+                const totalEps = episodes?.length || 9999;
+                if (deltaY > 80 && currentEpisode < totalEps) goToEpisode(currentEpisode + 1);
+                else if (deltaY < -80 && currentEpisode > 1) goToEpisode(currentEpisode - 1);
+            }
+        };
 
-      const touchEndY = e.changedTouches[0].clientY;
-      const deltaY = touchStartY - touchEndY;
-
-      // Threshold 80px agar tidak konflik dengan tap kontrol video
-      if (deltaY > 80) {
-        // Swipe ke atas → episode berikutnya
-        const nextEp = episodes[currentIndex + 1];
-        if (nextEp) handleEpisodeChange(nextEp.id, true);
-      } else if (deltaY < -80) {
-        // Swipe ke bawah → episode sebelumnya
-        const prevEp = episodes[currentIndex - 1];
-        if (prevEp) handleEpisodeChange(prevEp.id, true);
-      }
-    };
-
-    el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    el.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-    return () => {
-      el.removeEventListener('touchstart', handleTouchStart);
-      el.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [currentIndex, episodes, handleEpisodeChange]);
+        el.addEventListener('touchstart', handleTouchStart, { passive: true });
+        el.addEventListener('touchmove', handleTouchMove, { passive: true });
+        el.addEventListener('touchend', handleTouchEnd, { passive: true });
+        return () => {
+            el.removeEventListener('touchstart', handleTouchStart);
+            el.removeEventListener('touchmove', handleTouchMove);
+            el.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [currentEpisode, episodes]);
 
   if (isLoading) {
     return (
@@ -273,7 +305,7 @@ export default function FlickReelsWatchPage() {
         </div>
 
         {/* Navigation Controls Overlay - Bottom */}
-        <UnifiedVideoNavigation
+        <UnifiedVideoNavigation isHidden={isZoomed}
           currentEpisode={currentEpisodeData ? currentEpisodeData.index + 1 : 1}
           totalEpisodes={totalEpisodes}
           onPrev={() => {

@@ -78,7 +78,8 @@ export function useInfiniteDramaWave(category = 'popular') {
     },
     initialPageParam: 1,
     getNextPageParam: (lastPage, allPages) => {
-      if (!lastPage || lastPage.length < 30) return undefined;
+      // V2 API returns 20 items per page, so if it's less than 20, we hit the end
+      if (!lastPage || lastPage.length < 20) return undefined;
       return allPages.length + 1;
     },
     staleTime: 1000 * 60 * 5,

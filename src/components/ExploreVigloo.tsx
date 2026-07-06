@@ -41,25 +41,25 @@ export function ExploreVigloo() {
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    if (errorInfinite) return null;
+    if (errorInfinite && !infiniteData?.pages?.length) return null;
 
     return (
         <section>
             <div className="flex flex-col gap-6 mb-8">
-                <h2 className="font-display font-bold text-xl md:text-2xl text-foreground">
+                <h2 className="font-display font-bold text-xl md:text-2xl text-foreground uppercase tracking-tight">
                     Eksplorasi Vigloo
                 </h2>
             </div>
 
             {loadingInfinite ? (
-                <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
                     {[...Array(12)].map((_, i) => (
                         <UnifiedMediaCardSkeleton key={i} />
                     ))}
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-5">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">
                         {infiniteData?.pages.map((page, pageIndex) => (
                             page.items.map((drama: any) => (
                                 <UnifiedMediaCard

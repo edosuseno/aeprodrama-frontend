@@ -8,9 +8,10 @@ import { Loader2 } from "lucide-react";
 import { UnifiedMediaCardSkeleton } from "./UnifiedMediaCardSkeleton";
 
 export function ExploreDramaWave() {
-    const [selectedCategory, setSelectedCategory] = useState('popular');
+    const [selectedCategory, setSelectedCategory] = useState('home');
     
     const categories = [
+        { id: 'home', name: '🏠 Home (Semua)' },
         { id: 'popular', name: '🔥 Populer' },
         { id: 'free', name: '🎁 Gratis' },
         { id: 'trending', name: '📈 Trending' }
@@ -23,6 +24,7 @@ export function ExploreDramaWave() {
         isFetchingNextPage,
         isLoading,
         isError,
+        error,
     } = useInfiniteDramaWave(selectedCategory);
 
     const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -50,31 +52,17 @@ export function ExploreDramaWave() {
         return () => observer.disconnect();
     }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-    if (isError) return null;
+    if (isError) {
+        console.error("ExploreDramaWave Error:", error);
+        return <div className="text-red-500 p-4">Error loading data: {error?.message || 'Unknown error'}</div>;
+    }
 
     return (
         <section>
             <div className="flex flex-col gap-6 mb-8">
-                <h2 className="font-display font-bold text-xl md:text-2xl text-foreground">
+                <h2 className="font-display font-bold text-xl md:text-2xl text-foreground uppercase tracking-tight">
                     DramaWave Originals
                 </h2>
-
-                {/* Categories Filter */}
-                <div className="flex flex-wrap gap-2">
-                    {categories.map((cat) => (
-                        <button
-                            key={cat.id}
-                            onClick={() => setSelectedCategory(cat.id)}
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
-                                selectedCategory === cat.id
-                                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
-                                    : "bg-muted hover:bg-muted/80 text-muted-foreground"
-                            }`}
-                        >
-                            {cat.name}
-                        </button>
-                    ))}
-                </div>
             </div>
 
             <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-9 gap-2 md:gap-3">

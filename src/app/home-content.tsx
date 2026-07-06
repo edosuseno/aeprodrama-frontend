@@ -16,6 +16,7 @@ import { ExploreFreeReels } from "@/components/ExploreFreeReels";
 import { ShortMaxHome } from "@/components/ShortMaxHome";
 import { ExploreShortMax } from "@/components/ExploreShortMax";
 import { MovieBoxHome } from "@/components/MovieBoxHome";
+
 import { ExploreStardustTV } from "@/components/ExploreStardustTV";
 import { ExploreDramaWave } from "@/components/ExploreDramaWave";
 import { ExploreDramanova } from "@/components/ExploreDramanova";
@@ -24,6 +25,8 @@ import { ExploreIdrama2 } from "@/components/ExploreIdrama2";
 import { ExploreVigloo } from "@/components/ExploreVigloo";
 import { ExploreRadreels } from "@/components/ExploreRadreels";
 import { ExploreFlexTV } from "@/components/ExploreFlexTV";
+import { ExploreReelife } from "@/components/ExploreReelife";
+import { ExplorePine } from "@/components/ExplorePine";
 import { HeroCarousel } from "@/components/HeroCarousel";
 import { DotDramaList } from "@/components/DotDramaList";
 import { GoodShortList } from "@/components/GoodShortList";
@@ -33,7 +36,7 @@ import { useForYouDramas, useLatestDramas, useTrendingDramas, useDubindoDramas }
 import { usePlatform } from "@/hooks/usePlatform";
 
 export default function HomeContent() {
-  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isIdrama2, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort, isVigloo, isRadreels, isFlexTV } = usePlatform();
+  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isIdrama2, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort, isVigloo, isRadreels, isFlexTV, isReelife, isPine } = usePlatform();
 
   // Fetch data for all DramaBox sections (Only when in Home or DramaBox)
   const isDramaBoxActive = isHome || isDramaBox;
@@ -208,6 +211,20 @@ export default function HomeContent() {
       {isFlexTV && (
         <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <ExploreFlexTV />
+        </div>
+      )}
+
+      {/* Reelife Content */}
+      {isReelife && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExploreReelife />
+        </div>
+      )}
+
+      {/* Pine Content */}
+      {isPine && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExplorePine />
         </div>
       )}
     </main>

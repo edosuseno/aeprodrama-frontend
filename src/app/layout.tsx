@@ -6,11 +6,11 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { BackToTop } from "@/components/BackToTop";
 
 export const metadata: Metadata = {
-  title: "AE DRAMA Pusat Drama - Nonton Drama Pendek Sub Indo",
-  description: "AE DRAMA Pusat Drama adalah platform streaming drama pendek premium dengan subtitle Indonesia. Nonton gratis dan lengkap di AE DRAMA.",
+  title: "DRACINDO Pusat Drama - Nonton Drama Pendek Sub Indo",
+  description: "DRACINDO Pusat Drama adalah platform streaming drama pendek premium dengan subtitle Indonesia. Nonton gratis dan lengkap di DRACINDO.",
   icons: {
-    icon: "/icon.png?v=4",
-    apple: "/apple-touch-icon.png?v=4",
+    icon: "/icon.png?v=6",
+    apple: "/apple-touch-icon.png?v=6",
   },
   manifest: "/manifest.json",
 };
@@ -32,10 +32,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="preconnect" href="https://wsrv.nl" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Poppins:wght@500;600;700&display=swap" rel="stylesheet" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-        <meta name="apple-mobile-web-app-title" content="AE DRAMA" />
+        <meta name="apple-mobile-web-app-title" content="DRACINDO" />
       </head>
       <body className="font-sans antialiased text-foreground bg-background">
         <Providers>

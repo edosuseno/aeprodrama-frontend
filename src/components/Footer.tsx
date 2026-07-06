@@ -16,7 +16,7 @@ export function Footer() {
         <div className="flex flex-col items-center justify-center gap-3">
           {/* Copyright */}
           <p className="text-xs text-muted-foreground/80 text-center font-medium">
-            &copy; {new Date().getFullYear()} AE PRO Pusat Drama. All rights reserved.
+            &copy; {new Date().getFullYear()} DRACINDO Pusat Drama. All rights reserved.
           </p>
         </div>
       </div>

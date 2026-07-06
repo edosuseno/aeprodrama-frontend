@@ -18,6 +18,7 @@ export default function GoodShortWatchPage() {
   // State
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [showList, setShowList] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const swipeContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
 
@@ -208,6 +209,7 @@ export default function GoodShortWatchPage() {
                 src={videoUrl} 
                 poster={detail?.cover || ""} 
                 subtitleUrl={subtitleUrl}
+                isZoomed={isZoomed}
                 onEnded={() => {
                     if (currentEpisodeIndex < episodes.length - 1) {
                         setCurrentEpisodeIndex(prev => prev + 1);
@@ -222,7 +224,7 @@ export default function GoodShortWatchPage() {
             </div>
         )}
 
-        <UnifiedVideoNavigation
+        <UnifiedVideoNavigation isHidden={isZoomed}
           currentEpisode={currentEpisodeIndex + 1}
           totalEpisodes={episodes.length}
           onPrev={() => goToEpisode(currentEpisodeIndex - 1)}
@@ -262,7 +264,7 @@ export default function GoodShortWatchPage() {
   );
 }
 
-function VideoPlayer({ src, poster, subtitleUrl, onEnded }: { src: string; poster: string; subtitleUrl?: string; onEnded?: () => void }) {
+function VideoPlayer({ src, poster, subtitleUrl, isZoomed, onEnded }: { src: string; poster: string; subtitleUrl?: string; isZoomed?: boolean; onEnded?: () => void }) {
   const videoElementRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
@@ -316,7 +318,8 @@ function VideoPlayer({ src, poster, subtitleUrl, onEnded }: { src: string; poste
       ref={videoElementRef}
       controls
       autoPlay
-      className="w-full h-full object-contain"
+      className={`w-full h-full max-h-[100dvh] transition-all duration-300 ${isZoomed ? "object-cover" : "object-contain"}`}
+      controlsList="nofullscreen"
       poster={poster}
       onEnded={onEnded}
       playsInline

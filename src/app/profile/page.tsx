@@ -93,7 +93,7 @@ export default function ProfilePage() {
               </div>
             </div>
             
-            <h2 className="text-2xl font-display font-black tracking-tight text-white mb-1 uppercase">AE PRO DRAMA VIP</h2>
+            <h2 className="text-2xl font-display font-black tracking-tight text-white mb-1 uppercase">DRACINDO VIP</h2>
             <p className="text-sm text-muted-foreground/80 mb-6 font-medium">Bapak Guru - Premium Member</p>
             
             <div className="flex gap-4 w-full">
@@ -145,7 +145,7 @@ export default function ProfilePage() {
 
       {/* Version Tag */}
       <footer className="text-center pb-12 opacity-30 select-none">
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] font-display">AE PRO v4.2.0 BETA</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.3em] font-display">DRACINDO v4.2.0 BETA</p>
       </footer>
     </div>
   );

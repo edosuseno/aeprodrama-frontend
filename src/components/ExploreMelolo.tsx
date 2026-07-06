@@ -45,7 +45,7 @@ export function ExploreMelolo() {
 
     return (
         <section className="">
-            <h2 className="font-display font-bold text-xl md:text-2xl text-foreground mb-6">
+            <h2 className="font-display font-bold text-xl md:text-2xl text-foreground mb-6 uppercase tracking-tight">
                 Drama Lainnya
             </h2>
 
