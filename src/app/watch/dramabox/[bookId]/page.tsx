@@ -109,8 +109,8 @@ export default function DramaBoxWatchPage() {
       if (isHlsUrl) {
         return `/api/proxy?url=${encodeURIComponent(finalUrl)}`;
       }
-      // Kita bypass Sansekai/Aliyun melewati Next.js Proxy internal yang sudah mendukung Range-Requests!
-      return `/api/proxy/video?url=${encodeURIComponent(finalUrl)}`;
+      // Langsung return finalUrl untuk MP4. Bypass Vercel Proxy untuk menghindari Serverless Timeout (10s limit)!
+      return finalUrl;
     }
     return finalUrl;
   }, [currentEpisode, bookId, manualQuality]);
@@ -138,7 +138,8 @@ export default function DramaBoxWatchPage() {
             if (realUrl.includes('.m3u8') || realUrl.includes('.m3u')) {
               setActiveUrl(`/api/proxy?url=${encodeURIComponent(realUrl)}`);
             } else {
-              setActiveUrl(`/api/proxy/video?url=${encodeURIComponent(realUrl)}`);
+              // Bypass Vercel Proxy untuk MP4 agar loading cepat dan tidak terputus timeout
+              setActiveUrl(realUrl);
             }
             setVideoError(null);
           } else if (isMounted) {
