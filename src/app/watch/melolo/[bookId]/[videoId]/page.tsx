@@ -420,12 +420,14 @@ function HlsVideoPlayer({
   src,
   subtitleSrc,
   onEnded,
-  className
+  className,
+  controlsList
 }: {
   src: string;
   subtitleSrc?: string;
   onEnded?: () => void;
   className?: string;
+  controlsList?: string;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
@@ -501,6 +503,7 @@ function HlsVideoPlayer({
       onEnded={onEnded}
       autoPlay
       playsInline
+      controlsList={controlsList}
     >
       {subtitleSrc && (
         <track
