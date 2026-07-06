@@ -20,12 +20,20 @@ export function getBackendBase() {
   let base = process.env.NEXT_PUBLIC_API_BASE_URL;
   if (base) base = base.replace(/['"]/g, '');
 
-  // Jika di browser dan base kosong, gunakan origin saat ini (relatif)
-  if (typeof window !== 'undefined' && !base) {
-    return `${window.location.origin}/api`;
+  // Jika di browser, terapkan logika dinamis
+  if (typeof window !== 'undefined') {
+    // Jika origin adalah production (bukan localhost) tapi env-nya localhost, abaikan env tersebut
+    if (base && base.includes('localhost') && window.location.hostname !== 'localhost') {
+      base = '';
+    }
+    
+    // Jika base kosong, gunakan origin saat ini (relatif)
+    if (!base) {
+      return `${window.location.origin}/api`;
+    }
   }
 
-  // Fallback terakhir: berjalan di server VPS (Node.js API route)
+  // Fallback terakhir: berjalan di sisi server (Node.js API route)
   if (!base) {
     base = "http://localhost:5001";
   }
@@ -63,8 +71,8 @@ export function getProxiedImage(url: string, width: number = 400) {
   if (url.includes("wsrv.nl") || url.includes("/api/proxy")) return url;
   
   // Bypass wsrv.nl untuk host yang diketahui menolak (akan memicu 400 Bad Request)
-  if (url.startsWith("http://") || url.includes("montagehub.xyz") || url.includes("hikeuniverses.xyz") || url.includes("sansekai") || url.includes("fizzopic.org")) {
-    return `/api/proxy?url=${encodeURIComponent(url)}`;
+  if (url.startsWith("http://") || url.includes("montagehub.xyz") || url.includes("hikeuniverses.xyz") || url.includes("sansekai") || url.includes("tiktokcdn.com")) {
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
   }
   
   // Gunakan wsrv.nl: output=webp untuk kompresi maksimal, w=width untuk resize

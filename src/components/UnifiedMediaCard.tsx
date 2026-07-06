@@ -61,14 +61,23 @@ export function UnifiedMediaCard({
             if (!cover || typeof cover !== 'string' || !cover.trim()) {
               return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
             }
-            const finalCover = cover.startsWith('//') ? `https:${cover}` : cover;
+            let finalCover = cover.startsWith('//') ? `https:${cover}` : cover;
             
-            // Jika cover sudah berupa wsrv.nl atau menggunakan proxy backend internal kita, JANGAN wrap lagi!
-            if (finalCover.includes('wsrv.nl') || finalCover.includes('/api/proxy') || finalCover.includes('/api/image-proxy')) {
+            // Bypass adblocker iPhone Chrome yang sering memblokir wsrv.nl
+            if (finalCover.includes('wsrv.nl/?url=')) {
+                try {
+                    const extracted = finalCover.split('wsrv.nl/?url=')[1].split('&')[0];
+                    finalCover = decodeURIComponent(extracted);
+                } catch (err) {}
+            }
+
+            // Jika cover menggunakan proxy backend internal kita, langsung return
+            if (finalCover.includes('/api/proxy') || finalCover.includes('/api/image-proxy') || finalCover.includes('flextv.cc')) {
                 return finalCover;
             }
-            // Khusus provider yang menolak wsrv.nl atau image yg HTTPS-nya bermasalah (http://)
-            if (finalCover.includes('montagehub.xyz') || finalCover.includes('hikeuniverses.xyz') || finalCover.includes('sansekai') || finalCover.includes('stardusttv.cc') || finalCover.includes('fizzopic.org') || finalCover.includes('idrama.video') || finalCover.startsWith('http://')) {
+            
+            // Khusus provider yang menolak wsrv.nl, atau image HTTP, ATAU untuk menghindari adblocker HP
+            if (finalCover.includes('montagehub.xyz') || finalCover.includes('hikeuniverses.xyz') || finalCover.includes('sansekai') || finalCover.includes('stardusttv.cc') || finalCover.includes('idrama.video') || finalCover.includes('goodreels.com') || finalCover.startsWith('http://')) {
                 return `/api/image-proxy?url=${encodeURIComponent(finalCover)}`;
             }
 
