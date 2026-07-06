@@ -262,6 +262,20 @@ export default function ReelShortWatchPage() {
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         console.log("✅ Manifest Parsed, playing...");
+        
+        // Auto-select Indonesian subtitle track if available
+        if (hls.subtitleTracks && hls.subtitleTracks.length > 0) {
+          const idTrackIndex = hls.subtitleTracks.findIndex((t) => 
+            t.lang?.toLowerCase().includes('id') || 
+            t.lang?.toLowerCase().includes('in') || 
+            t.name?.toLowerCase().includes('indonesia')
+          );
+          if (idTrackIndex !== -1) {
+            hls.subtitleTrack = idTrackIndex;
+            console.log(`✅ Default subtitle set to Indonesian (Track ${idTrackIndex})`);
+          }
+        }
+
         const playPromise = video.play();
         if (playPromise !== undefined) {
           playPromise.catch((e) => console.error("⚠️ Autoplay error:", e));
