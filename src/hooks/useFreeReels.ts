@@ -192,10 +192,20 @@ export function useFreeReelsDetail(bookId: string) {
 export function useFreeReelsSearch(query: string) {
   return useQuery({
     queryKey: ["freereels", "search", query],
-    queryFn: () => fetchJson<FreeReelsSearchResponse>(`/api/freereels/search?query=${encodeURIComponent(query)}`),
+    queryFn: () => fetchJson<any>(`/api/freereels/search?query=${encodeURIComponent(query)}`),
     select: (response) => {
-      // Transform search items to FreeReelsItem format
-      return response.data?.items?.map(item => ({
+      let items: any[] = [];
+      if (response?.search_data?.[0]?.books) {
+        items = response.search_data[0].books;
+      } else if (response?.data?.items) {
+        items = response.data.items;
+      } else if (response?.items) {
+        items = response.items;
+      } else if (Array.isArray(response)) {
+        items = response;
+      }
+
+      return items.map(item => ({
         ...item,
         key: item.id || item.key,
         title: item.title || item.name || item.shortPlayName,

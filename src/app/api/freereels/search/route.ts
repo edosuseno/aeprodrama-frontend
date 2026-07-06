@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Keyword parameter is required" }, { status: 400 });
     }
 
-    const res = await fetch(`${getBackendBase()}/freereels/searchBook?keyword=${encodeURIComponent(keyword)}`, {
+    const res = await fetch(`${getBackendBase()}/freereels/search?keyword=${encodeURIComponent(keyword)}`, {
       cache: 'no-store'
     });
 
