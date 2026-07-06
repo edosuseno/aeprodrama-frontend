@@ -265,11 +265,15 @@ export default function ReelShortWatchPage() {
         
         // Auto-select Indonesian subtitle track if available
         if (hls.subtitleTracks && hls.subtitleTracks.length > 0) {
-          const idTrackIndex = hls.subtitleTracks.findIndex((t) => 
-            t.lang?.toLowerCase().includes('id') || 
-            t.lang?.toLowerCase().includes('in') || 
-            t.name?.toLowerCase().includes('indonesia')
-          );
+          console.log("📝 Available Subtitle Tracks:", hls.subtitleTracks.map(t => ({ id: t.id, name: t.name, lang: t.lang })));
+          
+          const idTrackIndex = hls.subtitleTracks.findIndex((t) => {
+            const lang = t.lang?.toLowerCase() || '';
+            const name = t.name?.toLowerCase() || '';
+            return lang === 'id' || lang === 'ind' || lang === 'in' || 
+                   name.includes('indonesia') || name.includes('indo');
+          });
+          
           if (idTrackIndex !== -1) {
             hls.subtitleTrack = idTrackIndex;
             console.log(`✅ Default subtitle set to Indonesian (Track ${idTrackIndex})`);
