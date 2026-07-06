@@ -21,6 +21,7 @@ export default function MeloloWatchPage() {
   const params = useParams<{ bookId: string; videoId: string }>();
   const router = useRouter();
   const [showEpisodeList, setShowEpisodeList] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
 
   // Internal state for videoId to prevent page unmount/remount on navigation
   const [currentVideoId, setCurrentVideoId] = useState(params.videoId || "");
@@ -80,8 +81,13 @@ export default function MeloloWatchPage() {
     const addProxyIfNeeded = (url: string) => {
       if (!url) return url;
       
+      // Bypass proxy untuk server Melolo V3 (inicdn) karena tidak memerlukan CORS/Referer
+      // dan proxy MP4 di Vercel akan menyebabkan timeout / payload too large (layar hitam / tombol abu)
+      if (url.includes("inicdn.net")) {
+          return url;
+      }
+      
       if (url.startsWith("http") && !url.includes("vidrama.asia/api/video-proxy")) {
-        const isMp4 = url.includes('.mp4') || url.includes('mime_type=video_mp4');
         const proxyPath = '/api/proxy';
         return `${proxyPath}?url=${encodeURIComponent(url)}&referer=${encodeURIComponent('https://vidrama.asia/')}&is_mp4=1`;
       }
@@ -164,44 +170,73 @@ export default function MeloloWatchPage() {
 
   // Swipe vertikal untuk navigasi episode di mobile
   useEffect(() => {
-    const el = swipeContainerRef.current;
-    if (!el) return;
+        const el = swipeContainerRef.current;
+        if (!el) return;
+        
+        let touchStartY = 0;
+        let initialPinchDistance = 0;
+        let lastTapTime = 0;
 
-    let touchStartY = 0;
+        const handleTouchStart = (e: TouchEvent) => { 
+            if (e.touches.length === 1) {
+                touchStartY = e.touches[0].clientY; 
+                // Double tap detection
+                const now = Date.now();
+                if (now - lastTapTime < 300) {
+                    setIsZoomed(prev => !prev);
+                }
+                lastTapTime = now;
+            } else if (e.touches.length === 2) {
+                initialPinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        };
 
-    const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
-    };
+        const handleTouchMove = (e: TouchEvent) => {
+            if (e.touches.length === 2 && initialPinchDistance > 0) {
+                const currentDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+                
+                if (currentDistance - initialPinchDistance > 40) {
+                    setIsZoomed(true); // Pinch out (Zoom)
+                    initialPinchDistance = currentDistance;
+                } else if (initialPinchDistance - currentDistance > 40) {
+                    setIsZoomed(false); // Pinch in (Fit)
+                    initialPinchDistance = currentDistance;
+                }
+            }
+        };
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      // Hanya aktif di mobile
-      if (window.innerWidth >= 768) return;
+        const handleTouchEnd = (e: TouchEvent) => {
+            if (e.touches.length === 0) {
+                initialPinchDistance = 0;
+            }
+            if (window.innerWidth >= 768 || e.changedTouches.length !== 1) return;
+            
+            const touchEndY = e.changedTouches[0].clientY;
+            const deltaY = touchStartY - touchEndY;
+            
+            // Allow swipe only if the swipe is significant and no pinch was happening
+            if (Math.abs(deltaY) > 80) {
+                const totalEps = drama?.video_list?.length || 9999;
+                if (deltaY > 80 && currentEpisodeIndex < totalEps - 1) handleEpisodeChange(currentEpisodeIndex + 1);
+                else if (deltaY < -80 && currentEpisodeIndex > 0) handleEpisodeChange(currentEpisodeIndex - 1);
+            }
+        };
 
-      const touchEndY = e.changedTouches[0].clientY;
-      const deltaY = touchStartY - touchEndY;
-
-      // Threshold 80px agar tidak konflik dengan tap kontrol video
-      if (deltaY > 80) {
-        // Swipe ke atas → episode berikutnya
-        if (currentEpisodeIndex !== -1 && currentEpisodeIndex < totalEpisodes - 1) {
-          handleEpisodeChange(currentEpisodeIndex + 1);
-        }
-      } else if (deltaY < -80) {
-        // Swipe ke bawah → episode sebelumnya
-        if (currentEpisodeIndex > 0) {
-          handleEpisodeChange(currentEpisodeIndex - 1);
-        }
-      }
-    };
-
-    el.addEventListener('touchstart', handleTouchStart, { passive: true });
-    el.addEventListener('touchend', handleTouchEnd, { passive: true });
-
-    return () => {
-      el.removeEventListener('touchstart', handleTouchStart);
-      el.removeEventListener('touchend', handleTouchEnd);
-    };
-  }, [currentEpisodeIndex, totalEpisodes, handleEpisodeChange]);
+        el.addEventListener('touchstart', handleTouchStart, { passive: true });
+        el.addEventListener('touchmove', handleTouchMove, { passive: true });
+        el.addEventListener('touchend', handleTouchEnd, { passive: true });
+        return () => {
+            el.removeEventListener('touchstart', handleTouchStart);
+            el.removeEventListener('touchmove', handleTouchMove);
+            el.removeEventListener('touchend', handleTouchEnd);
+        };
+    }, [currentEpisodeIndex, drama]);
 
   // Guard: If logic fails completely and we have no data after loading
   if (!detailLoading && !drama) {
@@ -304,7 +339,7 @@ export default function MeloloWatchPage() {
               src={selectedQuality?.url || processedVideoUrl}
               subtitleSrc={processedSubtitleUrl}
               onEnded={handleVideoEnded}
-              className="w-full h-full object-contain max-h-[100dvh]"
+              className={`w-full h-full max-h-[100dvh] transition-all duration-300 ${isZoomed ? "object-cover" : "object-contain"}`} controlsList="nofullscreen"
             />
           ) : !streamLoading && !streamFetching ? (
             <div className="flex flex-col items-center justify-center text-center p-4 gap-4">
@@ -327,7 +362,7 @@ export default function MeloloWatchPage() {
           )}
         </div>
 
-        <UnifiedVideoNavigation
+        <UnifiedVideoNavigation isHidden={isZoomed}
           currentEpisode={currentEpisodeIndex !== -1 ? currentEpisodeIndex + 1 : 1}
           totalEpisodes={totalEpisodes}
           onPrev={() => currentEpisodeIndex > 0 && handleEpisodeChange(currentEpisodeIndex - 1)}
