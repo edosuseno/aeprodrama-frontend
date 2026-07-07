@@ -42,8 +42,9 @@ export function HomeView() {
       }
 
       // 2. Top 2 from ReelShort
-      if (reelShortHome) {
-         mix.push(...reelShortHome.slice(0, 2).map((d: any) => ({ ...d, platform: "reelshort" })));
+      const rsBooks = (reelShortHome as any)?.data?.lists?.find((l: any) => l.books)?.books || (reelShortHome as any)?.lists?.find((l: any) => l.books)?.books;
+      if (rsBooks && Array.isArray(rsBooks)) {
+         mix.push(...rsBooks.slice(0, 2).map((d: any) => ({ ...d, platform: "reelshort" })));
       }
 
       // 3. Top 1 from FlickReels
