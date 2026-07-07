@@ -1,11 +1,17 @@
 "use client";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 
-import { useForYouDramas, useLatestDramas } from "@/hooks/useDramas";
 import { HeroCarousel } from "./HeroCarousel";
 import { DramaSection } from "./DramaSection";
-import { useReelShortHomepage } from "@/hooks/useReelShort";
-import { useFlickReelsForYou } from "@/hooks/useFlickReels";
+import { useNetShortForYou } from "@/hooks/useNetShort";
+import { useShortMaxLatest } from "@/hooks/useShortMax";
+import { useCubetvExplore } from "@/hooks/useCubetv";
+import { useDotDramaExplore } from "@/hooks/useDotDrama";
+import { useMeloloTrending } from "@/hooks/useMelolo";
+import { useFlexTVExplore } from "@/hooks/useFlexTV";
+import { useReelifeExplore } from "@/hooks/useReelife";
+import { useDrmanovaExplore } from "@/hooks/useDrmanova";
+import { useStardustTVExplore } from "@/hooks/useStardustTV";
 import { LucideIcon, Zap, Monitor, Star, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOnlineTracker } from "@/hooks/useStats";
@@ -13,18 +19,14 @@ import { useOnlineTracker } from "@/hooks/useStats";
 export function HomeView() {
    const [isDeferredReady, setIsDeferredReady] = useState(false);
    useEffect(() => {
-      const timer = setTimeout(() => setIsDeferredReady(true), 1500);
+      const timer = setTimeout(() => setIsDeferredReady(true), 1000);
       return () => clearTimeout(timer);
    }, []);
 
-   const { data: popularDramas, isLoading: loadingPopular } = useForYouDramas();
-   const { data: latestDramas, isLoading: loadingLatest } = useLatestDramas();
-
    // Priority 1: Fetch Immediately (For Hero & Top Sections)
-   const { data: reelShortHome, isLoading: loadingReelShort } = useReelShortHomepage();
-
-   // Priority 2: Deferred Fetching (Wait 1 second)
-   const { data: flickReelsHome, isLoading: loadingFlickReels } = useFlickReelsForYou(isDeferredReady);
+   const { data: dramanovaHome, isLoading: loadingDramanova } = useDrmanovaExplore(1, 'all');
+   const { data: stardustHome, isLoading: loadingStardust } = useStardustTVExplore(1);
+   const { data: netshortHome, isLoading: loadingNetshort } = useNetShortForYou(1);
 
    // Real-time Data from Backend (Real Count + Base 1000)
    const { data: onlineCountReal } = useOnlineTracker();
@@ -36,31 +38,32 @@ export function HomeView() {
    const heroDramas = useMemo(() => {
       const mix = [];
       
-      // 1. Top 3 from DramaBox (Popular)
-      if (popularDramas) {
-         mix.push(...popularDramas.slice(0, 3).map((d: any) => ({ ...d, platform: "dramabox" })));
+      // 1. Top 2 from Dramanova
+      const novaList = (dramanovaHome as any)?.list || dramanovaHome;
+      if (novaList && Array.isArray(novaList)) {
+         mix.push(...novaList.slice(0, 2).map((d: any) => ({ ...d, platform: "dramanova" })));
       }
 
-      // 2. Top 2 from ReelShort
-      const rsBooks = (reelShortHome as any)?.data?.lists?.find((l: any) => l.books)?.books || (reelShortHome as any)?.lists?.find((l: any) => l.books)?.books;
-      if (rsBooks && Array.isArray(rsBooks)) {
-         mix.push(...rsBooks.slice(0, 2).map((d: any) => ({ ...d, platform: "reelshort" })));
+      // 2. Top 2 from StardustTV
+      if (stardustHome && Array.isArray(stardustHome)) {
+         mix.push(...stardustHome.slice(0, 2).map((d: any) => ({ ...d, platform: "stardusttv" })));
       }
 
-      // 3. Top 1 from FlickReels
-      if (flickReelsHome && (flickReelsHome as any).data?.list) {
-         mix.push(...(flickReelsHome as any).data.list.slice(0, 1).map((d: any) => ({ ...d, platform: "flickreels" })));
+      // 3. Top 1 from NetShort
+      const nsList = (netshortHome as any)?.data || netshortHome;
+      if (nsList && Array.isArray(nsList)) {
+         mix.push(...nsList.slice(0, 1).map((d: any) => ({ ...d, platform: "netshort" })));
       }
 
       return mix;
-   }, [popularDramas, reelShortHome, flickReelsHome]);
+   }, [dramanovaHome, stardustHome, netshortHome]);
 
    return (
       <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-8 md:space-y-12 pb-20">
          {/* 1. Hero Section */}
          <HeroCarousel
             dramas={heroDramas}
-            isLoading={loadingPopular || loadingReelShort}
+            isLoading={loadingDramanova || loadingStardust}
          />
 
          {/* 2. Stats Bar */}
@@ -74,17 +77,17 @@ export function HomeView() {
             />
             <StatCard
                icon={Monitor}
-               label="KUALITAS"
-               value="HD / UHD"
-               color="text-green-500"
-               bgColor="bg-green-500/10"
+               label="PLATFORM"
+               value="18+ Apps"
+               color="text-purple-500"
+               bgColor="bg-purple-500/10"
             />
             <StatCard
                icon={Star}
-               label="SUMBER"
-               value="Multi Platform"
-               color="text-yellow-500"
-               bgColor="bg-yellow-500/10"
+               label="VIP ACCESS"
+               value="100% Free"
+               color="text-amber-500"
+               bgColor="bg-amber-500/10"
             />
             <StatCard
                icon={Users}
@@ -96,37 +99,84 @@ export function HomeView() {
             />
          </div>
 
-         {/* 3. Multi-Platform Sections (Top Providers Only) */}
+         {/* 3. Multi-Platform Sections (Requested by User) */}
          <div className="space-y-10 md:space-y-16">
-
-            {/* DRAMABOX */}
-            <DramaSection
-               title="DRAMABOX"
-               dramas={popularDramas}
-               isLoading={loadingPopular}
-               platform="dramabox"
-            />
-
-            {/* REELSHORT */}
-            <DramaSection
-               title="REELSHORT"
-               dramas={(reelShortHome as any)?.data?.lists?.find((l: any) => l.books)?.books || (reelShortHome as any)?.lists?.find((l: any) => l.books)?.books}
-               isLoading={loadingReelShort}
-               platform="reelshort"
-            />
-
-            {/* FLICKREELS */}
-            <DramaSection
-               title="FLICKREELS"
-               dramas={(flickReelsHome as any)?.data?.list}
-               isLoading={loadingFlickReels}
-               platform="flickreels"
-            />
-
+            <DramaSection title="DRAMANOVA" platform="dramanova" dramas={(dramanovaHome as any)?.list || dramanovaHome} isLoading={loadingDramanova} />
+            <DramaSection title="STARDUSTTV" platform="stardusttv" dramas={stardustHome} isLoading={loadingStardust} />
+            <DramaSection title="NETSHORT" platform="netshort" dramas={(netshortHome as any)?.data || netshortHome} isLoading={loadingNetshort} />
+            
+            {/* User Requested Providers Loaded Lazily */}
+            <LazySection><ShortMaxSection /></LazySection>
+            <LazySection><CubeTVSection /></LazySection>
+            <LazySection><DotDramaSection /></LazySection>
+            <LazySection><MeloloSection /></LazySection>
+            <LazySection><FlexTVSection /></LazySection>
+            <LazySection><ReelifeSection /></LazySection>
          </div>
       </div>
    );
 }
+
+// ----------------------------------------------------
+// LAZY LOADING WRAPPERS
+// ----------------------------------------------------
+
+function LazySection({ children }: { children: React.ReactNode }) {
+  const [inView, setInView] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        setInView(true);
+        observer.disconnect();
+      }
+    }, { rootMargin: "300px" });
+    if (ref.current) observer.observe(ref.current);
+    return () => observer.disconnect();
+  }, []);
+  return <div ref={ref} className="min-h-[300px]">{inView && children}</div>;
+}
+
+function DramanovaSection() {
+   const { data, isLoading } = useDrmanovaExplore(1, 'all');
+   return <DramaSection title="DRAMANOVA" platform="dramanova" dramas={(data as any)?.list || data} isLoading={isLoading} />;
+}
+function StardustSection() {
+   const { data, isLoading } = useStardustTVExplore(1);
+   return <DramaSection title="STARDUSTTV" platform="stardusttv" dramas={data} isLoading={isLoading} />;
+}
+function NetShortSection() {
+   const { data, isLoading } = useNetShortForYou(1);
+   return <DramaSection title="NETSHORT" platform="netshort" dramas={(data as any)?.data || data} isLoading={isLoading} />;
+}
+function ShortMaxSection() {
+   const { data, isLoading } = useShortMaxLatest();
+   return <DramaSection title="SHORTMAX" platform="shortmax" dramas={Array.isArray(data) ? data : (data as any)?.data} isLoading={isLoading} />;
+}
+function CubeTVSection() {
+   const { data, isLoading } = useCubetvExplore(1);
+   return <DramaSection title="CUBETV" platform="cubetv" dramas={(data as any)?.data?.list || data} isLoading={isLoading} />;
+}
+function DotDramaSection() {
+   const { data, isLoading } = useDotDramaExplore(1);
+   return <DramaSection title="DOTDRAMA" platform="dotdrama" dramas={data} isLoading={isLoading} />;
+}
+function MeloloSection() {
+   const { data, isLoading } = useMeloloTrending();
+   return <DramaSection title="MELOLO" platform="melolo" dramas={(data as any)?.books || data} isLoading={isLoading} />;
+}
+function FlexTVSection() {
+   const { data, isLoading } = useFlexTVExplore(1);
+   return <DramaSection title="FLEXTV" platform="flextv" dramas={(data as any)?.data || data} isLoading={isLoading} />;
+}
+function ReelifeSection() {
+   const { data, isLoading } = useReelifeExplore(1);
+   return <DramaSection title="REELIFE" platform="reelife" dramas={(data as any)?.data || data} isLoading={isLoading} />;
+}
+
+// ----------------------------------------------------
+// UI COMPONENTS
+// ----------------------------------------------------
 
 interface StatCardProps {
    icon: LucideIcon;
