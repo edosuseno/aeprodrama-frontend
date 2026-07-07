@@ -1,42 +1,45 @@
 "use client";
 
 import { PlatformSelector } from "@/components/PlatformSelector";
-import { DramaSection } from "@/components/DramaSection";
-import { ReelShortSection } from "@/components/ReelShortSection";
-import { NetShortHome } from "@/components/NetShortHome";
-import { MeloloHome } from "@/components/MeloloHome";
-import { FlickReelsHome } from "@/components/FlickReelsHome";
-import { FreeReelsHome } from "@/components/FreeReelsHome";
-import { ExploreDramas } from "@/components/ExploreDramas";
-import { ExploreReelShort } from "@/components/ExploreReelShort";
-import { ExploreNetShort } from "@/components/ExploreNetShort";
-import { ExploreMelolo } from "@/components/ExploreMelolo";
-import { ExploreFlickReels } from "@/components/ExploreFlickReels";
-import { ExploreFreeReels } from "@/components/ExploreFreeReels";
-import { ShortMaxHome } from "@/components/ShortMaxHome";
-import { ExploreShortMax } from "@/components/ExploreShortMax";
-import { MovieBoxHome } from "@/components/MovieBoxHome";
+import dynamic from 'next/dynamic';
 
-import { ExploreStardustTV } from "@/components/ExploreStardustTV";
-import { ExploreDramaWave } from "@/components/ExploreDramaWave";
-import { ExploreDramanova } from "@/components/ExploreDramanova";
-import { ExploreVelolo } from "@/components/ExploreVelolo";
-import { ExploreIdrama2 } from "@/components/ExploreIdrama2";
-import { ExploreVigloo } from "@/components/ExploreVigloo";
-import { ExploreRadreels } from "@/components/ExploreRadreels";
-import { ExploreFlexTV } from "@/components/ExploreFlexTV";
-import { ExploreReelife } from "@/components/ExploreReelife";
-import { ExplorePine } from "@/components/ExplorePine";
-import { HeroCarousel } from "@/components/HeroCarousel";
-import { DotDramaList } from "@/components/DotDramaList";
-import { GoodShortList } from "@/components/GoodShortList";
-import { MeloShortList } from "@/components/MeloShortList";
-import { HomeView } from "@/components/HomeView";
+const DramaSection = dynamic(() => import('@/components/DramaSection').then(m => m.DramaSection));
+const ReelShortSection = dynamic(() => import('@/components/ReelShortSection').then(m => m.ReelShortSection));
+const NetShortHome = dynamic(() => import('@/components/NetShortHome').then(m => m.NetShortHome));
+const MeloloHome = dynamic(() => import('@/components/MeloloHome').then(m => m.MeloloHome));
+const FlickReelsHome = dynamic(() => import('@/components/FlickReelsHome').then(m => m.FlickReelsHome));
+const FreeReelsHome = dynamic(() => import('@/components/FreeReelsHome').then(m => m.FreeReelsHome));
+const ExploreDramas = dynamic(() => import('@/components/ExploreDramas').then(m => m.ExploreDramas));
+const ExploreReelShort = dynamic(() => import('@/components/ExploreReelShort').then(m => m.ExploreReelShort));
+const ExploreNetShort = dynamic(() => import('@/components/ExploreNetShort').then(m => m.ExploreNetShort));
+const ExploreMelolo = dynamic(() => import('@/components/ExploreMelolo').then(m => m.ExploreMelolo));
+const ExploreFlickReels = dynamic(() => import('@/components/ExploreFlickReels').then(m => m.ExploreFlickReels));
+const ExploreFreeReels = dynamic(() => import('@/components/ExploreFreeReels').then(m => m.ExploreFreeReels));
+const ShortMaxHome = dynamic(() => import('@/components/ShortMaxHome').then(m => m.ShortMaxHome));
+const ExploreShortMax = dynamic(() => import('@/components/ExploreShortMax').then(m => m.ExploreShortMax));
+const MovieBoxHome = dynamic(() => import('@/components/MovieBoxHome').then(m => m.MovieBoxHome));
+const ExploreStardustTV = dynamic(() => import('@/components/ExploreStardustTV').then(m => m.ExploreStardustTV));
+const ExploreDramaWave = dynamic(() => import('@/components/ExploreDramaWave').then(m => m.ExploreDramaWave));
+const ExploreDramanova = dynamic(() => import('@/components/ExploreDramanova').then(m => m.ExploreDramanova));
+const ExploreVelolo = dynamic(() => import('@/components/ExploreVelolo').then(m => m.ExploreVelolo));
+const ExploreIdrama2 = dynamic(() => import('@/components/ExploreIdrama2').then(m => m.ExploreIdrama2));
+const ExploreVigloo = dynamic(() => import('@/components/ExploreVigloo').then(m => m.ExploreVigloo));
+const ExploreRadreels = dynamic(() => import('@/components/ExploreRadreels').then(m => m.ExploreRadreels));
+const ExploreFlexTV = dynamic(() => import('@/components/ExploreFlexTV').then(m => m.ExploreFlexTV));
+const ExploreReelife = dynamic(() => import('@/components/ExploreReelife').then(m => m.ExploreReelife));
+const ExplorePine = dynamic(() => import('@/components/ExplorePine').then(m => m.ExplorePine));
+const ExploreShortwave2 = dynamic(() => import('@/components/ExploreShortwave2').then(m => m.ExploreShortwave2));
+const ExploreShortSky = dynamic(() => import('@/components/ExploreShortSky').then(m => m.ExploreShortSky));
+const ExploreCubetv = dynamic(() => import('@/components/ExploreCubetv').then(m => m.ExploreCubetv));
+const DotDramaList = dynamic(() => import('@/components/DotDramaList').then(m => m.DotDramaList));
+const GoodShortList = dynamic(() => import('@/components/GoodShortList').then(m => m.GoodShortList));
+const MeloShortList = dynamic(() => import('@/components/MeloShortList').then(m => m.MeloShortList));
+const HomeView = dynamic(() => import('@/components/HomeView').then(m => m.HomeView));
 import { useForYouDramas, useLatestDramas, useTrendingDramas, useDubindoDramas } from "@/hooks/useDramas";
 import { usePlatform } from "@/hooks/usePlatform";
 
 export default function HomeContent() {
-  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isIdrama2, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort, isVigloo, isRadreels, isFlexTV, isReelife, isPine } = usePlatform();
+  const { isHome, isDramaBox, isReelShort, isNetShort, isShortMax, isMelolo, isFlickReels, isFreeReels, isMovieBox, isStardustTV, isIdrama2, isDramaWave, isDramaNova, isVelolo, isDotDrama, isGoodShort, isMeloShort, isVigloo, isRadreels, isFlexTV, isReelife, isPine, isShortwave2, isShortsky, isCubetv } = usePlatform();
 
   // Fetch data for all DramaBox sections (Only when in Home or DramaBox)
   const isDramaBoxActive = isHome || isDramaBox;
@@ -225,6 +228,27 @@ export default function HomeContent() {
       {isPine && (
         <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
           <ExplorePine />
+        </div>
+      )}
+
+      {/* Shortwave2 Content */}
+      {isShortwave2 && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExploreShortwave2 />
+        </div>
+      )}
+
+      {/* ShortSky Content */}
+      {isShortsky && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExploreShortSky />
+        </div>
+      )}
+
+      {/* CubeTV Content */}
+      {isCubetv && (
+        <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-10">
+          <ExploreCubetv />
         </div>
       )}
     </main>

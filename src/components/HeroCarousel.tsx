@@ -30,7 +30,7 @@ export function HeroCarousel({ dramas, isLoading }: HeroCarouselProps) {
 
   const featuredDramas = useMemo(() => {
     if (!dramas) return [];
-    return dramas.slice(0, 7);
+    return dramas.slice(0, 5); // Dibatasi 5 agar tidak menguras memori HP
   }, [dramas]);
 
   if (isLoading) {
@@ -58,10 +58,11 @@ export function HeroCarousel({ dramas, isLoading }: HeroCarouselProps) {
                   {/* Background Image */}
                   <img
                     src={cover && cover.trim()
-                      ? (cover.includes(".heic") && !cover.includes("wsrv.nl")
-                        ? `https://wsrv.nl/?url=${encodeURIComponent(cover)}&output=jpg`
-                        : cover)
-                      : "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1600' height='900'%3E%3Crect fill='%2318181b' width='1600' height='900'/%3E%3C/svg%3E"}
+                      ? (cover.includes('montagehub.xyz') || cover.includes('hikeuniverses.xyz') || cover.includes('sansekai') || cover.includes('stardusttv.cc') || cover.includes('idrama.video') || cover.includes('goodreels.com') || cover.includes('cubetv.cc') || cover.startsWith('http://')
+                          ? `/api/image-proxy?url=${encodeURIComponent(cover)}`
+                          : `https://wsrv.nl/?url=${encodeURIComponent(cover)}&w=1280&q=75&output=webp`
+                        )
+                      : "/placeholder-.svg"}
                     alt={title || ""}
                     className="absolute inset-0 w-full h-full object-cover object-top"
                     loading={idx === 0 ? "eager" : "lazy"}

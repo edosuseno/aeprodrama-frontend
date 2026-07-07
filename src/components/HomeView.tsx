@@ -4,19 +4,8 @@ import { useMemo, useState, useEffect } from "react";
 import { useForYouDramas, useLatestDramas } from "@/hooks/useDramas";
 import { HeroCarousel } from "./HeroCarousel";
 import { DramaSection } from "./DramaSection";
-import { useReelShortHomepage, useInfiniteReelShort } from "@/hooks/useReelShort";
+import { useReelShortHomepage } from "@/hooks/useReelShort";
 import { useFlickReelsForYou } from "@/hooks/useFlickReels";
-import { useShortMaxLatest } from "@/hooks/useShortMax";
-import { useMeloloTrending } from "@/hooks/useMelolo";
-import { useDrmanovaExplore } from "@/hooks/useDrmanova";
-import { useInfiniteVelolo } from "@/hooks/useVelolo";
-import { useInfiniteRadreels } from "@/hooks/useRadreels";
-import { useStardustTVExplore } from "@/hooks/useStardustTV";
-import { useIdrama2Explore } from "@/hooks/useIdrama2";
-import { useDramaWaveExplore } from "@/hooks/useDramaWave";
-import { useDotDramaExplore } from "@/hooks/useDotDrama";
-import { useGoodShortExplore } from "@/hooks/useGoodShort";
-import { useMeloShortExplore } from "@/hooks/useMeloShort";
 import { LucideIcon, Zap, Monitor, Star, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useOnlineTracker } from "@/hooks/useStats";
@@ -34,21 +23,8 @@ export function HomeView() {
    // Priority 1: Fetch Immediately (For Hero & Top Sections)
    const { data: reelShortHome, isLoading: loadingReelShort } = useReelShortHomepage();
 
-   // Priority 2: Deferred Fetching (Wait 2 seconds)
+   // Priority 2: Deferred Fetching (Wait 1 second)
    const { data: flickReelsHome, isLoading: loadingFlickReels } = useFlickReelsForYou(isDeferredReady);
-   const { data: shortMaxHome, isLoading: loadingShortMax } = useShortMaxLatest(isDeferredReady);
-   const { data: meloloHome, isLoading: loadingMelolo } = useMeloloTrending(); // Still immediate but could be deferred
-   const { data: dramanovaHome, isLoading: loadingDramanova } = useDrmanovaExplore(1, 'all');
-   const { data: dramanova18, isLoading: loadingDramanova18 } = useDrmanovaExplore(1, 'drama18');
-   const { data: dramanovaKomik, isLoading: loadingDramanovaKomik } = useDrmanovaExplore(1, 'komik');
-   const { data: veloloHome, isLoading: loadingVelolo } = useInfiniteVelolo();
-   const { data: radreelsHome, isLoading: loadingRadreels } = useInfiniteRadreels();
-   const { data: stardustHome, isLoading: loadingStardust } = useStardustTVExplore(1);
-   const { data: idrama2Home, isLoading: loadingIdrama2 } = useIdrama2Explore(1);
-   const { data: dramawaveHome, isLoading: loadingDramawave } = useDramaWaveExplore(1, 'popular');
-   const { data: dotDramaHome, isLoading: loadingDotDrama } = useDotDramaExplore(1);
-   const { data: goodShortHome, isLoading: loadingGoodShort } = useGoodShortExplore(1);
-   const { data: meloShortHome, isLoading: loadingMeloShort } = useMeloShortExplore(1);
 
    // Real-time Data from Backend (Real Count + Base 1000)
    const { data: onlineCountReal } = useOnlineTracker();
@@ -56,71 +32,27 @@ export function HomeView() {
    // Base number for UI (Start from 1000 + actual visitors)
    const displayCount = 1000 + (onlineCountReal || 0);
 
-   // Global Trending Mix for Hero Carousel
+   // Global Trending Mix for Hero Carousel - Optimized to only fetch from 3 top providers
    const heroDramas = useMemo(() => {
       const mix = [];
-
-      // 2 top items from DramaBox
+      
+      // 1. Top 3 from DramaBox (Popular)
       if (popularDramas) {
-         mix.push(...popularDramas.slice(0, 2).map((d: any) => ({ ...d, platform: "dramabox" })));
+         mix.push(...popularDramas.slice(0, 3).map((d: any) => ({ ...d, platform: "dramabox" })));
       }
 
-      // 2 top items from ReelShort
-      const rsBooks = (reelShortHome as any)?.data?.lists?.find((l: any) => l.books)?.books || (reelShortHome as any)?.lists?.find((l: any) => l.books)?.books;
-      if (rsBooks) {
-         mix.push(...rsBooks.slice(0, 2).map((d: any) => ({ ...d, platform: "reelshort" })));
+      // 2. Top 2 from ReelShort
+      if (reelShortHome) {
+         mix.push(...reelShortHome.slice(0, 2).map((d: any) => ({ ...d, platform: "reelshort" })));
       }
 
-      // 1 item from FlickReels
-      if (flickReelsHome?.data?.list) {
-         mix.push(...flickReelsHome.data.list.slice(0, 1).map((d: any) => ({ ...d, platform: "flickreels" })));
-      }
-
-      // 1 item from ShortMax
-      const smBooks = Array.isArray(shortMaxHome) ? shortMaxHome : (shortMaxHome as any)?.data;
-      if (smBooks) {
-         mix.push(...smBooks.slice(0, 1).map((d: any) => ({ ...d, platform: "shortmax" })));
-      }
-
-      // 1 item from Melolo
-      if (meloloHome?.books) {
-         mix.push(...meloloHome.books.slice(0, 1).map((d: any) => ({ ...d, platform: "melolo" })));
-      }
-
-      // 1 item from DramaNova
-      if (dramanovaHome) {
-         mix.push(...dramanovaHome.slice(0, 1).map((d: any) => ({ ...d, platform: "dramanova" })));
-      }
-
-      // 1 item from Velolo
-      const veloloList = (veloloHome as any)?.pages?.[0] || veloloHome;
-      if (Array.isArray(veloloList)) {
-         mix.push(...veloloList.slice(0, 1).map((d: any) => ({ ...d, platform: "velolo" })));
-      }
-
-      // 1 item from Radreels
-      const radreelsList = (radreelsHome as any)?.pages?.[0] || radreelsHome;
-      if (Array.isArray(radreelsList)) {
-         mix.push(...radreelsList.slice(0, 1).map((d: any) => ({ ...d, platform: "radreels" })));
-      }
-
-      // 1 item from StardustTV
-      if (Array.isArray(stardustHome) && stardustHome.length > 0) {
-         mix.push(...stardustHome.slice(0, 1).map((d: any) => ({ ...d, platform: "stardusttv" })));
-      }
-
-      // 1 item from iDrama
-      if (Array.isArray(idrama2Home) && idrama2Home.length > 0) {
-         mix.push(...idrama2Home.slice(0, 1).map((d: any) => ({ ...d, platform: "idrama2" })));
-      }
-
-      // 1 item from DramaWave
-      if (Array.isArray(dramawaveHome) && dramawaveHome.length > 0) {
-         mix.push(...dramawaveHome.slice(0, 1).map((d: any) => ({ ...d, platform: "dramawave" })));
+      // 3. Top 1 from FlickReels
+      if (flickReelsHome && (flickReelsHome as any).data?.list) {
+         mix.push(...(flickReelsHome as any).data.list.slice(0, 1).map((d: any) => ({ ...d, platform: "flickreels" })));
       }
 
       return mix;
-   }, [popularDramas, reelShortHome, flickReelsHome, shortMaxHome, meloloHome, dramanovaHome, veloloHome, radreelsHome, stardustHome, idrama2Home, dramawaveHome]);
+   }, [popularDramas, reelShortHome, flickReelsHome]);
 
    return (
       <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-8 md:space-y-12 pb-20">
