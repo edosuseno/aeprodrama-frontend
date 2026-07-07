@@ -194,12 +194,12 @@ export function Header() {
                 alt="DRACINDO Logo"
                 className="w-10 h-10 rounded-xl group-hover:scale-110 transition-transform duration-300"
               />
-              <div className="flex flex-col -gap-1">
-                <span className="font-display font-bold text-lg leading-none gradient-text tracking-wide">
+              <div className="flex flex-col justify-center">
+                <span className="font-display font-black text-xl leading-none gradient-text tracking-[0.1em]">
                   DRACINDO
                 </span>
-                <span className="text-[10px] font-medium text-muted-foreground leading-none tracking-[0.2em]">
-                  PUSAT DRAMA
+                <span className="text-[8px] font-bold text-muted-foreground leading-tight tracking-[0.15em] mt-0.5 uppercase">
+                  DRAMA CINA SUB INDONESIA
                 </span>
               </div>
             </Link>

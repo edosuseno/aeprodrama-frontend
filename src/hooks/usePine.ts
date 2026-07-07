@@ -20,6 +20,8 @@ export interface PineEpisode {
   videoUrl?: string; // We'll map this from whatever the API uses (videoAddress, etc)
   videoAddress?: string;
   subtitle?: string;
+  num?: number;
+  seqId?: number | string;
 }
 
 export interface PineDetail {
@@ -27,6 +29,7 @@ export interface PineDetail {
   collectionId?: string;
   title: string;
   cover: string;
+  image?: string;
   description: string;
   categories?: string;
   totalEpisodes: number;
@@ -86,7 +89,7 @@ export function usePineEpisodes(id: string) {
     });
 }
 
-export function usePinePlay(id: string, ep: number) {
+export function usePinePlay(id: string, ep: number | string) {
     return useQuery({
         queryKey: [platform, "play", id, ep],
         queryFn: async () => {

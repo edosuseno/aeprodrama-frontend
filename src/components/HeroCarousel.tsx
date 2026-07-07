@@ -95,7 +95,7 @@ export function HeroCarousel({ dramas, isLoading }: HeroCarouselProps) {
                     <div className="flex items-center gap-3 md:gap-5">
                       <Link
                         href={`/watch/${platform}/${bookId}`}
-                        className="flex items-center gap-2.5 px-6 md:px-10 py-3 md:py-4 bg-primary text-white rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-primary/40 text-xs md:text-sm uppercase tracking-widest"
+                        className="flex items-center gap-2.5 px-6 md:px-10 py-3 md:py-4 bg-gradient-to-r from-primary to-accent text-primary-foreground rounded-2xl font-black hover:scale-105 active:scale-95 transition-all shadow-2xl shadow-primary/40 text-xs md:text-sm uppercase tracking-widest hover:opacity-90"
                       >
                         <Play className="w-4 md:w-5 h-4 md:h-5 fill-current" />
                         <span>PUTAR SEKARANG</span>

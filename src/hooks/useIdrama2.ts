@@ -32,6 +32,8 @@ export interface Idrama2DetailResponse {
   episodes: Idrama2Episode[];
   provider: string;
   source: string;
+  chapterCount?: number;
+  [key: string]: any;
 }
 
 export function useIdrama2Explore(page = 1) {

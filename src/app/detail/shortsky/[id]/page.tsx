@@ -1,23 +1,34 @@
 "use client";
 
 import { UnifiedErrorDisplay } from "@/components/UnifiedErrorDisplay";
-import { useFlexTVDetail } from "@/hooks/useFlexTV";
+import { useShortSkyDetail } from "@/hooks/useShortSky";
 import { usePlatform } from "@/hooks/usePlatform";
 import { Play, ChevronLeft } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import { useRouter, useParams } from "next/navigation";
+import { useRouter, useParams, useSearchParams } from "next/navigation";
 
-export default function FlexTVDetailPage() {
+export default function ShortSkyDetailPage() {
     const params = useParams<{ id: string }>();
-    const id = params.id;
+    const searchParams = useSearchParams();
+    const id = params?.id;
     const router = useRouter();
 
-    const { data, isLoading, error } = useFlexTVDetail(id || "");
+    const { data: detailData, isLoading, error } = useShortSkyDetail(id || "");
     const { setPlatform } = usePlatform();
 
+    const fallbackTitle = searchParams?.get("title") || "ShortSky Drama";
+    const fallbackCover = searchParams?.get("cover") || "";
+
+    const detail = {
+        ...detailData,
+        title: detailData?.title && detailData.title !== 'ShortSky Drama' ? detailData.title : fallbackTitle,
+        cover: detailData?.cover || detailData?.book_pic || detailData?.poster || fallbackCover,
+        description: detailData?.description || detailData?.introduction || "Tidak ada deskripsi yang tersedia untuk drama ini."
+    };
+
     const handleBack = () => {
-        setPlatform("flextv");
+        setPlatform("shortsky");
         router.push("/");
     };
 
@@ -25,12 +36,12 @@ export default function FlexTVDetailPage() {
         return <DetailSkeleton />;
     }
 
-    if (error || !data || data.success === false || !data.id) {
+    if (error || !detailData) {
         return (
             <div className="min-h-screen pt-24 px-4">
                 <UnifiedErrorDisplay
                     title="Drama tidak ditemukan"
-                    message="Tidak dapat memuat detail drama dari FlexTV. Silakan coba lagi atau kembali ke beranda."
+                    message="Tidak dapat memuat detail drama. Silakan coba lagi atau kembali ke beranda."
                     onRetry={handleBack}
                     retryLabel="Kembali ke Beranda"
                 />
@@ -38,20 +49,14 @@ export default function FlexTVDetailPage() {
         );
     }
 
-    const detail = data;
-    const posterUrl = detail.cover || "";
-    const displayPosterUrl = posterUrl && !posterUrl.includes('wsrv.nl') && !posterUrl.includes('flextv.cc')
-        ? `https://wsrv.nl/?url=${encodeURIComponent(posterUrl)}&w=500&output=webp`
-        : posterUrl;
+    // Remove the conflicted const detail = data
 
     return (
         <main className="min-h-screen pt-20">
-            {/* Hero Section with Cover */}
             <div className="relative">
-                {/* Background Blur */}
                 <div className="absolute inset-0 overflow-hidden">
                     <img
-                        src={displayPosterUrl}
+                        src={detail.poster || detail.cover || detail.cover_h || ""}
                         alt=""
                         className="w-full h-full object-cover opacity-20 blur-3xl scale-110"
                     />
@@ -59,7 +64,6 @@ export default function FlexTVDetailPage() {
                 </div>
 
                 <div className="relative max-w-7xl mx-auto px-4 py-8">
-                    {/* Back Button */}
                     <button
                         onClick={handleBack}
                         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors mb-6"
@@ -69,16 +73,15 @@ export default function FlexTVDetailPage() {
                     </button>
 
                     <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
-                        {/* Cover */}
                         <div className="relative group">
                             <img
-                                src={displayPosterUrl}
+                                src={detail.poster || detail.cover || detail.cover_h || ""}
                                 alt={detail.title}
                                 className="w-full max-w-[300px] mx-auto rounded-2xl shadow-2xl"
                             />
-                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
+                            <div className="absolute inset-0 rounded-2xl bg-gradient-to-t from-background/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-6">
                                 <Link
-                                    href={`/watch/flextv/${detail.id}?ep=1`}
+                                    href={`/watch/shortsky/${detail.id || id}?ep=1&title=${encodeURIComponent(detail.title)}&cover=${encodeURIComponent(detail.cover)}`}
                                     className="px-8 py-3 rounded-full bg-primary text-primary-foreground font-semibold flex items-center gap-2 hover:scale-105 transition-transform shadow-lg"
                                 >
                                     <Play className="w-5 h-5 fill-current" />
@@ -87,46 +90,34 @@ export default function FlexTVDetailPage() {
                             </div>
                         </div>
 
-                        {/* Info */}
                         <div className="space-y-6">
                             <div>
-                                <h1 className="text-3xl md:text-4xl font-bold font-display gradient-text mb-4 text-white">
-                                    {detail.title || "FlexTV Drama"}
+                                <h1 className="text-3xl md:text-4xl font-bold font-display gradient-text mb-4">
+                                    {detail.title}
                                 </h1>
 
-                                {/* Stats */}
                                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                                     <div className="flex items-center gap-1.5">
                                         <Play className="w-4 h-4" />
-                                        <span>{detail.totalEpisodes || detail.episodes?.length || 0} Episode</span>
+                                        <span>{detail.totalEpisodes || detail.chapterCount || detail.chapters || detail.episodes?.length || 0} Episode</span>
                                     </div>
-                                </div>
-
-                                {/* Labels */}
-                                <div className="flex flex-wrap gap-2 mt-3">
-                                    <span className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-white/80 text-xs font-medium">
-                                        Sub Indonesia
-                                    </span>
-                                    <span className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-white/80 text-xs font-medium">
-                                        FlexTV HD
+                                    <span className="px-2 py-0.5 rounded bg-primary/20 text-primary text-xs font-medium uppercase tracking-wider">
+                                        ShortSky VIP
                                     </span>
                                 </div>
                             </div>
 
-                            {/* Description */}
                             <div className="glass rounded-xl p-4">
-                                <h3 className="font-semibold text-foreground mb-2">
-                                    Sinopsis
-                                </h3>
+                                <h3 className="font-semibold text-foreground mb-2">Sinopsis</h3>
                                 <p className="text-muted-foreground leading-relaxed">
-                                    {detail.description || "Nikmati drama pendek berkualitas tinggi dari platform FlexTV."}
+                                    {detail.description || detail.introduction || "Tidak ada deskripsi."}
                                 </p>
                             </div>
 
-                            {/* Watch Button */}
                             <Link
-                                href={`/watch/flextv/${detail.id}?ep=1`}
-                                className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-primary-foreground transition-all hover:scale-105 shadow-lg bg-gradient-to-r from-primary to-accent hover:opacity-90"
+                                href={`/watch/shortsky/${detail.id || id}?ep=1&title=${encodeURIComponent(detail.title)}&cover=${encodeURIComponent(detail.cover)}`}
+                                className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-primary-foreground transition-all hover:scale-105 shadow-lg"
+                                style={{ background: "var(--gradient-primary)" }}
                             >
                                 <Play className="w-5 h-5 fill-current" />
                                 Mulai Menonton
@@ -141,10 +132,10 @@ export default function FlexTVDetailPage() {
 
 function DetailSkeleton() {
     return (
-        <main className="min-h-screen pt-24 px-4 bg-background">
+        <main className="min-h-screen pt-24 px-4">
             <div className="max-w-7xl mx-auto">
                 <div className="grid grid-cols-1 md:grid-cols-[300px_1fr] gap-8">
-                    <Skeleton className="aspect-[2/3] w-full max-w-[300px] rounded-2xl mx-auto md:mx-0" />
+                    <Skeleton className="aspect-[2/3] w-full max-w-[300px] mx-auto rounded-2xl" />
                     <div className="space-y-4">
                         <Skeleton className="h-10 w-3/4" />
                         <Skeleton className="h-6 w-1/2" />

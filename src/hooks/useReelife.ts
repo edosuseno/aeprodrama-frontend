@@ -18,11 +18,14 @@ export interface ReelifeEpisode {
     episodeNumber: number;
     title: string;
     isFree: boolean;
+    subtitle?: string;
+    videoAddress?: string;
 }
 
 export interface ReelifeDetail extends ReelifeDrama {
     totalEpisodes: number;
     episodes: ReelifeEpisode[];
+    chapterCount?: number;
 }
 
 export function useReelifeExplore(page: number = 1) {

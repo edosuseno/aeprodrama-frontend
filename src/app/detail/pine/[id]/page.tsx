@@ -107,8 +107,8 @@ export default function PineDetailPage() {
                                     {drama.title}
                                 </h1>
                                 <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                                    <span className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-indigo-400 font-bold uppercase tracking-wider text-[10px]">Pine</span>
-                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/10 text-indigo-400">
+                                    <span className="px-3 py-1 rounded-full border border-white/10 bg-white/5 text-primary font-bold uppercase tracking-wider text-[10px]">Pine</span>
+                                    <div className="flex items-center gap-1.5 px-3 py-1 bg-white/5 rounded-full border border-white/10 text-primary">
                                         <Play className="w-4 h-4 text-primary" />
                                         <span>{drama.totalEpisodes} Episode</span>
                                     </div>
@@ -122,7 +122,7 @@ export default function PineDetailPage() {
 
                             <div className="glass rounded-2xl p-6 border border-white/10">
                                 <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                                    <span className="w-1 h-5 bg-indigo-500 rounded-full" />
+                                    <span className="w-1 h-5 bg-primary rounded-full" />
                                     Sinopsis
                                 </h3>
                                 <div className="text-muted-foreground leading-relaxed text-sm md:text-base whitespace-pre-wrap">
@@ -133,7 +133,7 @@ export default function PineDetailPage() {
                             <div className="pt-2">
                                 <Link 
                                     href={`/watch/pine/${id}?ep=1&cover=${encodeURIComponent(finalCover)}&cat=${encodeURIComponent(finalCategories)}`}
-                                    className="inline-flex items-center gap-3 px-10 py-4 rounded-full font-bold text-primary-foreground transition-all hover:scale-105 shadow-xl hover:shadow-primary/20 bg-indigo-600 hover:bg-indigo-700"
+                                    className="inline-flex items-center gap-3 px-10 py-4 rounded-full font-bold text-primary-foreground transition-all hover:scale-105 shadow-xl hover:shadow-primary/20 bg-gradient-to-r from-primary to-accent hover:opacity-90"
                                 >
                                     <Play className="w-6 h-6 fill-current" />
                                     Mulai Menonton

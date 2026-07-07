@@ -18,11 +18,14 @@ export interface FlexTVEpisode {
     episodeNumber: number;
     title: string;
     isFree: boolean;
+    subtitle?: string;
+    videoAddress?: string;
 }
 
 export interface FlexTVDetail extends FlexTVDrama {
     totalEpisodes: number;
     episodes: FlexTVEpisode[];
+    chapterCount?: number;
 }
 
 export function useFlexTVExplore(page: number = 1) {

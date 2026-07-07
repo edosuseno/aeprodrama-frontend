@@ -167,7 +167,7 @@ export function Sidebar() {
                 isExpanded ? "opacity-100" : "opacity-0 pointer-events-none"
               )}>Masuk</span>
             </button>
-            <button className="w-full h-12 flex items-center px-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90 transition-all font-bold text-sm shadow-lg shadow-primary/20">
+            <button className="w-full h-12 flex items-center px-3 rounded-xl bg-gradient-to-r from-primary to-accent text-primary-foreground hover:opacity-90 transition-all font-bold text-sm shadow-lg shadow-primary/20">
               <UserPlus className="w-6 h-6 shrink-0" />
               <span className={cn(
                 "ml-4 transition-all duration-300 whitespace-nowrap",

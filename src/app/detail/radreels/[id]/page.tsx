@@ -126,8 +126,7 @@ export default function RadreelsDetailPage() {
                             {/* Watch Button */}
                             <Link
                                 href={`/watch/radreels/${detail.id}?ep=1`}
-                                className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-white transition-all hover:scale-105 shadow-lg"
-                                style={{ background: "var(--gradient-primary)" }}
+                                className="inline-flex items-center gap-2 px-8 py-3 rounded-full font-semibold text-primary-foreground transition-all hover:scale-105 shadow-lg bg-gradient-to-r from-primary to-accent hover:opacity-90"
                             >
                                 <Play className="w-5 h-5 fill-current" />
                                 Mulai Menonton

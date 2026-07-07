@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 
-export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dotdrama" | "goodshort" | "meloshort" | "idrama2" | "vigloo" | "radreels" | "flextv" | "reelife" | "pine";
+export type Platform = "home" | "dramabox" | "reelshort" | "netshort" | "shortmax" | "melolo" | "flickreels" | "freereels" | "moviebox" | "stardusttv" | "dramawave" | "dramanova" | "velolo" | "dotdrama" | "goodshort" | "meloshort" | "idrama2" | "vigloo" | "radreels" | "flextv" | "reelife" | "pine" | "shortwave2" | "shortsky" | "cubetv";
 
 export type ProviderStatus = "active" | "maintenance" | "offline" | "coming_soon";
 
@@ -63,6 +63,12 @@ export const PLATFORMS: PlatformInfo[] = [
     name: "FreeReels",
     logo: "/freereels.webp",
     apiBase: "/api/freereels",
+  },
+  {
+    id: "cubetv",
+    name: "CubeTV",
+    logo: "/cubetv.png",
+    apiBase: "/api/cubetv",
   },
   {
     id: "moviebox",
@@ -148,6 +154,19 @@ export const PLATFORMS: PlatformInfo[] = [
     name: "PineDrama",
     logo: "/pine.png",
     apiBase: "/api/pine",
+  },
+  {
+    id: "shortwave2",
+    name: "Shortwave",
+    logo: "https://storage.vidrama.asia/providers/shortwave2.webp",
+    apiBase: "/api/shortwave2",
+    status: "maintenance"
+  },
+  {
+    id: "shortsky",
+    name: "ShortSky",
+    logo: "https://storage.vidrama.asia/providers/shortsky.webp",
+    apiBase: "/api/shortsky"
   }
 ];
 
@@ -197,5 +216,8 @@ export function usePlatform() {
     isFlexTV: currentPlatform === "flextv",
     isReelife: currentPlatform === "reelife",
     isPine: currentPlatform === "pine",
+    isShortwave2: currentPlatform === "shortwave2",
+    isShortsky: currentPlatform === "shortsky",
+    isCubetv: currentPlatform === "cubetv",
   };
 }

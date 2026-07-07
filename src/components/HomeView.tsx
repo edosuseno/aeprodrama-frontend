@@ -27,6 +27,7 @@ export function HomeView() {
    const { data: dramanovaHome, isLoading: loadingDramanova } = useDrmanovaExplore(1, 'all');
    const { data: stardustHome, isLoading: loadingStardust } = useStardustTVExplore(1);
    const { data: netshortHome, isLoading: loadingNetshort } = useNetShortForYou(1);
+   const { data: shortmaxHome, isLoading: loadingShortmax } = useShortMaxLatest();
 
    // Real-time Data from Backend (Real Count + Base 1000)
    const { data: onlineCountReal } = useOnlineTracker();
@@ -37,16 +38,16 @@ export function HomeView() {
    // Global Trending Mix for Hero Carousel - Optimized to only fetch from 3 top providers
    const heroDramas = useMemo(() => {
       const mix = [];
-      
-      // 1. Top 2 from Dramanova
-      const novaList = (dramanovaHome as any)?.list || dramanovaHome;
-      if (novaList && Array.isArray(novaList)) {
-         mix.push(...novaList.slice(0, 2).map((d: any) => ({ ...d, platform: "dramanova" })));
-      }
 
-      // 2. Top 2 from StardustTV
+      // 1. Top 2 from StardustTV
       if (stardustHome && Array.isArray(stardustHome)) {
          mix.push(...stardustHome.slice(0, 2).map((d: any) => ({ ...d, platform: "stardusttv" })));
+      }
+
+      // 2. Top 2 from ShortMax
+      const smList = Array.isArray(shortmaxHome) ? shortmaxHome : (shortmaxHome as any)?.data;
+      if (smList && Array.isArray(smList)) {
+         mix.push(...smList.slice(0, 2).map((d: any) => ({ ...d, platform: "shortmax" })));
       }
 
       // 3. Top 1 from NetShort
@@ -56,14 +57,14 @@ export function HomeView() {
       }
 
       return mix;
-   }, [dramanovaHome, stardustHome, netshortHome]);
+   }, [stardustHome, shortmaxHome, netshortHome]);
 
    return (
       <div className="w-full max-w-[1700px] mx-auto px-4 md:px-10 py-6 space-y-8 md:space-y-12 pb-20">
          {/* 1. Hero Section */}
          <HeroCarousel
             dramas={heroDramas}
-            isLoading={loadingDramanova || loadingStardust}
+            isLoading={loadingStardust || loadingShortmax || loadingNetshort}
          />
 
          {/* 2. Stats Bar */}
@@ -72,30 +73,30 @@ export function HomeView() {
                icon={Zap}
                label="TOTAL LIBRARY"
                value="15.215+ Drama"
-               color="text-blue-500"
-               bgColor="bg-blue-500/10"
+               color="text-amber-500"
+               bgColor="bg-amber-500/10"
             />
             <StatCard
                icon={Monitor}
                label="PLATFORM"
                value="18+ Apps"
-               color="text-purple-500"
-               bgColor="bg-purple-500/10"
+               color="text-zinc-300"
+               bgColor="bg-zinc-300/10"
             />
             <StatCard
                icon={Star}
                label="VIP ACCESS"
                value="100% Free"
-               color="text-amber-500"
-               bgColor="bg-amber-500/10"
+               color="text-yellow-400"
+               bgColor="bg-yellow-400/10"
             />
             <StatCard
                icon={Users}
                label="USER ONLINE"
                value={displayCount.toLocaleString('id-ID')}
                isOnline={true}
-               color="text-emerald-500"
-               bgColor="bg-emerald-500/10"
+               color="text-emerald-400"
+               bgColor="bg-emerald-400/10"
             />
          </div>
 
@@ -106,7 +107,7 @@ export function HomeView() {
             <DramaSection title="NETSHORT" platform="netshort" dramas={(netshortHome as any)?.data || netshortHome} isLoading={loadingNetshort} />
             
             {/* User Requested Providers Loaded Lazily */}
-            <LazySection><ShortMaxSection /></LazySection>
+            <DramaSection title="SHORTMAX" platform="shortmax" dramas={Array.isArray(shortmaxHome) ? shortmaxHome : (shortmaxHome as any)?.data} isLoading={loadingShortmax} />
             <LazySection><CubeTVSection /></LazySection>
             <LazySection><DotDramaSection /></LazySection>
             <LazySection><MeloloSection /></LazySection>
@@ -137,22 +138,6 @@ function LazySection({ children }: { children: React.ReactNode }) {
   return <div ref={ref} className="min-h-[300px]">{inView && children}</div>;
 }
 
-function DramanovaSection() {
-   const { data, isLoading } = useDrmanovaExplore(1, 'all');
-   return <DramaSection title="DRAMANOVA" platform="dramanova" dramas={(data as any)?.list || data} isLoading={isLoading} />;
-}
-function StardustSection() {
-   const { data, isLoading } = useStardustTVExplore(1);
-   return <DramaSection title="STARDUSTTV" platform="stardusttv" dramas={data} isLoading={isLoading} />;
-}
-function NetShortSection() {
-   const { data, isLoading } = useNetShortForYou(1);
-   return <DramaSection title="NETSHORT" platform="netshort" dramas={(data as any)?.data || data} isLoading={isLoading} />;
-}
-function ShortMaxSection() {
-   const { data, isLoading } = useShortMaxLatest();
-   return <DramaSection title="SHORTMAX" platform="shortmax" dramas={Array.isArray(data) ? data : (data as any)?.data} isLoading={isLoading} />;
-}
 function CubeTVSection() {
    const { data, isLoading } = useCubetvExplore(1);
    return <DramaSection title="CUBETV" platform="cubetv" dramas={(data as any)?.data?.list || data} isLoading={isLoading} />;

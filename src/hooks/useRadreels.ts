@@ -16,8 +16,10 @@ export interface RadreelsDetail extends RadreelsDrama {
     index: number;
     title: string;
     subtitle?: string;
+    videoAddress?: string;
   }[];
   totalEpisodes: number;
+  chapterCount?: number;
 }
 
 export function useRadreelsExplore(page = 1) {

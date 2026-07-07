@@ -105,7 +105,7 @@ export function MobileBottomNav() {
         
         {/* Floating Modal Content */}
         <div className={cn(
-          "absolute m-auto inset-x-4 inset-y-0 h-fit max-h-[85vh] bg-[#191922] shadow-2xl rounded-[32px] border border-white/10 p-5 transition-transform duration-500 ease-out flex flex-col items-center",
+          "absolute m-auto inset-x-4 inset-y-0 h-fit max-h-[85vh] bg-background shadow-2xl rounded-[32px] border border-border p-5 transition-transform duration-500 ease-out flex flex-col items-center",
           isModalOpen ? "scale-100 opacity-100" : "scale-95 opacity-0 pointer-events-none"
         )}>
            <div className="flex items-start justify-between w-full mb-6 mt-2">
