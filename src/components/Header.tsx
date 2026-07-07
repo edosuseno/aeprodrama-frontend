@@ -190,7 +190,7 @@ export function Header() {
             {/* Logo */}
             <Link href="/" onClick={() => setPlatform("home")} className="flex items-center gap-2.5 px-2 md:px-0 group">
               <img
-                src="/icon.png"
+                src="/logo.png"
                 alt="DRACINDO Logo"
                 className="w-10 h-10 rounded-xl group-hover:scale-110 transition-transform duration-300"
               />

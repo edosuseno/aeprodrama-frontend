@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   title: "DRACINDO Pusat Drama - Nonton Drama Pendek Sub Indo",
   description: "DRACINDO Pusat Drama adalah platform streaming drama pendek premium dengan subtitle Indonesia. Nonton gratis dan lengkap di DRACINDO.",
   icons: {
-    icon: "/icon.png?v=6",
+    icon: "/logo.png?v=7",
     apple: "/apple-touch-icon.png?v=6",
   },
   manifest: "/manifest.json",
