@@ -95,74 +95,31 @@ export function HomeView() {
             />
          </div>
 
-         {/* 3. Multi-Platform Sections (9 Cards Each) */}
+         {/* 3. Multi-Platform Sections (Top Providers Only) */}
          <div className="space-y-10 md:space-y-16">
 
-            {/* DOTDRAMA */}
+            {/* DRAMABOX */}
             <DramaSection
-               title="DOTDRAMA"
-               dramas={dotDramaHome}
-               isLoading={loadingDotDrama}
-               platform="dotdrama"
+               title="DRAMABOX"
+               dramas={popularDramas}
+               isLoading={loadingPopular}
+               platform="dramabox"
             />
 
-
-            {/* SHORTMAX */}
+            {/* REELSHORT */}
             <DramaSection
-               title="SHORTMAX"
-               dramas={Array.isArray(shortMaxHome) ? shortMaxHome : (shortMaxHome as any)?.data}
-               isLoading={loadingShortMax}
-               platform="shortmax"
+               title="REELSHORT"
+               dramas={(reelShortHome as any)?.data?.lists?.find((l: any) => l.books)?.books || (reelShortHome as any)?.lists?.find((l: any) => l.books)?.books}
+               isLoading={loadingReelShort}
+               platform="reelshort"
             />
 
-
-
-            {/* VELOLO */}
+            {/* FLICKREELS */}
             <DramaSection
-               title="VELOLO"
-               dramas={(veloloHome as any)?.pages?.[0] || veloloHome}
-               isLoading={loadingVelolo}
-               platform="velolo"
-            />
-
-            {/* RADREELS */}
-            <DramaSection
-               title="RADREELS"
-               dramas={(radreelsHome as any)?.pages?.[0] || radreelsHome}
-               isLoading={loadingRadreels}
-               platform="radreels"
-            />
-
-            {/* MELOSHORT */}
-            <DramaSection
-               title="MELOSHORT"
-               dramas={meloShortHome}
-               isLoading={loadingMeloShort}
-               platform="meloshort"
-            />
-
-            {/* STARDUSTTV */}
-            <DramaSection
-               title="STARDUSTTV"
-               dramas={stardustHome}
-               isLoading={loadingStardust}
-               platform="stardusttv"
-            />
-
-            {/* IDRAMA */}
-            <DramaSection
-               title="IDRAMA"
-               dramas={idrama2Home}
-               isLoading={loadingIdrama2}
-               platform="idrama2"
-            />
-
-            {/* DRAMAWAVE */}
-            <DramaSection
-               title="DRAMAWAVE"
-               dramas={dramawaveHome}
-               isLoading={loadingDramawave}
-               platform="dramawave"
+               title="FLICKREELS"
+               dramas={(flickReelsHome as any)?.data?.list}
+               isLoading={loadingFlickReels}
+               platform="flickreels"
             />
 
          </div>
