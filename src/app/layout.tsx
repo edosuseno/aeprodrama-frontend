@@ -20,6 +20,7 @@ export const viewport: Viewport = {
 };
 
 import { LayoutContent } from "@/components/LayoutContent";
+import { ClientSecurity } from "@/components/ClientSecurity";
 
 export default function RootLayout({
   children,
@@ -39,6 +40,7 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased text-foreground bg-background">
         <Providers>
+          <ClientSecurity />
           <LayoutContent>
             {children}
           </LayoutContent>
