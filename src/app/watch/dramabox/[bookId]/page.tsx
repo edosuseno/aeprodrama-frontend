@@ -109,8 +109,7 @@ export default function DramaBoxWatchPage() {
       if (isHlsUrl) {
         return `/api/proxy?url=${encodeURIComponent(finalUrl)}`;
       }
-      // Langsung return finalUrl untuk MP4. Bypass Vercel Proxy untuk menghindari Serverless Timeout (10s limit)!
-      return finalUrl;
+      return `/api/proxy/video?url=${encodeURIComponent(finalUrl)}`;
     }
     return finalUrl;
   }, [currentEpisode, bookId, manualQuality]);
@@ -138,8 +137,7 @@ export default function DramaBoxWatchPage() {
             if (realUrl.includes('.m3u8') || realUrl.includes('.m3u')) {
               setActiveUrl(`/api/proxy?url=${encodeURIComponent(realUrl)}`);
             } else {
-              // Bypass Vercel Proxy untuk MP4 agar loading cepat dan tidak terputus timeout
-              setActiveUrl(realUrl);
+              setActiveUrl(`/api/proxy/video?url=${encodeURIComponent(realUrl)}`);
             }
             setVideoError(null);
           } else if (isMounted) {
@@ -376,7 +374,7 @@ export default function DramaBoxWatchPage() {
           >
             <ChevronLeft className="w-6 h-6" />
             <div className="flex flex-col -gap-1">
-              <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+              <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">DRACINDO</span>
               <span className="text-[10px] text-white/70 hidden sm:inline leading-none">PUSAT DRAMA</span>
             </div>
           </Link>

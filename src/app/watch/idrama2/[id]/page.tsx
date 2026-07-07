@@ -24,6 +24,7 @@ export default function Idrama2WatchPage() {
     const [videoUrl, setVideoUrl] = useState<string | null>(null);
     const [loadingStream, setLoadingStream] = useState(false);
     const [streamError, setStreamError] = useState<string | null>(null);
+    const [nextVideoUrl, setNextVideoUrl] = useState<string | null>(null);
 
     const swipeContainerRef = useRef<HTMLDivElement>(null);
 
@@ -82,6 +83,36 @@ export default function Idrama2WatchPage() {
             fetchStream();
         }
     }, [id, currentEpisode, episodes]);
+
+    // Prefetch the NEXT episode to make swiping more responsive
+    useEffect(() => {
+        let isMounted = true;
+        const total = detailData?.totalEpisodes || episodes.length;
+        if (id && episodes.length > 0 && currentEpisode < total) {
+            const nextEp = currentEpisode + 1;
+            const epData = episodes.find(e => e.index === nextEp || e.id == nextEp);
+            const epIdToFetch = epData ? epData.id : nextEp;
+
+            const fetchNextStream = async () => {
+                try {
+                    const res = await fetch(`/api/idrama2/stream/${id}/${epIdToFetch}`);
+                    const data = await res.json();
+                    
+                    if (isMounted && data && data.url) {
+                        setNextVideoUrl(data.url);
+                    } else if (isMounted) {
+                        setNextVideoUrl(null);
+                    }
+                } catch (e) {
+                    if (isMounted) setNextVideoUrl(null);
+                }
+            };
+            fetchNextStream();
+        } else {
+            setNextVideoUrl(null);
+        }
+        return () => { isMounted = false; };
+    }, [id, currentEpisode, episodes, detailData]);
 
     const handleVideoEnded = useCallback(() => {
         if (!detailData) return;
@@ -237,7 +268,7 @@ export default function Idrama2WatchPage() {
                     >
                         <ChevronLeft className="w-6 h-6" />
                         <div className="flex flex-col -gap-1">
-                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">DRACINDO</span>
                             <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-tighter">Pusat Drama</span>
                         </div>
                     </Link>
@@ -325,6 +356,22 @@ export default function Idrama2WatchPage() {
                             })}
                         </div>
                     </div>
+                </>
+            )}
+
+            {/* Hidden Preloader for the Next Episode */}
+            {nextVideoUrl && (
+                <>
+                    {/* Preload manifest untuk iOS / Safari */}
+                    <link rel="preload" href={nextVideoUrl} as="fetch" crossOrigin="anonymous" />
+                    {/* Preload video buffer untuk Android / Desktop */}
+                    <video 
+                        preload="auto" 
+                        src={nextVideoUrl} 
+                        className="hidden" 
+                        muted
+                        playsInline
+                    />
                 </>
             )}
         </main>

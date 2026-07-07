@@ -176,7 +176,7 @@ export default function GoodShortWatchPage() {
         <Link href={`/detail/goodshort/${id}`} className="pointer-events-auto flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10">
           <ChevronLeft className="w-6 h-6" />
           <div className="flex flex-col -gap-1">
-            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">DRACINDO</span>
             <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-tighter">Pusat Drama</span>
           </div>
         </Link>

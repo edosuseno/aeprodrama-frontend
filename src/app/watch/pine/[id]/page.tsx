@@ -170,9 +170,11 @@ function WatchContent({ backUrl }: { backUrl: string }) {
     if (index >= 0 && index < episodes.length) {
       setCurrentEpisodeIndex(index);
       const epNum = episodes[index].num || episodes[index].seqId || episodes[index].index || index + 1;
-      router.replace(`/watch/pine/${id}?ep=${epNum}`, { scroll: false });
+      const params = new URLSearchParams(searchParams.toString());
+      params.set("ep", epNum.toString());
+      router.replace(`/watch/pine/${id}?${params.toString()}`, { scroll: false });
     }
-  }, [episodes, id, router]);
+  }, [episodes, id, router, searchParams]);
 
   // Scroll/Swipe Navigation
   useEffect(() => {
@@ -279,7 +281,7 @@ function WatchContent({ backUrl }: { backUrl: string }) {
         <Link href={backUrl} className="pointer-events-auto flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10">
           <ChevronLeft className="w-6 h-6" />
           <div className="flex flex-col -gap-1">
-            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">DRACINDO</span>
             <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-tighter">Pusat Drama</span>
           </div>
         </Link>
@@ -367,19 +369,24 @@ function WatchContent({ backUrl }: { backUrl: string }) {
 
       {/* Hidden Preloader for the Next Episode */}
       {nextVideoUrl && (
-        <video 
-           preload="auto" 
-           src={nextVideoUrl} 
-           className="hidden" 
-           muted
-           playsInline
-        />
+        <>
+          {/* Preload manifest untuk iOS / Safari */}
+          <link rel="preload" href={nextVideoUrl} as="fetch" />
+          {/* Preload video buffer untuk Android / Desktop */}
+          <video 
+             preload="auto" 
+             src={nextVideoUrl} 
+             className="hidden" 
+             muted
+             playsInline
+          />
+        </>
       )}
     </div>
   );
 }
 
-function VideoPlayer({ src, poster, isZoomed, onEnded }: { src: string; poster: string; isZoomed?: boolean; onEnded?: () => void }) {
+function VideoPlayer({ src, poster, subtitleUrl, isZoomed, onEnded }: { src: string; poster: string; subtitleUrl?: string; isZoomed?: boolean; onEnded?: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {

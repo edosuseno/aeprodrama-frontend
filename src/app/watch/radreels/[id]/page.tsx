@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useRadreelsDetail, useRadreelsStream } from "@/hooks/useRadreels";
 import { useHistoryStore } from "@/hooks/useHistory";
 import { ChevronLeft, ChevronRight, Loader2, AlertCircle, List } from "lucide-react";
@@ -33,6 +34,42 @@ export default function RadreelsWatchPage() {
     const { data: videoUrl, isLoading: loadingStream } = useRadreelsStream(id || "", currentEpisode);
     const { addToHistory } = useHistoryStore();
     
+    const queryClient = useQueryClient();
+    const [nextVideoUrl, setNextVideoUrl] = useState<string | null>(null);
+
+    // Prefetch the NEXT episode to make swiping more responsive
+    useEffect(() => {
+        let isMounted = true;
+        if (detailData && currentEpisode < detailData.totalEpisodes) {
+            const nextEp = currentEpisode + 1;
+            if (id) {
+                queryClient.prefetchQuery({
+                    queryKey: ["radreels", "stream", id, nextEp],
+                    queryFn: async () => {
+                        const res = await fetch(`/api/radreels/watch?id=${id}&episodeIndex=${nextEp}`);
+                        const data = await res.json();
+                        
+                        if (isMounted && data) {
+                            const payload = data.data || data;
+                            const rawUrl = payload.url || payload.videoAddress;
+                            if (rawUrl) {
+                                let pUrl = rawUrl;
+                                if (pUrl.startsWith("http") && !pUrl.includes("wolftv.online") && !pUrl.includes(".mp4")) {
+                                    pUrl = `/api/proxy?url=${encodeURIComponent(pUrl)}&referer=${encodeURIComponent('https://vidrama.asia/')}`;
+                                }
+                                setNextVideoUrl(pUrl);
+                            }
+                        }
+                        return data.data || data;
+                    }
+                });
+            }
+        } else {
+            setNextVideoUrl(null);
+        }
+        return () => { isMounted = false; };
+    }, [currentEpisode, detailData, id, queryClient]);
+
     const currentEpisodeData = useMemo(() => {
         return detailData?.episodes?.find(ep => ep.index === currentEpisode);
     }, [detailData, currentEpisode]);
@@ -271,7 +308,7 @@ export default function RadreelsWatchPage() {
                     >
                         <ChevronLeft className="w-6 h-6" />
                         <div className="flex flex-col -gap-1">
-                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">DRACINDO</span>
                             <span className="text-[10px] text-white/70 hidden sm:inline leading-none">PUSAT DRAMA</span>
                         </div>
                     </Link>
@@ -400,6 +437,22 @@ export default function RadreelsWatchPage() {
                             })}
                         </div>
                     </div>
+                </>
+            )}
+
+            {/* Hidden Preloader for the Next Episode */}
+            {nextVideoUrl && (
+                <>
+                    {/* Preload manifest untuk iOS / Safari */}
+                    <link rel="preload" href={nextVideoUrl} as="fetch" crossOrigin="anonymous" />
+                    {/* Preload video buffer untuk Android / Desktop */}
+                    <video 
+                        preload="auto" 
+                        src={nextVideoUrl} 
+                        className="hidden" 
+                        muted
+                        playsInline
+                    />
                 </>
             )}
         </div>

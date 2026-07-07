@@ -212,7 +212,7 @@ export default function ViglooWatchPage() {
                     >
                         <ChevronLeft className="w-6 h-6" />
                         <div className="flex flex-col -gap-1">
-                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+                            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">DRACINDO</span>
                             <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-tighter">Pusat Drama</span>
                         </div>
                     </Link>

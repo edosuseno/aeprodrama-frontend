@@ -45,6 +45,7 @@ function WatchContent() {
   // State
   const [currentEpisodeIndex, setCurrentEpisodeIndex] = useState(0);
   const [showList, setShowList] = useState(false);
+  const [isZoomed, setIsZoomed] = useState(false);
   const swipeContainerRef = useRef<HTMLDivElement>(null);
   const lastScrollTime = useRef<number>(0);
 
@@ -115,12 +116,48 @@ function WatchContent() {
     if (!el) return;
 
     let touchStartY = 0;
+    let initialPinchDistance = 0;
+    let lastTapTime = 0;
 
     const handleTouchStart = (e: TouchEvent) => {
-      touchStartY = e.touches[0].clientY;
+      if (e.touches.length === 1) {
+        touchStartY = e.touches[0].clientY;
+        const now = Date.now();
+        if (now - lastTapTime < 300) {
+            setIsZoomed(prev => !prev);
+        }
+        lastTapTime = now;
+      } else if (e.touches.length === 2) {
+        initialPinchDistance = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+        if (e.touches.length === 2 && initialPinchDistance > 0) {
+            const currentDistance = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            
+            if (currentDistance - initialPinchDistance > 40) {
+                setIsZoomed(true);
+                initialPinchDistance = currentDistance;
+            } else if (initialPinchDistance - currentDistance > 40) {
+                setIsZoomed(false);
+                initialPinchDistance = currentDistance;
+            }
+        }
     };
 
     const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length === 0) {
+          initialPinchDistance = 0;
+      }
+      if (window.innerWidth >= 768 || e.changedTouches.length !== 1) return;
+      
       const touchEndY = e.changedTouches[0].clientY;
       const deltaY = touchStartY - touchEndY;
       const threshold = 70;
@@ -150,11 +187,13 @@ function WatchContent() {
     };
 
     el.addEventListener("touchstart", handleTouchStart, { passive: true });
+    el.addEventListener("touchmove", handleTouchMove, { passive: true });
     el.addEventListener("touchend", handleTouchEnd, { passive: true });
     el.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
       el.removeEventListener("touchstart", handleTouchStart);
+      el.removeEventListener("touchmove", handleTouchMove);
       el.removeEventListener("touchend", handleTouchEnd);
       el.removeEventListener("wheel", handleWheel);
     };
@@ -176,7 +215,7 @@ function WatchContent() {
         <Link href={`/detail/meloshort/${id}`} className="pointer-events-auto flex items-center gap-2 text-white/90 hover:text-white transition-colors p-2 -ml-2 rounded-full hover:bg-white/10">
           <ChevronLeft className="w-6 h-6" />
           <div className="flex flex-col -gap-1">
-            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">AE PRO</span>
+            <span className="text-primary font-bold hidden sm:inline shadow-black drop-shadow-md leading-none">DRACINDO</span>
             <span className="text-[10px] text-white/70 hidden sm:inline leading-none uppercase tracking-tighter">Pusat Drama</span>
           </div>
         </Link>
@@ -209,6 +248,7 @@ function WatchContent() {
                 src={videoUrl} 
                 poster={detail?.cover || ""} 
                 subtitleUrl={subtitleUrl}
+                isZoomed={isZoomed}
                 onEnded={() => {
                     if (currentEpisodeIndex < episodes.length - 1) {
                         goToEpisode(currentEpisodeIndex + 1);
@@ -225,6 +265,7 @@ function WatchContent() {
         )}
 
         <UnifiedVideoNavigation
+          isHidden={isZoomed}
           currentEpisode={currentEpisodeIndex + 1}
           totalEpisodes={episodes.length}
           onPrev={() => goToEpisode(currentEpisodeIndex - 1)}
@@ -264,7 +305,7 @@ function WatchContent() {
   );
 }
 
-function VideoPlayer({ src, poster, subtitleUrl, onEnded }: { src: string; poster: string; subtitleUrl?: string; onEnded?: () => void }) {
+function VideoPlayer({ src, poster, subtitleUrl, isZoomed, onEnded }: { src: string; poster: string; subtitleUrl?: string; isZoomed?: boolean; onEnded?: () => void }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [localSubtitleObjUrl, setLocalSubtitleObjUrl] = useState<string>('');
 
@@ -340,8 +381,10 @@ function VideoPlayer({ src, poster, subtitleUrl, onEnded }: { src: string; poste
   return (
     <video
       ref={videoRef}
+      controls
+      controlsList="nofullscreen"
       autoPlay
-      className="w-full h-full object-contain"
+      className={`w-full h-full max-h-[100dvh] transition-all duration-300 ${isZoomed ? "object-cover" : "object-contain"}`}
       poster={poster}
       onEnded={onEnded}
       playsInline
