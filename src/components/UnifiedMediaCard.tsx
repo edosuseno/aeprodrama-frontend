@@ -59,7 +59,7 @@ export function UnifiedMediaCard({
         <img
           src={(() => {
             if (!cover || typeof cover !== 'string' || !cover.trim()) {
-              return "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+              return "/placeholder-.svg";
             }
             let finalCover = cover.startsWith('//') ? `https:${cover}` : cover;
             
@@ -77,7 +77,7 @@ export function UnifiedMediaCard({
             }
             
             // Khusus provider yang menolak wsrv.nl, atau image HTTP, ATAU untuk menghindari adblocker HP
-            if (finalCover.includes('montagehub.xyz') || finalCover.includes('hikeuniverses.xyz') || finalCover.includes('sansekai') || finalCover.includes('stardusttv.cc') || finalCover.includes('idrama.video') || finalCover.includes('goodreels.com') || finalCover.startsWith('http://')) {
+            if (finalCover.includes('montagehub.xyz') || finalCover.includes('hikeuniverses.xyz') || finalCover.includes('sansekai') || finalCover.includes('stardusttv.cc') || finalCover.includes('idrama.video') || finalCover.includes('goodreels.com') || finalCover.includes('cubetv.cc') || finalCover.startsWith('http://')) {
                 return `/api/image-proxy?url=${encodeURIComponent(finalCover)}`;
             }
 
@@ -91,9 +91,8 @@ export function UnifiedMediaCard({
             const target = e.target as HTMLImageElement;
             const currentSrc = target.src || "";
             
-            // Jika sudah pakai proxy atau sudah ditandai error, stop agar tidak infinite loop/banjir request
             if (target.dataset.triedProxy || currentSrc.includes('/api/image-proxy') || currentSrc.includes('/api/proxy')) {
-              target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='450'%3E%3Crect fill='%23374151' width='300' height='450'/%3E%3Ctext fill='%23ffffff' font-family='system-ui' font-size='20' x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle'%3ENo Image%3C/text%3E%3C/svg%3E";
+              target.src = "/placeholder-.svg";
               return;
             }
 
